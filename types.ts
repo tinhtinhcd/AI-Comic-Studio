@@ -1,3 +1,4 @@
+
 export enum AgentRole {
   PROJECT_MANAGER = 'PROJECT_MANAGER',
   MARKET_RESEARCHER = 'MARKET_RESEARCHER',
@@ -18,6 +19,7 @@ export interface Agent {
   avatar: string;
   description: string;
   color: string;
+  department: string;
 }
 
 export interface ComicPanel {
@@ -32,7 +34,7 @@ export interface ComicPanel {
   captionAudioUrl?: string;
   isGenerating?: boolean;
   shouldAnimate?: boolean;
-  duration?: number; // Duration in seconds. Max 3600 (60 mins).
+  duration?: number;
 }
 
 export interface Character {
@@ -42,10 +44,9 @@ export interface Character {
   imageUrl?: string;
   voice?: string; 
   isGenerating?: boolean;
-  // NEW: Consistency features
-  isLocked?: boolean; // If true, this design is the Source of Truth
-  role?: 'MAIN' | 'SUPPORTING';
-  // NEW: Manual Upload & Style Check
+  isLocked?: boolean;
+  role?: 'MAIN' | 'SUPPORTING' | 'ANTAGONIST';
+  personality?: string;
   consistencyStatus?: 'PENDING' | 'PASS' | 'FAIL';
   consistencyReport?: string;
 }
@@ -74,11 +75,28 @@ export interface ResearchData {
   targetAudience: string;
   visualStyle: string;
   narrativeStructure: string;
+  // NEW: Direct control fields
+  estimatedChapters: string; 
+  worldSetting: string;
+  
   colorPalette: string[];
   keyThemes: string[];
 }
 
+export interface StoryConcept {
+    premise: string;
+    similarStories: string[];
+    uniqueTwist: string;
+    genreTrends: string;
+}
+
 export type StoryFormat = 'SHORT_STORY' | 'LONG_SERIES' | 'EPISODIC';
+
+export interface Message {
+  role: 'user' | 'agent';
+  content: string;
+  timestamp: number;
+}
 
 export interface ComicProject {
   id?: string;
@@ -86,14 +104,18 @@ export interface ComicProject {
   title: string;
   theme: string;
   storyFormat: StoryFormat;
-  modelTier?: 'STANDARD' | 'PREMIUM'; // STANDARD = Free, PREMIUM = Paid
+  modelTier?: 'STANDARD' | 'PREMIUM';
 
-  // NEW: Series Bible for Long/Episodic consistency
   seriesBible?: {
       worldSetting: string;
       mainConflict: string;
       characterArcs: string;
   };
+  
+  storyConcept?: StoryConcept;
+
+  // NEW: Chat history specifically for the Research phase
+  researchChatHistory: Message[]; 
 
   marketAnalysis?: ResearchData | null;
   censorReport?: string;
@@ -105,10 +127,4 @@ export interface ComicProject {
   panels: ComicPanel[];
   workflowStage: WorkflowStage;
   logs: SystemLog[];
-}
-
-export interface Message {
-  role: 'user' | 'agent';
-  content: string;
-  timestamp: number;
 }
