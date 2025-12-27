@@ -1,4 +1,4 @@
-import { Agent, AgentRole, WorkflowStage } from './types';
+import { Agent, AgentRole, WorkflowStage, ComicProject } from './types';
 
 export const AGENTS: Record<AgentRole, Agent> = {
   [AgentRole.PROJECT_MANAGER]: {
@@ -10,9 +10,9 @@ export const AGENTS: Record<AgentRole, Agent> = {
   },
   [AgentRole.MARKET_RESEARCHER]: {
     id: AgentRole.MARKET_RESEARCHER,
-    name: 'Market Researcher',
+    name: 'Strategic Planner',
     avatar: 'https://picsum.photos/seed/researcher/100/100',
-    description: 'Analyzes trends and refines themes.',
+    description: 'Defines visual style, title, and audience strategy.',
     color: 'bg-indigo-500'
   },
   [AgentRole.SCRIPTWRITER]: {
@@ -70,13 +70,21 @@ export const AGENTS: Record<AgentRole, Agent> = {
     avatar: 'https://picsum.photos/seed/publisher/100/100',
     description: 'Finalizes release.',
     color: 'bg-amber-600'
+  },
+  [AgentRole.ARCHIVIST]: {
+    id: AgentRole.ARCHIVIST,
+    name: 'Archivist',
+    avatar: 'https://picsum.photos/seed/archivist/100/100',
+    description: 'Stores scripts and project metadata (Text only).',
+    color: 'bg-stone-600'
   }
 };
 
-export const INITIAL_PROJECT_STATE = {
+export const INITIAL_PROJECT_STATE: ComicProject = {
   title: 'Untitled Comic',
   theme: '',
-  marketAnalysis: '',
+  storyFormat: 'SHORT_STORY', // Default
+  marketAnalysis: null,
   censorReport: '',
   isCensored: false,
   style: 'Modern Western Comic',

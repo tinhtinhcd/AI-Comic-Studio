@@ -8,7 +8,8 @@ export enum AgentRole {
   PANEL_ARTIST = 'PANEL_ARTIST',
   CINEMATOGRAPHER = 'CINEMATOGRAPHER',
   VOICE_ACTOR = 'VOICE_ACTOR',
-  PUBLISHER = 'PUBLISHER'
+  PUBLISHER = 'PUBLISHER',
+  ARCHIVIST = 'ARCHIVIST'
 }
 
 export interface Agent {
@@ -23,14 +24,14 @@ export interface ComicPanel {
   id: string;
   description: string;
   dialogue: string;
-  caption?: string; // New: Narrator text
+  caption?: string; 
   charactersInvolved: string[];
   imageUrl?: string;
   videoUrl?: string;
-  audioUrl?: string; // Dialogue audio
-  captionAudioUrl?: string; // New: Narrator audio
+  audioUrl?: string; 
+  captionAudioUrl?: string;
   isGenerating?: boolean;
-  shouldAnimate?: boolean; // New: User choice for video
+  shouldAnimate?: boolean;
 }
 
 export interface Character {
@@ -40,6 +41,9 @@ export interface Character {
   imageUrl?: string;
   voice?: string; 
   isGenerating?: boolean;
+  // NEW: Consistency features
+  isLocked?: boolean; // If true, this design is the Source of Truth
+  role?: 'MAIN' | 'SUPPORTING';
 }
 
 export enum WorkflowStage {
@@ -61,10 +65,32 @@ export interface SystemLog {
   type: 'info' | 'success' | 'error' | 'warning';
 }
 
+export interface ResearchData {
+  suggestedTitle: string;
+  targetAudience: string;
+  visualStyle: string;
+  narrativeStructure: string;
+  colorPalette: string[];
+  keyThemes: string[];
+}
+
+export type StoryFormat = 'SHORT_STORY' | 'LONG_SERIES' | 'EPISODIC';
+
 export interface ComicProject {
+  id?: string;
+  lastModified?: number;
   title: string;
   theme: string;
-  marketAnalysis?: string;
+  storyFormat: StoryFormat;
+  
+  // NEW: Series Bible for Long/Episodic consistency
+  seriesBible?: {
+      worldSetting: string;
+      mainConflict: string;
+      characterArcs: string;
+  };
+
+  marketAnalysis?: ResearchData | null;
   censorReport?: string;
   isCensored: boolean;
   style: string;

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Schema, Modality } from "@google/genai";
-import { ComicPanel, Character } from "../types";
+import { ComicPanel, Character, ResearchData, StoryFormat } from "../types";
 
 // Helper for TTS audio decoding
 async function decodeAudioData(
@@ -85,35 +85,87 @@ const getAI = (apiKeyOverride?: string) => {
   return new GoogleGenAI({ apiKey });
 };
 
-// --- NEW CAPABILITIES ---
+// --- STRATEGIC & PRE-PRODUCTION ---
 
-export const conductMarketResearch = async (theme: string): Promise<string> => {
+export const conductMarketResearch = async (theme: string, language: string = 'English'): Promise<ResearchData> => {
     const ai = getAI();
     const prompt = `
-        As a Comic Market Researcher, analyze the following story theme: "${theme}".
-        Provide a short 3-bullet point report on:
-        1. Target Audience.
-        2. Potential Trends to exploit.
-        3. Suggestions to make the story more engaging for a global audience.
-        Keep it professional and concise.
+        Act as a Creative Director and Market Researcher.
+        Analyze theme: "${theme}".
+        
+        Output strategic plan in ${language}:
+        1. 'suggestedTitle'
+        2. 'targetAudience'
+        3. 'visualStyle'
+        4. 'narrativeStructure'
+        5. 'colorPalette': 3-4 main hex codes.
+        6. 'keyThemes': 3 keywords.
     `;
+    
+    const schema: Schema = {
+        type: Type.OBJECT,
+        properties: {
+            suggestedTitle: { type: Type.STRING },
+            targetAudience: { type: Type.STRING },
+            visualStyle: { type: Type.STRING },
+            narrativeStructure: { type: Type.STRING },
+            colorPalette: { type: Type.ARRAY, items: { type: Type.STRING } },
+            keyThemes: { type: Type.ARRAY, items: { type: Type.STRING } }
+        },
+        required: ["suggestedTitle", "targetAudience", "visualStyle", "narrativeStructure", "colorPalette", "keyThemes"]
+    };
+
     const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: prompt
+        contents: prompt,
+        config: { responseMimeType: "application/json", responseSchema: schema }
     });
-    return response.text || "No analysis generated.";
+    
+    return JSON.parse(response.text!);
 };
+
+// NEW: Series Bible Generation (For Long/Episodic formats)
+export const generateSeriesBible = async (theme: string, style: string, language: string): Promise<{ worldSetting: string, mainConflict: string, characterArcs: string }> => {
+    const ai = getAI();
+    const prompt = `
+        Create a "Series Bible" for a long-running animated series.
+        Theme: "${theme}".
+        Style: "${style}".
+        Language: ${language}.
+        
+        Define:
+        1. 'worldSetting': The rules, location, and atmosphere of the world.
+        2. 'mainConflict': The overarching problem that spans multiple seasons/chapters.
+        3. 'characterArcs': Brief summary of how main characters should evolve.
+    `;
+
+    const schema: Schema = {
+        type: Type.OBJECT,
+        properties: {
+            worldSetting: { type: Type.STRING },
+            mainConflict: { type: Type.STRING },
+            characterArcs: { type: Type.STRING }
+        },
+        required: ["worldSetting", "mainConflict", "characterArcs"]
+    };
+
+    const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: { responseMimeType: "application/json", responseSchema: schema }
+    });
+
+    return JSON.parse(response.text!);
+};
+
+// --- SCRIPTING ---
 
 export const censorContent = async (content: string, type: 'SCRIPT' | 'IMAGE'): Promise<{passed: boolean, report: string}> => {
     const ai = getAI();
     const prompt = `
-        Act as a Safety Inspector for a media publishing house.
-        Analyze the following ${type} content for: Hate Speech, Explicit Violence, Sexual Content, or Self-Harm.
-        
-        Content: "${content}"
-        
-        Return JSON:
-        { "passed": boolean, "report": "Short reason if failed, or 'Safe' if passed" }
+        Act as a Safety Inspector. Analyze ${type} content: "${content}".
+        Check for: Hate Speech, Explicit Violence, Sexual Content, Self-Harm.
+        Return JSON: { "passed": boolean, "report": "Reason or 'Safe'" }
     `;
     
     const schema: Schema = {
@@ -134,26 +186,52 @@ export const censorContent = async (content: string, type: 'SCRIPT' | 'IMAGE'): 
     return JSON.parse(response.text!);
 };
 
-// --- EXISTING SERVICES ---
-
-export const generateScript = async (theme: string, style: string): Promise<{ title: string; panels: ComicPanel[] }> => {
+export const generateScript = async (
+    theme: string, 
+    style: string, 
+    language: string = 'English', 
+    format: StoryFormat = 'SHORT_STORY',
+    bible?: { worldSetting: string, mainConflict: string } // Optional Bible context
+): Promise<{ title: string; panels: ComicPanel[] }> => {
   const ai = getAI();
-  // UPGRADE: Added Dramatic Structure instruction and CAPTION field
-  const prompt = `
-    Create a comic book script based on: "${theme}". Style: "${style}". 
-    Structure the story with 4-6 panels following this arc:
-    1. Setup (Introduction)
-    2. Inciting Incident (Conflict)
-    3. Rising Action
-    4. Climax / Twist
-    5. Resolution (or Cliffhanger)
+  
+  let structurePrompt = "";
+  let panelCountInstructions = "";
+  let contextPrompt = "";
 
-    Output JSON. 
-    'description': Visual instructions for the artist.
-    'dialogue': Spoken text by characters (or empty).
-    'caption': Narrator text/box text (or empty).
-    'charactersInvolved': List of names.
+  if (bible) {
+      contextPrompt = `
+        SERIES CONTEXT (Adhere strictly to this):
+        World: ${bible.worldSetting}
+        Main Conflict: ${bible.mainConflict}
+      `;
+  }
+
+  if (format === 'SHORT_STORY') {
+      structurePrompt = `Target Runtime: 5-10 mins. Complete narrative (Beginning, Middle, End).`;
+      panelCountInstructions = "Generate 8-12 KEYFRAMES.";
+  } else if (format === 'LONG_SERIES') {
+      structurePrompt = `Target Runtime: ~30 mins. This is CHAPTER 1. Focus on world setup and the 'Call to Action'. End with a cliffhanger.`;
+      panelCountInstructions = "Generate 12-16 KEYFRAMES (Storyboards).";
+  } else if (format === 'EPISODIC') {
+      structurePrompt = `Target Runtime: 15-30 mins. Self-contained episode. Problem introduced and resolved.`;
+      panelCountInstructions = "Generate 10-14 KEYFRAMES.";
+  }
+
+  const prompt = `
+    Act as a Screenwriter.
+    Theme: "${theme}". 
+    Style: "${style}". 
+    Format: "${format}".
+    ${contextPrompt}
+    ${structurePrompt}
+    
+    Language: ${language}.
+    ${panelCountInstructions}
+    
+    Output JSON: 'description' (Visuals), 'dialogue' (Speech), 'caption' (Narrator), 'charactersInvolved' (Names).
   `;
+  
   const schema: Schema = {
     type: Type.OBJECT,
     properties: {
@@ -178,24 +256,54 @@ export const generateScript = async (theme: string, style: string): Promise<{ ti
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: schema }
+    config: { 
+        responseMimeType: "application/json", 
+        responseSchema: schema,
+        thinkingConfig: { thinkingBudget: 4096 } 
+    }
   });
 
   const data = JSON.parse(response.text!);
-  const panelsWithIds = data.panels.map((p: any) => ({ ...p, id: crypto.randomUUID(), shouldAnimate: true })); // Default to animate
+  const panelsWithIds = data.panels.map((p: any) => ({ ...p, id: crypto.randomUUID(), shouldAnimate: true })); 
   return { title: data.title, panels: panelsWithIds };
 };
 
-export const generateCharacterDesign = async (characterName: string, projectTheme: string): Promise<{ description: string; imageUrl: string }> => {
+// --- VISUALIZATION & CONSISTENCY ---
+
+export const generateCharacterDesign = async (
+    characterName: string, 
+    projectTheme: string, 
+    language: string = 'English', 
+    isLongFormat: boolean = false
+): Promise<{ description: string; imageUrl: string }> => {
   const ai = getAI();
+  
+  // 1. Text Description
   const textResponse = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
-    contents: `Describe appearance of "${characterName}" for a comic about "${projectTheme}". Concise. Focus on distinctive features.`
+    contents: `Describe appearance of "${characterName}" for a comic about "${projectTheme}". Concise. Focus on distinctive features (hair, clothes, colors). Write in ${language}.`
   });
   const description = textResponse.text || `A cool ${characterName}`;
+
+  // 2. Image Generation Strategy
+  // For Long Format, we generate a "Character Reference Sheet" (Turnaround) to ensure consistency later.
+  // For Short Format, we just generate a cool pose.
+  let imagePrompt = "";
+  if (isLongFormat) {
+      imagePrompt = `
+          Character Reference Sheet for animation. 
+          Character: ${characterName}. ${description}.
+          Layout: Three views (Front view, Side view, 3/4 view) arranged horizontally on a white background.
+          Style: Concept art, neutral lighting, flat shading for reference.
+          No text, clean lines.
+      `;
+  } else {
+      imagePrompt = `Character design for ${characterName}, ${description}. White background, full body, concept art style, dynamic pose.`;
+  }
+
   const imageResponse = await ai.models.generateContent({
     model: "gemini-2.5-flash-image",
-    contents: `Character design sheet for ${characterName}, ${description}. White background, full body, concept art style.`,
+    contents: imagePrompt,
   });
   return { description, imageUrl: `data:image/png;base64,${imageResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data}` };
 };
@@ -203,29 +311,33 @@ export const generateCharacterDesign = async (characterName: string, projectThem
 export const generatePanelImage = async (panel: ComicPanel, style: string, characters: Character[]): Promise<string> => {
   const ai = getAI();
   
-  // UPGRADE: MULTIMODAL INPUT (Reference Images)
   const parts: any[] = [];
   
-  // 1. Add Text Prompt
+  // 1. Construct Prompt
   const charDescriptions = characters
     .filter(c => panel.charactersInvolved.some(name => c.name.toLowerCase().includes(name.toLowerCase())))
-    .map(c => `${c.name} (Appearance: ${c.description})`)
+    .map(c => `${c.name} (Look: ${c.description})`)
     .join(". ");
 
   const prompt = `
-    Comic panel art. Style: ${style}.
-    Scene: ${panel.description}.
-    Characters: ${charDescriptions}.
-    Action: "${panel.dialogue || panel.caption || ''}".
-    Maintain consistent character appearance based on provided reference images.
+    Comic panel art / Storyboard frame.
+    Style: ${style}.
+    Scene Description: ${panel.description}.
+    Characters present: ${charDescriptions}.
+    Action/Mood: "${panel.dialogue || panel.caption || ''}".
+    
+    CRITICAL: Use the provided Reference Images to maintain strict character consistency (Hair, Clothes, Face).
   `;
   
   parts.push({ text: prompt });
 
-  // 2. Add Reference Images
-  // Only add images for characters actually in this panel to avoid confusion
+  // 2. Inject Reference Images (Crucial for Long Series)
+  // Only inject if the character is involved in this specific panel
   characters.forEach(char => {
-      if (panel.charactersInvolved.some(name => char.name.toLowerCase().includes(name.toLowerCase())) && char.imageUrl) {
+      const isInvolved = panel.charactersInvolved.some(name => char.name.toLowerCase().includes(name.toLowerCase()));
+      // If it's a Long Series (implied by isLocked), we prioritize Locked images.
+      // Even if not locked, we use available images.
+      if (isInvolved && char.imageUrl) {
           const base64 = char.imageUrl.split(',')[1];
           parts.push({
               inlineData: {
@@ -239,7 +351,7 @@ export const generatePanelImage = async (panel: ComicPanel, style: string, chara
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash-image",
     contents: { parts },
-    config: { imageConfig: { aspectRatio: "4:3" } }
+    config: { imageConfig: { aspectRatio: "16:9" } }
   });
   return `data:image/png;base64,${response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data}`;
 };
@@ -248,11 +360,13 @@ export const generateCoverImage = async (title: string, theme: string, style: st
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash-image",
-    contents: `Comic cover for "${title}". Theme: ${theme}. Style: ${style}. Vertical, dramatic, minimal text.`,
-    config: { imageConfig: { aspectRatio: "3:4" } }
+    contents: `Cinematic movie poster for "${title}". Theme: ${theme}. Style: ${style}. Vertical, dramatic, minimal text.`,
+    config: { imageConfig: { aspectRatio: "2:3" } }
   });
   return `data:image/png;base64,${response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data}`;
 };
+
+// --- POST PRODUCTION ---
 
 export const translateScript = async (currentScript: {title: string, panels: ComicPanel[]}, targetLanguage: string): Promise<{title: string, panels: ComicPanel[]}> => {
     const ai = getAI();
@@ -331,7 +445,7 @@ export const generateVideo = async (imageUrl: string, prompt: string): Promise<s
         config: {
             numberOfVideos: 1,
             resolution: '720p',
-            aspectRatio: '4:3'
+            aspectRatio: '16:9'
         }
     });
 

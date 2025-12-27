@@ -1,6 +1,6 @@
 import React from 'react';
 import { ComicProject } from '../types';
-import { Download, Play, Volume2 } from 'lucide-react';
+import { Download, Play, Volume2, Book, MessageSquare, Loader2 } from 'lucide-react';
 
 interface FinalComicViewProps {
   project: ComicProject;
@@ -8,6 +8,10 @@ interface FinalComicViewProps {
 
 const FinalComicView: React.FC<FinalComicViewProps> = ({ project }) => {
   if (project.panels.length === 0) return null;
+
+  const playAudio = (url: string) => {
+      new Audio(url).play();
+  };
 
   return (
     <div className="fixed right-0 top-0 bottom-0 w-80 lg:w-96 bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-hidden flex flex-col z-20">
@@ -43,9 +47,27 @@ const FinalComicView: React.FC<FinalComicViewProps> = ({ project }) => {
             </div>
 
             {project.panels.map((panel, idx) => (
-                <div key={panel.id} className="bg-white p-2 shadow-sm rounded-sm">
+                <div key={panel.id} className="bg-white p-2 shadow-sm rounded-sm mb-6">
                     <div className="border-2 border-black bg-zinc-100 aspect-[4/3] overflow-hidden relative group">
-                         {panel.videoUrl ? (
+                         
+                         {/* Narrator Caption Box */}
+                         {panel.caption && (
+                             <div className="absolute top-0 left-0 right-0 p-2 z-10 pointer-events-none">
+                                <div className="bg-yellow-200 border-2 border-black p-2 shadow-[2px_2px_0px_rgba(0,0,0,1)] inline-block max-w-[90%]">
+                                    <p className="text-[10px] font-bold text-black uppercase leading-tight font-sans tracking-wide">
+                                        {panel.caption}
+                                    </p>
+                                </div>
+                             </div>
+                         )}
+
+                         {/* Visual Content */}
+                         {panel.isGenerating ? (
+                             <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-200 text-zinc-500 gap-2">
+                                 <Loader2 className="w-6 h-6 animate-spin text-indigo-500"/>
+                                 <span className="text-xs font-mono uppercase">AI Artist Working...</span>
+                             </div>
+                         ) : panel.videoUrl ? (
                              <video 
                                 src={panel.videoUrl} 
                                 className="w-full h-full object-cover" 
@@ -57,31 +79,45 @@ const FinalComicView: React.FC<FinalComicViewProps> = ({ project }) => {
                          ) : panel.imageUrl ? (
                              <img src={panel.imageUrl} className="w-full h-full object-cover" />
                          ) : (
-                             <div className="w-full h-full flex items-center justify-center text-zinc-300 text-xs font-mono uppercase">
-                                 Pending Art...
+                             <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400 gap-2 p-4 text-center">
+                                 <div className="w-8 h-8 rounded-full border-2 border-dashed border-zinc-400 flex items-center justify-center">?</div>
+                                 <span className="text-xs font-mono uppercase">Pending Art<br/>(Run Step 3)</span>
                              </div>
                          )}
                          
-                         {/* Audio overlay icon if audio exists but video doesn't (or separate control) */}
-                         {panel.audioUrl && !panel.videoUrl && (
-                             <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    new Audio(panel.audioUrl).play();
-                                }}
-                                className="absolute bottom-2 right-2 p-2 bg-black/50 rounded-full text-white hover:bg-black/80 transition-colors"
-                             >
-                                 <Volume2 className="w-4 h-4" />
-                             </button>
-                         )}
                     </div>
+                    
+                    {/* Dialogue Box */}
                     {panel.dialogue && (
-                         <div className="mt-2 text-center">
-                             <span className="font-comic font-bold text-sm text-black uppercase">{panel.dialogue}</span>
+                         <div className="mt-2 text-center px-4 relative">
+                             <div className="bg-white border-2 border-black rounded-[20px] p-3 shadow-sm inline-block relative bubble-tail">
+                                <span className="font-comic font-bold text-sm text-black uppercase leading-tight block">
+                                    {panel.dialogue}
+                                </span>
+                             </div>
                          </div>
                     )}
-                    {panel.audioUrl && (
-                        <audio src={panel.audioUrl} controls className="w-full h-6 mt-1 opacity-50 hover:opacity-100" />
+
+                    {/* Audio Controls */}
+                    {(panel.audioUrl || panel.captionAudioUrl) && (
+                        <div className="mt-3 flex gap-2 justify-center border-t border-zinc-100 pt-2">
+                            {panel.captionAudioUrl && (
+                                <button 
+                                    onClick={() => playAudio(panel.captionAudioUrl!)}
+                                    className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded hover:bg-amber-100 uppercase"
+                                >
+                                    <Book className="w-3 h-3" /> Narrator
+                                </button>
+                            )}
+                            {panel.audioUrl && (
+                                <button 
+                                    onClick={() => playAudio(panel.audioUrl!)}
+                                    className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100 uppercase"
+                                >
+                                    <MessageSquare className="w-3 h-3" /> Dialogue
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
             ))}
