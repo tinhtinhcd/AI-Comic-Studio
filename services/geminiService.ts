@@ -85,9 +85,61 @@ const getAI = (apiKeyOverride?: string) => {
   return new GoogleGenAI({ apiKey });
 };
 
+const extractImageFromResponse = (response: any): string => {
+    const candidates = response.candidates || [];
+    for (const candidate of candidates) {
+        const parts = candidate.content?.parts || [];
+        for (const part of parts) {
+            if (part.inlineData && part.inlineData.data) {
+                return `data:image/png;base64,${part.inlineData.data}`;
+            }
+        }
+    }
+    throw new Error("No image data found in AI response. The model might have refused the request.");
+};
+
+// MODEL SELECTORS
+const getTextModel = (tier: 'STANDARD' | 'PREMIUM' = 'STANDARD') => {
+    return tier === 'PREMIUM' ? "gemini-3-pro-preview" : "gemini-3-flash-preview";
+};
+
+const getImageModel = (tier: 'STANDARD' | 'PREMIUM' = 'STANDARD') => {
+    return tier === 'PREMIUM' ? "gemini-3-pro-image-preview" : "gemini-2.5-flash-image";
+};
+
+// HELPER: Enhance Prompt for Styles
+const getEnhancedStylePrompt = (style: string) => {
+    // Add specific visual boosters based on the selected style
+    let boosters = "";
+    
+    if (style.includes("Photorealistic") || style.includes("Lifelike")) {
+        boosters = "cinematic lighting, highly detailed, 8k resolution, photography style, realistic textures, raw photo quality, depth of field, raytracing";
+    } else if (style.includes("Manga") || style.includes("Japanese")) {
+        boosters = "anime style, japanese manga, cel shaded, highly detailed lines, screentone, monochrome or vibrant colors";
+    } else if (style.includes("Noir")) {
+        boosters = "high contrast, chiaroscuro, film noir, black and white, dramatic shadows, moody";
+    } else if (style.includes("Cyberpunk")) {
+        boosters = "neon lights, futuristic, high tech low life, vibrant cyan and magenta, detailed mechanical parts";
+    } else if (style.includes("Watercolor")) {
+        boosters = "soft edges, watercolor texture, artistic, flowing colors, paper texture";
+    } else if (style.includes("Wuxia") || style.includes("Kiếm Hiệp")) {
+        boosters = "Chinese ink wash painting style, ancient martial arts, flowing robes, dramatic wind, misty mountains, traditional asian aesthetic, detailed brushwork";
+    } else if (style.includes("Xianxia") || style.includes("Tiên Hiệp")) {
+        boosters = "Ethereal, celestial fantasy, glowing effects, pastel and gold colors, floating islands, magical aura, divine elegance, chinese fantasy art";
+    } else if (style.includes("Horror") || style.includes("Kinh Dị")) {
+        boosters = "Junji Ito style, high contrast black and white ink, disturbing details, dark atmosphere, psychological horror, scratching texture, eerie";
+    } else if (style.includes("Romance") || style.includes("Manhwa") || style.includes("Tình Cảm")) {
+        boosters = "Korean webtoon style, soft focus, blooming flowers background, sparkling eyes, attractive characters, vibrant and warm colors, romantic atmosphere";
+    } else {
+        boosters = "high quality, detailed, masterpiece";
+    }
+
+    return `Art Style: ${style}. Visual Qualities: ${boosters}`;
+};
+
 // --- STRATEGIC & PRE-PRODUCTION ---
 
-export const conductMarketResearch = async (theme: string, language: string = 'English'): Promise<ResearchData> => {
+export const conductMarketResearch = async (theme: string, language: string = 'English', tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'): Promise<ResearchData> => {
     const ai = getAI();
     const prompt = `
         Act as a Creative Director and Market Researcher.
@@ -116,7 +168,7 @@ export const conductMarketResearch = async (theme: string, language: string = 'E
     };
 
     const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: getTextModel(tier),
         contents: prompt,
         config: { responseMimeType: "application/json", responseSchema: schema }
     });
@@ -124,8 +176,7 @@ export const conductMarketResearch = async (theme: string, language: string = 'E
     return JSON.parse(response.text!);
 };
 
-// NEW: Series Bible Generation (For Long/Episodic formats)
-export const generateSeriesBible = async (theme: string, style: string, language: string): Promise<{ worldSetting: string, mainConflict: string, characterArcs: string }> => {
+export const generateSeriesBible = async (theme: string, style: string, language: string, tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'): Promise<{ worldSetting: string, mainConflict: string, characterArcs: string }> => {
     const ai = getAI();
     const prompt = `
         Create a "Series Bible" for a long-running animated series.
@@ -150,7 +201,7 @@ export const generateSeriesBible = async (theme: string, style: string, language
     };
 
     const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: getTextModel(tier),
         contents: prompt,
         config: { responseMimeType: "application/json", responseSchema: schema }
     });
@@ -191,7 +242,8 @@ export const generateScript = async (
     style: string, 
     language: string = 'English', 
     format: StoryFormat = 'SHORT_STORY',
-    bible?: { worldSetting: string, mainConflict: string } // Optional Bible context
+    bible?: { worldSetting: string, mainConflict: string },
+    tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'
 ): Promise<{ title: string; panels: ComicPanel[] }> => {
   const ai = getAI();
   
@@ -254,17 +306,18 @@ export const generateScript = async (
   };
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: getTextModel(tier),
     contents: prompt,
     config: { 
         responseMimeType: "application/json", 
         responseSchema: schema,
-        thinkingConfig: { thinkingBudget: 4096 } 
+        thinkingConfig: tier === 'PREMIUM' ? { thinkingBudget: 4096 } : undefined
     }
   });
 
   const data = JSON.parse(response.text!);
-  const panelsWithIds = data.panels.map((p: any) => ({ ...p, id: crypto.randomUUID(), shouldAnimate: true })); 
+  // CHANGED: default 'shouldAnimate' to false. Veo is expensive/paid. User must opt-in.
+  const panelsWithIds = data.panels.map((p: any) => ({ ...p, id: crypto.randomUUID(), shouldAnimate: false })); 
   return { title: data.title, panels: panelsWithIds };
 };
 
@@ -272,47 +325,55 @@ export const generateScript = async (
 
 export const generateCharacterDesign = async (
     characterName: string, 
-    projectTheme: string, 
+    projectTheme: string,
+    projectStyle: string, 
     language: string = 'English', 
-    isLongFormat: boolean = false
+    isLongFormat: boolean = false,
+    tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'
 ): Promise<{ description: string; imageUrl: string }> => {
   const ai = getAI();
   
   // 1. Text Description
   const textResponse = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: `Describe appearance of "${characterName}" for a comic about "${projectTheme}". Concise. Focus on distinctive features (hair, clothes, colors). Write in ${language}.`
+    model: getTextModel(tier),
+    contents: `Describe appearance of "${characterName}" for a story about "${projectTheme}". Style: ${projectStyle}. Concise. Focus on distinctive features (hair, clothes, colors). Write in ${language}.`
   });
   const description = textResponse.text || `A cool ${characterName}`;
 
   // 2. Image Generation Strategy
-  // For Long Format, we generate a "Character Reference Sheet" (Turnaround) to ensure consistency later.
-  // For Short Format, we just generate a cool pose.
+  const stylePrompt = getEnhancedStylePrompt(projectStyle);
+
   let imagePrompt = "";
   if (isLongFormat) {
       imagePrompt = `
-          Character Reference Sheet for animation. 
+          Character Reference Sheet.
           Character: ${characterName}. ${description}.
+          ${stylePrompt}.
           Layout: Three views (Front view, Side view, 3/4 view) arranged horizontally on a white background.
-          Style: Concept art, neutral lighting, flat shading for reference.
           No text, clean lines.
       `;
   } else {
-      imagePrompt = `Character design for ${characterName}, ${description}. White background, full body, concept art style, dynamic pose.`;
+      imagePrompt = `Character design for ${characterName}, ${description}. White background, full body. ${stylePrompt}`;
   }
 
+  const model = getImageModel(tier);
+  const config = tier === 'PREMIUM' ? { imageConfig: { imageSize: "1K" } } : undefined;
+
   const imageResponse = await ai.models.generateContent({
-    model: "gemini-2.5-flash-image",
+    model: model,
     contents: imagePrompt,
+    config: config
   });
-  return { description, imageUrl: `data:image/png;base64,${imageResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data}` };
+  
+  const imageUrl = extractImageFromResponse(imageResponse);
+  return { description, imageUrl };
 };
 
-// NEW: Analyze Character Consistency (Vision)
 export const analyzeCharacterConsistency = async (
     imageBase64: string,
     targetStyle: string,
-    characterName: string
+    characterName: string,
+    tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'
 ): Promise<{ isConsistent: boolean, critique: string }> => {
     const ai = getAI();
     const prompt = `
@@ -327,7 +388,6 @@ export const analyzeCharacterConsistency = async (
         Return JSON.
     `;
     
-    // Clean base64 header if present
     const cleanBase64 = imageBase64.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
 
     const schema: Schema = {
@@ -340,17 +400,16 @@ export const analyzeCharacterConsistency = async (
     };
 
     const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-image", // Using vision model to see the image
+        model: getTextModel(tier),
         contents: {
             parts: [
                 { inlineData: { mimeType: 'image/png', data: cleanBase64 } },
                 { text: prompt }
             ]
         },
-        config: { responseMimeType: "application/json" } // Note: 2.5 flash image might default to text, so we rely on parsing or standard response
+        config: { responseMimeType: "application/json", responseSchema: schema } 
     });
     
-    // Parse result (handling potential markdown wrapping)
     let text = response.text!;
     if (text.startsWith("```json")) {
         text = text.replace(/^```json\n/, "").replace(/\n```$/, "");
@@ -363,35 +422,39 @@ export const analyzeCharacterConsistency = async (
     }
 };
 
-export const generatePanelImage = async (panel: ComicPanel, style: string, characters: Character[]): Promise<string> => {
+export const generatePanelImage = async (panel: ComicPanel, style: string, characters: Character[], tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'): Promise<string> => {
   const ai = getAI();
   
   const parts: any[] = [];
   
-  // 1. Construct Prompt
   const charDescriptions = characters
     .filter(c => panel.charactersInvolved.some(name => c.name.toLowerCase().includes(name.toLowerCase())))
     .map(c => `${c.name} (Look: ${c.description})`)
     .join(". ");
 
+  const stylePrompt = getEnhancedStylePrompt(style);
+
   const prompt = `
-    Comic panel art / Storyboard frame.
-    Style: ${style}.
+    Generate a Comic panel / Storyboard frame.
+    
+    ${stylePrompt}. (RENDER STRICTLY IN THIS STYLE).
+    
     Scene Description: ${panel.description}.
-    Characters present: ${charDescriptions}.
     Action/Mood: "${panel.dialogue || panel.caption || ''}".
     
-    CRITICAL: Use the provided Reference Images to maintain strict character consistency (Hair, Clothes, Face).
+    Characters present: ${charDescriptions}.
+    
+    INSTRUCTIONS:
+    1. Adopt the "Art Style" defined above for the ENTIRE image.
+    2. Use the provided Reference Images ONLY for character identity (facial features, clothing, hair).
+    3. ADAPT the characters from the reference images to fit the "Art Style" of this scene perfectly.
+    4. Composition: Cinematic, dynamic.
   `;
   
   parts.push({ text: prompt });
 
-  // 2. Inject Reference Images (Crucial for Long Series)
-  // Only inject if the character is involved in this specific panel
   characters.forEach(char => {
       const isInvolved = panel.charactersInvolved.some(name => char.name.toLowerCase().includes(name.toLowerCase()));
-      // If it's a Long Series (implied by isLocked), we prioritize Locked images.
-      // Even if not locked, we use available images.
       if (isInvolved && char.imageUrl) {
           const base64 = char.imageUrl.split(',')[1];
           parts.push({
@@ -403,22 +466,36 @@ export const generatePanelImage = async (panel: ComicPanel, style: string, chara
       }
   });
 
+  const model = getImageModel(tier);
+  const config = tier === 'PREMIUM' 
+      ? { imageConfig: { aspectRatio: "16:9", imageSize: "1K" } } 
+      : { imageConfig: { aspectRatio: "16:9" } }; 
+
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-image",
+    model: model,
     contents: { parts },
-    config: { imageConfig: { aspectRatio: "16:9" } }
+    config: config
   });
-  return `data:image/png;base64,${response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data}`;
+  
+  return extractImageFromResponse(response);
 };
 
-export const generateCoverImage = async (title: string, theme: string, style: string): Promise<string> => {
+export const generateCoverImage = async (title: string, theme: string, style: string, tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'): Promise<string> => {
   const ai = getAI();
+  const model = getImageModel(tier);
+  const config = tier === 'PREMIUM' 
+    ? { imageConfig: { aspectRatio: "3:4", imageSize: "1K" } } 
+    : { imageConfig: { aspectRatio: "3:4" } };
+  
+  const stylePrompt = getEnhancedStylePrompt(style);
+
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-image",
-    contents: `Cinematic movie poster for "${title}". Theme: ${theme}. Style: ${style}. Vertical, dramatic, minimal text.`,
-    config: { imageConfig: { aspectRatio: "2:3" } }
+    model: model,
+    contents: `Cinematic movie poster for "${title}". Theme: ${theme}. ${stylePrompt}. Vertical, dramatic, minimal text.`,
+    config: config
   });
-  return `data:image/png;base64,${response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data}`;
+  
+  return extractImageFromResponse(response);
 };
 
 // --- POST PRODUCTION ---
@@ -490,29 +567,37 @@ export const generateVideo = async (imageUrl: string, prompt: string): Promise<s
     const base64Data = imageUrl.split(',')[1]; 
     const ai = getAI(process.env.API_KEY); 
 
-    let operation = await ai.models.generateVideos({
-        model: 'veo-3.1-fast-generate-preview',
-        image: {
-            imageBytes: base64Data,
-            mimeType: 'image/png'
-        },
-        prompt: `Cinematic camera movement, ${prompt}, high quality, 4k`,
-        config: {
-            numberOfVideos: 1,
-            resolution: '720p',
-            aspectRatio: '16:9'
+    try {
+        let operation = await ai.models.generateVideos({
+            model: 'veo-3.1-fast-generate-preview',
+            image: {
+                imageBytes: base64Data,
+                mimeType: 'image/png'
+            },
+            prompt: `Cinematic camera movement, ${prompt}, high quality, 4k`,
+            config: {
+                numberOfVideos: 1,
+                resolution: '720p',
+                aspectRatio: '16:9'
+            }
+        });
+
+        while (!operation.done) {
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            operation = await ai.operations.getVideosOperation({operation: operation});
         }
-    });
 
-    while (!operation.done) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        operation = await ai.operations.getVideosOperation({operation: operation});
+        const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
+        if (!videoUri) throw new Error("Video generation failed (Unknown Error)");
+
+        const videoResponse = await fetch(`${videoUri}&key=${process.env.API_KEY}`);
+        const videoBlob = await videoResponse.blob();
+        return URL.createObjectURL(videoBlob);
+    } catch (e: any) {
+        // Handle billing/permission errors gracefully
+        if (e.message && (e.message.includes('403') || e.message.includes('400') || e.message.includes('billing'))) {
+             throw new Error("Veo requires a Paid Google Cloud Project. Please verify your billing settings.");
+        }
+        throw e;
     }
-
-    const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
-    if (!videoUri) throw new Error("Video generation failed");
-
-    const videoResponse = await fetch(`${videoUri}&key=${process.env.API_KEY}`);
-    const videoBlob = await videoResponse.blob();
-    return URL.createObjectURL(videoBlob);
 };

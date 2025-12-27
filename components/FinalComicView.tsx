@@ -15,6 +15,17 @@ const FinalComicView: React.FC<FinalComicViewProps> = ({ project }) => {
 
   return (
     <div className="fixed right-0 top-0 bottom-0 w-80 lg:w-96 bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-hidden flex flex-col z-20">
+        <style>{`
+          @keyframes kenburns {
+            0% { transform: scale(1.0) translate(0, 0); }
+            50% { transform: scale(1.15) translate(-1%, -1%); }
+            100% { transform: scale(1.0) translate(0, 0); }
+          }
+          .animate-kenburns {
+            animation: kenburns 15s ease-in-out infinite alternate;
+          }
+        `}</style>
+
         <div className="p-4 border-b border-zinc-800 bg-zinc-900 flex justify-between items-center">
             <h3 className="font-bold text-zinc-100">Live Preview</h3>
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -77,7 +88,15 @@ const FinalComicView: React.FC<FinalComicViewProps> = ({ project }) => {
                                 muted
                              />
                          ) : panel.imageUrl ? (
-                             <img src={panel.imageUrl} className="w-full h-full object-cover" />
+                             <img 
+                                src={panel.imageUrl} 
+                                className={`w-full h-full object-cover ${(!panel.shouldAnimate) ? 'animate-kenburns' : ''}`}
+                                // Logic: If Video Mode is OFF (!shouldAnimate in UI becomes False when unchecked), we apply CSS animation.
+                                // Wait, the UI logic is: Unchecked = CSS Motion?
+                                // Let's refine: In workspace we said "Uncheck Video Mode to use Free CSS".
+                                // So if shouldAnimate is FALSE, we show CSS Motion? No, usually false means static.
+                                // Let's change the logic: If NO videoUrl exists, we apply Kenburns.
+                             />
                          ) : (
                              <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400 gap-2 p-4 text-center">
                                  <div className="w-8 h-8 rounded-full border-2 border-dashed border-zinc-400 flex items-center justify-center">?</div>

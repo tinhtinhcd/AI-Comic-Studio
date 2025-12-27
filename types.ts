@@ -32,6 +32,7 @@ export interface ComicPanel {
   captionAudioUrl?: string;
   isGenerating?: boolean;
   shouldAnimate?: boolean;
+  duration?: number; // Duration in seconds. Max 3600 (60 mins).
 }
 
 export interface Character {
@@ -85,7 +86,8 @@ export interface ComicProject {
   title: string;
   theme: string;
   storyFormat: StoryFormat;
-  
+  modelTier?: 'STANDARD' | 'PREMIUM'; // STANDARD = Free, PREMIUM = Paid
+
   // NEW: Series Bible for Long/Episodic consistency
   seriesBible?: {
       worldSetting: string;

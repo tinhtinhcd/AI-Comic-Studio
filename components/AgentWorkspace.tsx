@@ -3,7 +3,7 @@ import { AgentRole, ComicProject, ComicPanel, Character, WorkflowStage, SystemLo
 import { AGENTS } from '../constants';
 import * as GeminiService from '../services/geminiService';
 import * as StorageService from '../services/storageService';
-import { Send, RefreshCw, Image as ImageIcon, CheckCircle, Loader2, Sparkles, UserPlus, BookOpen, Users, Megaphone, Languages, Mic, Video, Play, Pause, Globe, TrendingUp, ShieldAlert, ArrowRight, Activity, Palette, XCircle, AlertTriangle, X, Edit2, Film, Save, Settings, Target, Lightbulb, PenTool, Layers, Archive, Trash2, FileText, Upload, Lock, Unlock, Book, ChevronRight, Eye, AlertCircle } from 'lucide-react';
+import { Send, RefreshCw, Image as ImageIcon, CheckCircle, Loader2, Sparkles, UserPlus, BookOpen, Users, Megaphone, Languages, Mic, Video, Play, Pause, Globe, TrendingUp, ShieldAlert, ArrowRight, Activity, Palette, XCircle, AlertTriangle, X, Edit2, Film, Save, Settings, Target, Lightbulb, PenTool, Layers, Archive, Trash2, FileText, Upload, Lock, Unlock, Book, ChevronRight, Eye, AlertCircle, Zap, Clock } from 'lucide-react';
 
 interface AgentWorkspaceProps {
   role: AgentRole;
@@ -66,6 +66,16 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
 
   const isLongFormat = project.storyFormat === 'LONG_SERIES' || project.storyFormat === 'EPISODIC';
 
+  // Helper to force key selection only for Paid tier
+  const checkApiKeyRequirement = async () => {
+    if (project.modelTier === 'PREMIUM' && (window as any).aistudio) {
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+            await (window as any).aistudio.openSelectKey();
+        }
+    }
+  };
+
   // ----------------------------------------------------------------------
   // REJECTION / CORRECTION LOGIC
   // ----------------------------------------------------------------------
@@ -105,12 +115,15 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
 
   const handleRegenerateSinglePanel = async (panel: ComicPanel, index: number) => {
       if (!project.style || project.characters.length === 0) return;
+      
+      await checkApiKeyRequirement();
+
       setRegeneratingPanelId(panel.id);
       addLog(AgentRole.PROJECT_MANAGER, `Requesting redraw for Panel ${index + 1}...`, 'info');
       
       try {
           // Pass full character list with images for consistency
-          const imageUrl = await GeminiService.generatePanelImage(panel, project.style, project.characters);
+          const imageUrl = await GeminiService.generatePanelImage(panel, project.style, project.characters, project.modelTier);
           
           const newPanels = [...project.panels];
           newPanels[index] = { ...newPanels[index], imageUrl };
@@ -120,6 +133,47 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
           addLog(AgentRole.PANEL_ARTIST, `Failed to redraw Panel ${index + 1}.`, 'error');
       } finally {
           setRegeneratingPanelId(null);
+      }
+  };
+  
+  // NEW: Regenerate Single Character
+  const handleRegenerateSingleCharacter = async (char: Character, index: number) => {
+      if (!project.style) return;
+      await checkApiKeyRequirement();
+      
+      // Update state to generating
+      const newChars = [...project.characters];
+      newChars[index] = { ...newChars[index], isGenerating: true };
+      updateProject({ characters: newChars });
+      addLog(AgentRole.PROJECT_MANAGER, `Requesting redraw for character: ${char.name}...`, 'info');
+
+      try {
+          const result = await GeminiService.generateCharacterDesign(
+                char.name, 
+                project.theme,
+                project.style,
+                project.language,
+                isLongFormat,
+                project.modelTier
+            );
+            
+            // Success
+            const successChars = [...project.characters]; // get fresh ref
+            successChars[index] = { 
+                ...successChars[index], 
+                description: result.description, 
+                imageUrl: result.imageUrl,
+                isGenerating: false,
+                isLocked: isLongFormat ? true : false
+            };
+            updateProject({ characters: successChars });
+            addLog(AgentRole.CHARACTER_DESIGNER, `Redesigned ${char.name}.`, 'success');
+
+      } catch (e) {
+            const failChars = [...project.characters];
+            failChars[index] = { ...failChars[index], isGenerating: false };
+            updateProject({ characters: failChars });
+            addLog(AgentRole.CHARACTER_DESIGNER, `Failed to redesign ${char.name}.`, 'error');
       }
   };
 
@@ -139,10 +193,18 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
       addLog(AgentRole.CHARACTER_DESIGNER, `${char?.name} design ${char?.isLocked ? 'LOCKED' : 'UNLOCKED'}.`, 'info');
   };
 
+  const updatePanelDuration = (index: number, duration: number) => {
+      const newPanels = [...project.panels];
+      newPanels[index] = { ...newPanels[index], duration };
+      updateProject({ panels: newPanels });
+  };
+
   // NEW: Manual Upload & Verification
   const handleCharacterUpload = async (e: React.ChangeEvent<HTMLInputElement>, charIndex: number) => {
       const file = e.target.files?.[0];
       if (!file) return;
+      
+      await checkApiKeyRequirement();
 
       // 1. Read File
       const reader = new FileReader();
@@ -164,7 +226,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
 
           // 3. Trigger AI Verification
           try {
-             const report = await GeminiService.analyzeCharacterConsistency(base64, project.style, charName);
+             const report = await GeminiService.analyzeCharacterConsistency(base64, project.style, charName, project.modelTier);
              
              // Update Result
              const verifiedChars = [...project.characters]; // Need fresh state ref if changed elsewhere
@@ -233,7 +295,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
     updateProject({ workflowStage: WorkflowStage.RESEARCHING });
     addLog(AgentRole.PROJECT_MANAGER, `Initializing Strategic Planning (${project.language || 'English'})...`, 'info');
     try {
-        const analysis: ResearchData = await GeminiService.conductMarketResearch(project.theme, project.language);
+        const analysis: ResearchData = await GeminiService.conductMarketResearch(project.theme, project.language, project.modelTier);
         updateProject({ 
             marketAnalysis: analysis,
             title: analysis.suggestedTitle,
@@ -254,7 +316,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
           // Pre-step for Long Series: Create Bible if missing
           if (isLongFormat && !project.seriesBible) {
               addLog(AgentRole.SCRIPTWRITER, "Drafting Series Bible (World & Conflict)...", 'info');
-              const bible = await GeminiService.generateSeriesBible(project.theme, project.style, project.language);
+              const bible = await GeminiService.generateSeriesBible(project.theme, project.style, project.language, project.modelTier);
               updateProject({ seriesBible: bible });
               addLog(AgentRole.SCRIPTWRITER, "Series Bible established. Now writing Chapter 1...", 'success');
           }
@@ -267,7 +329,8 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
             project.marketAnalysis ? project.marketAnalysis.visualStyle : project.style,
             project.language,
             project.storyFormat,
-            project.seriesBible 
+            project.seriesBible,
+            project.modelTier 
           );
 
           const chars = result.panels.flatMap(p => p.charactersInvolved).reduce((acc: Character[], name) => {
@@ -320,7 +383,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
 
     setLoading(true);
     updateProject({ workflowStage: WorkflowStage.DESIGNING_CHARACTERS });
-    addLog(AgentRole.PROJECT_MANAGER, "Script Approved. Starting Visuals.", 'info');
+    addLog(AgentRole.PROJECT_MANAGER, `Script Approved. Starting Visuals (${project.modelTier || 'STANDARD'} Mode).`, 'info');
+    
+    // UPGRADE: Check/Request API Key if PREMIUM
+    await checkApiKeyRequirement();
 
     try {
         // 1. Characters
@@ -342,11 +408,14 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
 
              try {
                 // Generate
+                // FIXED: Pass project.style to character generation to ensure consistency
                 const result = await GeminiService.generateCharacterDesign(
                     updatedChars[i].name, 
-                    project.theme, 
+                    project.theme,
+                    project.style, // <--- Added Style here
                     project.language,
-                    isLongFormat
+                    isLongFormat,
+                    project.modelTier
                 );
                 
                 // Update with success
@@ -378,7 +447,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                  updateProject({ panels: [...updatedPanels] });
 
                  try {
-                     const imageUrl = await GeminiService.generatePanelImage(updatedPanels[i], project.style, updatedChars);
+                     const imageUrl = await GeminiService.generatePanelImage(updatedPanels[i], project.style, updatedChars, project.modelTier);
                      updatedPanels[i] = { ...updatedPanels[i], imageUrl, isGenerating: false };
                  } catch (error) {
                      updatedPanels[i] = { ...updatedPanels[i], isGenerating: false };
@@ -402,9 +471,23 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
     setLoading(true);
     addLog(AgentRole.PROJECT_MANAGER, "Greenlighting Motion & Sound.", 'info');
     
-    if ((window as any).aistudio) {
-        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-        if (!hasKey) await (window as any).aistudio.openSelectKey();
+    // Check if any video generation is requested
+    const hasVideoRequest = project.panels.some(p => p.shouldAnimate && !p.videoUrl);
+
+    if (hasVideoRequest) {
+        if ((window as any).aistudio) {
+            try {
+                // Ensure we have a key for Veo
+                const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+                if (!hasKey) {
+                    addLog(AgentRole.CINEMATOGRAPHER, "Veo Video generation requires a Paid Key. Opening selection...", 'warning');
+                    await (window as any).aistudio.openSelectKey();
+                }
+            } catch (e) {
+                // If user cancels dialog or fails, we should handle it gracefully
+                addLog(AgentRole.CINEMATOGRAPHER, "Key selection failed/cancelled. Video generation might fail.", 'warning');
+            }
+        }
     }
 
     try {
@@ -433,17 +516,24 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
         updateProject({ panels: [...newPanels] });
 
         // 2. Video (Selective)
-        addLog(AgentRole.CINEMATOGRAPHER, "Animating selected panels...", 'info');
-        for (let i = 0; i < newPanels.length; i++) {
-            if (newPanels[i].imageUrl && newPanels[i].shouldAnimate && !newPanels[i].videoUrl) {
-                try {
-                    const videoUrl = await GeminiService.generateVideo(newPanels[i].imageUrl!, newPanels[i].description);
-                    newPanels[i] = { ...newPanels[i], videoUrl };
-                    updateProject({ panels: [...newPanels] });
-                } catch (err) {
-                     addLog(AgentRole.CINEMATOGRAPHER, `Video skipped Panel ${i+1} (Error).`, 'warning');
+        if (hasVideoRequest) {
+            addLog(AgentRole.CINEMATOGRAPHER, "Animating selected panels...", 'info');
+            for (let i = 0; i < newPanels.length; i++) {
+                if (newPanels[i].imageUrl && newPanels[i].shouldAnimate && !newPanels[i].videoUrl) {
+                    try {
+                        // Pass duration if set, otherwise default prompt
+                        const durationPrompt = newPanels[i].duration ? ` slow ambient motion, duration ${newPanels[i].duration} seconds` : '';
+                        const videoUrl = await GeminiService.generateVideo(newPanels[i].imageUrl!, newPanels[i].description + durationPrompt);
+                        newPanels[i] = { ...newPanels[i], videoUrl };
+                        updateProject({ panels: [...newPanels] });
+                    } catch (err: any) {
+                         // Catch Veo errors specifically to allow Audio to survive
+                         addLog(AgentRole.CINEMATOGRAPHER, `Video skipped Panel ${i+1}: ${err.message}`, 'error');
+                         // Do NOT disable shouldAnimate, so CSS motion can takeover
+                    }
                 }
             }
+            updateProject({ panels: [...newPanels] });
         }
         
         updateProject({ workflowStage: WorkflowStage.COMPLETED });
@@ -487,9 +577,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
   // VIEW RENDERERS
   // ----------------------------------------------------------------------
 
-  // --- PROJECT MANAGER (DASHBOARD) ---
+  // ... [Other Role Views Omitted for Brevity - Keeping same as original] ...
   if (role === AgentRole.PROJECT_MANAGER) {
-    return (
+      // (Original Project Manager Code)
+      return (
       <div className="h-full flex flex-col w-full relative overflow-y-auto">
         {renderProgressBar()}
         
@@ -583,9 +674,14 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                                         >
                                             <option>Modern Western Comic</option>
                                             <option>Japanese Manga</option>
+                                            <option>Wuxia (Kiếm Hiệp)</option>
+                                            <option>Xianxia (Tiên Hiệp)</option>
+                                            <option>Horror Manga (Kinh Dị)</option>
+                                            <option>Romance Manhwa (Tình Cảm)</option>
                                             <option>Noir</option>
                                             <option>Watercolor</option>
                                             <option>Cyberpunk</option>
+                                            <option>Photorealistic (Lifelike)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -602,6 +698,21 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                                             <option value="SHORT_STORY">Short Film (5-10 mins)</option>
                                             <option value="LONG_SERIES">Series Chapter 1 (30+ mins)</option>
                                             <option value="EPISODIC">Episodic/Sitcom (15-30 mins)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                {/* MODEL TIER SELECTOR */}
+                                <div className="col-span-2">
+                                    <label className="text-xs text-emerald-400 font-bold uppercase tracking-wider mb-2 block">Model Tier</label>
+                                    <div className="relative">
+                                        <Zap className="absolute left-3 top-3 w-4 h-4 text-zinc-500" />
+                                        <select 
+                                            value={project.modelTier || 'STANDARD'}
+                                            onChange={(e) => updateProject({ modelTier: e.target.value as 'STANDARD' | 'PREMIUM' })}
+                                            className="w-full bg-zinc-950 border border-zinc-700 rounded-lg py-2.5 pl-9 pr-3 text-sm text-zinc-200 focus:border-emerald-500 outline-none appearance-none"
+                                        >
+                                            <option value="STANDARD">Standard (Free - Flash Models)</option>
+                                            <option value="PREMIUM">Premium (Paid - Pro Models)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -745,7 +856,9 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
     );
   }
 
-  // --- CHARACTER DESIGNER (UPDATED FOR LOCKING & LOADING FEEDBACK & MANUAL UPLOAD) ---
+  // ... (Other roles kept same, skipping to CINEMATOGRAPHER)
+
+  // --- CHARACTER DESIGNER ---
   if (role === AgentRole.CHARACTER_DESIGNER) {
       if (project.characters.length === 0) {
           return (
@@ -780,7 +893,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
 
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
                      {project.characters.map((char, i) => (
-                         <div key={char.id} className={`bg-zinc-900 border rounded-2xl p-4 flex gap-4 transition-all relative overflow-hidden ${char.isLocked ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : 'border-zinc-800'}`}>
+                         <div key={char.id} className={`bg-zinc-900 border rounded-2xl p-4 flex gap-4 transition-all relative overflow-hidden group ${char.isLocked ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : 'border-zinc-800'}`}>
                              {/* Consistency Overlay */}
                              {char.consistencyStatus === 'FAIL' && (
                                  <div className="absolute top-0 right-0 bg-red-600/90 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg z-10 flex items-center gap-1">
@@ -802,16 +915,31 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                                          </span>
                                      </div>
                                  ) : char.imageUrl ? (
-                                     <img src={char.imageUrl} className="w-full h-full object-cover" />
+                                     <>
+                                        <img src={char.imageUrl} className="w-full h-full object-cover" />
+                                        {/* ADDED: Regenerate Overlay */}
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button 
+                                                onClick={() => handleRegenerateSingleCharacter(char, i)}
+                                                className="bg-white/10 hover:bg-purple-600 p-2 rounded-full backdrop-blur-md transition-all border border-white/20"
+                                                title="Redraw Character"
+                                            >
+                                                <RefreshCw className="w-5 h-5 text-white" />
+                                            </button>
+                                        </div>
+                                     </>
                                  ) : (
-                                     <div className="w-full h-full flex items-center justify-center text-zinc-700 bg-zinc-950/50">
-                                         <UserPlus className="w-8 h-8 opacity-50"/>
+                                     <div className="w-full h-full flex flex-col items-center justify-center text-zinc-700 bg-zinc-950/50">
+                                         <UserPlus className="w-8 h-8 opacity-50 mb-2"/>
+                                         <button onClick={() => handleRegenerateSingleCharacter(char, i)} className="text-xs text-purple-400 underline hover:text-purple-300">
+                                             Generate
+                                         </button>
                                      </div>
                                  )}
                                  
                                  {/* Lock Status Badge */}
                                  {char.imageUrl && !char.isGenerating && (
-                                     <div className="absolute top-2 left-2">
+                                     <div className="absolute top-2 left-2 pointer-events-none">
                                          {char.isLocked 
                                             ? <div className="bg-amber-500 text-black p-1 rounded-full shadow-lg"><Lock className="w-3 h-3"/></div>
                                             : <div className="bg-black/50 text-white p-1 rounded-full"><Unlock className="w-3 h-3"/></div>
@@ -865,6 +993,8 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
         </div>
       );
   }
+
+  // ... (Other roles kept same)
 
   // --- SCRIPTWRITER VIEW (UPDATED FOR BIBLE) ---
   if (role === AgentRole.SCRIPTWRITER) {
@@ -942,7 +1072,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
     );
   }
 
-  // --- ARCHIVIST VIEW (NEW) ---
+  // --- MARKET RESEARCHER & ARCHIVIST & PANEL ARTIST (Keeping same logic but omitting for brevity in diff) ---
   if (role === AgentRole.ARCHIVIST) {
     return (
         <div className="h-full flex flex-col w-full relative overflow-y-auto">
@@ -1062,111 +1192,109 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
     );
   }
 
-  // --- MARKET RESEARCHER VIEW (STRATEGIC) ---
   if (role === AgentRole.MARKET_RESEARCHER) {
-    if (!project.marketAnalysis) {
-        return (
-            <div className="h-full flex flex-col w-full relative overflow-y-auto">
-                {renderProgressBar()}
-                <div className="h-full flex items-center justify-center p-8">
-                    <div className="text-center text-zinc-500">
-                        <TrendingUp className="w-16 h-16 mx-auto mb-4 opacity-50"/>
-                        <h3 className="text-xl font-bold mb-2">No Research Data</h3>
-                        <p>Go to Project Manager console and start "Step 1: Market Research".</p>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    return (
-        <div className="h-full flex flex-col w-full relative overflow-y-auto">
-             {renderProgressBar()}
-             <div className="max-w-7xl mx-auto w-full px-8 pb-8">
-                 <div className="flex items-center gap-6 mb-8">
-                    <img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-indigo-500 shadow-lg" />
-                    <div>
-                        <h2 className="text-2xl font-bold text-white">Strategic Strategy</h2>
-                        <p className="text-zinc-400">Analysis of audience, style, and narrative direction.</p>
-                    </div>
-                 </div>
-
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-                     
-                     {/* Card 1: Core Identity */}
-                     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
-                         <div className="flex items-center gap-3 mb-4">
-                             <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400"><Target className="w-5 h-5"/></div>
-                             <h3 className="font-bold text-lg text-zinc-100">Core Identity</h3>
-                         </div>
-                         <div className="space-y-4">
-                             <div>
-                                 <label className="text-[10px] uppercase font-bold text-zinc-500 block mb-1">Suggested Title</label>
-                                 <p className="text-xl font-serif font-black text-white">{project.marketAnalysis.suggestedTitle}</p>
-                             </div>
-                             <div>
-                                 <label className="text-[10px] uppercase font-bold text-zinc-500 block mb-1">Target Audience</label>
-                                 <p className="text-sm text-zinc-300 leading-relaxed">{project.marketAnalysis.targetAudience}</p>
-                             </div>
-                         </div>
-                     </div>
-
-                     {/* Card 2: Visual Direction */}
-                     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
-                         <div className="flex items-center gap-3 mb-4">
-                             <div className="p-2 bg-pink-500/20 rounded-lg text-pink-400"><Palette className="w-5 h-5"/></div>
-                             <h3 className="font-bold text-lg text-zinc-100">Visual Direction</h3>
-                         </div>
-                         <div className="space-y-4">
-                             <div>
-                                 <label className="text-[10px] uppercase font-bold text-zinc-500 block mb-1">Art Style</label>
-                                 <p className="text-sm text-zinc-300 leading-relaxed italic border-l-2 border-pink-500 pl-3">"{project.marketAnalysis.visualStyle}"</p>
-                             </div>
-                             <div>
-                                <label className="text-[10px] uppercase font-bold text-zinc-500 block mb-2">Color Palette</label>
-                                <div className="flex gap-2">
-                                    {project.marketAnalysis.colorPalette.map((color, i) => (
-                                        <div key={i} className="flex flex-col items-center gap-1">
-                                            <div className="w-10 h-10 rounded-full border border-white/10 shadow-lg" style={{backgroundColor: color}}></div>
-                                            <span className="text-[9px] font-mono text-zinc-500">{color}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                             </div>
-                         </div>
-                     </div>
-
-                     {/* Card 3: Narrative DNA */}
-                     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
-                         <div className="flex items-center gap-3 mb-4">
-                             <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400"><Lightbulb className="w-5 h-5"/></div>
-                             <h3 className="font-bold text-lg text-zinc-100">Narrative DNA</h3>
-                         </div>
-                         <div className="space-y-4">
-                             <div>
-                                 <label className="text-[10px] uppercase font-bold text-zinc-500 block mb-1">Pacing & Structure</label>
-                                 <p className="text-sm text-zinc-300 leading-relaxed">{project.marketAnalysis.narrativeStructure}</p>
-                             </div>
-                             <div>
-                                 <label className="text-[10px] uppercase font-bold text-zinc-500 block mb-2">Key Themes</label>
-                                 <div className="flex flex-wrap gap-2">
-                                     {project.marketAnalysis.keyThemes.map((theme, i) => (
-                                         <span key={i} className="px-3 py-1 bg-emerald-900/30 text-emerald-300 border border-emerald-900/50 rounded-full text-xs font-bold">
-                                             #{theme}
-                                         </span>
-                                     ))}
-                                 </div>
-                             </div>
-                         </div>
-                     </div>
-
-                 </div>
-             </div>
-        </div>
-    );
+      if (!project.marketAnalysis) {
+          return (
+              <div className="h-full flex flex-col w-full relative overflow-y-auto">
+                  {renderProgressBar()}
+                  <div className="h-full flex items-center justify-center p-8">
+                      <div className="text-center text-zinc-500">
+                          <TrendingUp className="w-16 h-16 mx-auto mb-4 opacity-50"/>
+                          <h3 className="text-xl font-bold mb-2">No Research Data</h3>
+                          <p>Go to Project Manager console and start "Step 1: Market Research".</p>
+                      </div>
+                  </div>
+              </div>
+          )
+      }
+  
+      return (
+          <div className="h-full flex flex-col w-full relative overflow-y-auto">
+               {renderProgressBar()}
+               <div className="max-w-7xl mx-auto w-full px-8 pb-8">
+                   <div className="flex items-center gap-6 mb-8">
+                      <img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-indigo-500 shadow-lg" />
+                      <div>
+                          <h2 className="text-2xl font-bold text-white">Strategic Strategy</h2>
+                          <p className="text-zinc-400">Analysis of audience, style, and narrative direction.</p>
+                      </div>
+                   </div>
+  
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
+                       
+                       {/* Card 1: Core Identity */}
+                       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
+                           <div className="flex items-center gap-3 mb-4">
+                               <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400"><Target className="w-5 h-5"/></div>
+                               <h3 className="font-bold text-lg text-zinc-100">Core Identity</h3>
+                           </div>
+                           <div className="space-y-4">
+                               <div>
+                                   <label className="text-[10px] uppercase font-bold text-zinc-500 block mb-1">Suggested Title</label>
+                                   <p className="text-xl font-serif font-black text-white">{project.marketAnalysis.suggestedTitle}</p>
+                               </div>
+                               <div>
+                                   <label className="text-[10px] uppercase font-bold text-zinc-500 block mb-1">Target Audience</label>
+                                   <p className="text-sm text-zinc-300 leading-relaxed">{project.marketAnalysis.targetAudience}</p>
+                               </div>
+                           </div>
+                       </div>
+  
+                       {/* Card 2: Visual Direction */}
+                       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
+                           <div className="flex items-center gap-3 mb-4">
+                               <div className="p-2 bg-pink-500/20 rounded-lg text-pink-400"><Palette className="w-5 h-5"/></div>
+                               <h3 className="font-bold text-lg text-zinc-100">Visual Direction</h3>
+                           </div>
+                           <div className="space-y-4">
+                               <div>
+                                   <label className="text-[10px] uppercase font-bold text-zinc-500 block mb-1">Art Style</label>
+                                   <p className="text-sm text-zinc-300 leading-relaxed italic border-l-2 border-pink-500 pl-3">"{project.marketAnalysis.visualStyle}"</p>
+                               </div>
+                               <div>
+                                  <label className="text-[10px] uppercase font-bold text-zinc-500 block mb-2">Color Palette</label>
+                                  <div className="flex gap-2">
+                                      {project.marketAnalysis.colorPalette.map((color, i) => (
+                                          <div key={i} className="flex flex-col items-center gap-1">
+                                              <div className="w-10 h-10 rounded-full border border-white/10 shadow-lg" style={{backgroundColor: color}}></div>
+                                              <span className="text-[9px] font-mono text-zinc-500">{color}</span>
+                                          </div>
+                                      ))}
+                                  </div>
+                               </div>
+                           </div>
+                       </div>
+  
+                       {/* Card 3: Narrative DNA */}
+                       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
+                           <div className="flex items-center gap-3 mb-4">
+                               <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400"><Lightbulb className="w-5 h-5"/></div>
+                               <h3 className="font-bold text-lg text-zinc-100">Narrative DNA</h3>
+                           </div>
+                           <div className="space-y-4">
+                               <div>
+                                   <label className="text-[10px] uppercase font-bold text-zinc-500 block mb-1">Pacing & Structure</label>
+                                   <p className="text-sm text-zinc-300 leading-relaxed">{project.marketAnalysis.narrativeStructure}</p>
+                               </div>
+                               <div>
+                                   <label className="text-[10px] uppercase font-bold text-zinc-500 block mb-2">Key Themes</label>
+                                   <div className="flex flex-wrap gap-2">
+                                       {project.marketAnalysis.keyThemes.map((theme, i) => (
+                                           <span key={i} className="px-3 py-1 bg-emerald-900/30 text-emerald-300 border border-emerald-900/50 rounded-full text-xs font-bold">
+                                               #{theme}
+                                           </span>
+                                       ))}
+                                   </div>
+                               </div>
+                           </div>
+                       </div>
+  
+                   </div>
+               </div>
+          </div>
+      );
   }
 
-  // --- PANEL ARTIST (REGENERATION) ---
   if (role === AgentRole.PANEL_ARTIST) {
        return (
         <div className="h-full flex flex-col w-full relative overflow-y-auto">
@@ -1202,6 +1330,14 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                                     <div className="w-full h-full flex flex-col items-center justify-center text-zinc-700 bg-zinc-900/50">
                                         <ImageIcon className="w-12 h-12 mb-2 opacity-50"/>
                                         <span className="text-xs uppercase font-bold opacity-50">Empty</span>
+                                        {/* Fallback Generate Button if initial loop failed */}
+                                        <button 
+                                            onClick={() => handleRegenerateSinglePanel(p, i)}
+                                            disabled={!!regeneratingPanelId}
+                                            className="mt-2 text-[10px] font-bold text-rose-500 underline hover:text-rose-400"
+                                        >
+                                            Generate Image
+                                        </button>
                                     </div>
                                 )}
                                 {/* Loading Overlay */}
@@ -1222,7 +1358,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
       );
   }
 
-  // --- CINEMATOGRAPHER (VIDEO SELECTION) ---
+  // --- CINEMATOGRAPHER (UPDATED: DURATION CONTROLS) ---
   if (role === AgentRole.CINEMATOGRAPHER) {
       return (
         <div className="h-full flex flex-col w-full relative overflow-y-auto">
@@ -1232,7 +1368,13 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                     <img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-orange-500 shadow-lg" />
                     <div>
                         <h2 className="text-2xl font-bold text-white">Motion Planning</h2>
-                        <p className="text-zinc-400">Select panels to animate into video. Unchecked panels will remain as static slides.</p>
+                        <p className="text-zinc-400">Select panels to animate and define scene duration (Max 60 mins).</p>
+                        <div className="mt-2 bg-zinc-900 border border-zinc-700 p-2 rounded-lg flex items-center gap-2">
+                             <Zap className="w-4 h-4 text-orange-500" />
+                             <span className="text-xs text-zinc-300">
+                                 Tip: Check <strong>Video Mode</strong> for premium AI video (Veo). Uncheck it to use <strong>Free CSS Motion</strong> (Pan/Zoom effect).
+                             </span>
+                        </div>
                     </div>
                 </div>
                 <div className="space-y-4 pb-24">
@@ -1244,26 +1386,45 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                             <div className="flex-1 py-2">
                                 <div className="flex justify-between items-start mb-3">
                                     <h4 className="font-bold text-lg text-zinc-200">Panel {i+1}</h4>
-                                    <label className={`flex items-center gap-3 cursor-pointer px-4 py-2 rounded-lg border transition-all ${p.shouldAnimate ? 'bg-orange-600 text-white border-orange-500 shadow-orange-900/20 shadow-lg' : 'bg-zinc-950 text-zinc-400 border-zinc-700 hover:border-zinc-500'}`}>
-                                        <input 
-                                            type="checkbox" 
-                                            checked={p.shouldAnimate} 
-                                            onChange={() => {
-                                                const newPanels = [...project.panels];
-                                                newPanels[i].shouldAnimate = !newPanels[i].shouldAnimate;
-                                                updateProject({ panels: newPanels });
-                                            }}
-                                            className="hidden" // Custom checkbox styling
-                                        />
-                                        {p.shouldAnimate ? <Video className="w-4 h-4" /> : <ImageIcon className="w-4 h-4"/>}
-                                        <span className="text-xs font-bold uppercase tracking-wider">{p.shouldAnimate ? 'Video Mode' : 'Static Image'}</span>
-                                    </label>
+                                    
+                                    <div className="flex items-center gap-4">
+                                        {/* DURATION INPUT */}
+                                        <div className="flex items-center gap-2 bg-zinc-950 rounded-lg border border-zinc-700 px-3 py-1.5">
+                                            <Clock className="w-3 h-3 text-zinc-400" />
+                                            <input 
+                                                type="number"
+                                                min="1"
+                                                max="3600"
+                                                placeholder="Secs"
+                                                value={p.duration || ''}
+                                                onChange={(e) => updatePanelDuration(i, parseInt(e.target.value))}
+                                                className="bg-transparent text-white text-sm w-12 outline-none text-right font-mono"
+                                            />
+                                            <span className="text-xs text-zinc-500">sec</span>
+                                        </div>
+
+                                        <label className={`flex items-center gap-3 cursor-pointer px-4 py-2 rounded-lg border transition-all ${p.shouldAnimate ? 'bg-orange-600 text-white border-orange-500 shadow-orange-900/20 shadow-lg' : 'bg-zinc-950 text-zinc-400 border-zinc-700 hover:border-zinc-500'}`}>
+                                            <input 
+                                                type="checkbox" 
+                                                checked={p.shouldAnimate} 
+                                                onChange={() => {
+                                                    const newPanels = [...project.panels];
+                                                    newPanels[i].shouldAnimate = !newPanels[i].shouldAnimate;
+                                                    updateProject({ panels: newPanels });
+                                                }}
+                                                className="hidden" // Custom checkbox styling
+                                            />
+                                            {p.shouldAnimate ? <Video className="w-4 h-4" /> : <ImageIcon className="w-4 h-4"/>}
+                                            <span className="text-xs font-bold uppercase tracking-wider">{p.shouldAnimate ? 'Video Mode' : 'CSS Motion'}</span>
+                                        </label>
+                                    </div>
                                 </div>
                                 <p className="text-sm text-zinc-500 mb-4 line-clamp-2">{p.description}</p>
                                 
                                 <div className="flex gap-2">
                                     {p.dialogue && <span className="text-[10px] uppercase font-bold bg-emerald-900/30 text-emerald-400 px-2 py-1 rounded border border-emerald-900/50">Dialogue Available</span>}
                                     {p.caption && <span className="text-[10px] uppercase font-bold bg-amber-900/30 text-amber-400 px-2 py-1 rounded border border-amber-900/50">Narrator Available</span>}
+                                    {p.duration && <span className="text-[10px] uppercase font-bold bg-zinc-800 text-zinc-300 px-2 py-1 rounded border border-zinc-700">Duration: {p.duration}s</span>}
                                 </div>
                             </div>
                         </div>

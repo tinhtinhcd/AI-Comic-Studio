@@ -84,6 +84,7 @@ export const INITIAL_PROJECT_STATE: ComicProject = {
   title: 'Untitled Comic',
   theme: '',
   storyFormat: 'SHORT_STORY', // Default
+  modelTier: 'STANDARD', // Default to Free tier to prevent errors
   marketAnalysis: null,
   censorReport: '',
   isCensored: false,
