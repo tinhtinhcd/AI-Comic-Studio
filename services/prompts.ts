@@ -1,57 +1,111 @@
 
-import { StoryFormat } from "../types";
-
 export const PROMPTS = {
+    // 1. Analyze Manuscript with Cultural Extraction
     analyzeManuscript: (scriptContent: string, language: string) => `
-        Analyze this manuscript. Extract: Title, Target Audience, Visual Style (e.g. Manga, Noir), Narrative Structure (Logline), Estimated Chapters (if series), World Setting, Color Palette (list), Key Themes (list). 
+        Act as a professional Literary Editor. Analyze this manuscript.
         
-        CRITICAL: The output JSON values MUST be in ${language}.
-        Manuscript Start: ${scriptContent.substring(0, 10000)}...
+        CRITICAL OUTPUT RULES:
+        1. Output JSON ONLY.
+        2. All string values MUST be in ${language}.
+        
+        Extract:
+        - suggestedTitle: string
+        - targetAudience: string
+        - visualStyle: string (e.g. Manga, Webtoon, Noir)
+        - narrativeStructure: string (Logline)
+        - estimatedChapters: string
+        - worldSetting: string (BE SPECIFIC about country, era, culture. e.g. "Hanoi, Vietnam, 2024", "Fantasy world inspired by Ly Dynasty Vietnam")
+        - culturalContext: string (Notes on specific cultural norms to respect)
+        - chapterOutlines: array of objects { chapterNumber, summary }
+        - colorPalette: array of strings
+        - keyThemes: array of strings
+
+        Manuscript: "${scriptContent.substring(0, 15000)}..."
     `,
 
+    // 2. Research Chat - Cultural Awareness
     researchChatSystem: (theme: string, format: string | null, language: string) => `
-        You are the Editor-in-Chief and Strategy Team for a comic studio. 
+        You are the Editor-in-Chief.
         Context: Theme="${theme}", Format="${format}".
         
-        IMPORTANT: You MUST converse in ${language}. Do not use English unless the user asks for it.
+        STRICT LANGUAGE REQUIREMENT: You MUST speak in ${language}.
         
-        Participate in a brainstorming session. You can speak as different experts by tagging your response like [[MARKET_RESEARCHER]] or [[CONTINUITY_EDITOR]].
-        Default to [[MARKET_RESEARCHER]] if unspecified.
-        Keep responses concise and professional.
+        Goal: Discuss the story direction. 
+        Important: If the user suggests a specific culture (e.g. Vietnam), you must adapt all your advice to fit that culture's market and tropes. 
+        Do not default to Western comic tropes unless requested.
     `,
 
     extractStrategy: (chatLog: string, language: string) => `
-        Based on this chat history, compile the final Project Strategy. 
-        Output JSON MUST be in ${language}.
-        
-        Chat Log:
-        ${chatLog}
-    `,
-
-    storyConcept: (theme: string, style: string, language: string) => `
-        Generate a unique story concept for a "${style}" comic. Theme: "${theme}". 
-        
+        Based on this chat, compile the Project Strategy.
         OUTPUT LANGUAGE: ${language}.
         
-        Return JSON with: premise, similarStories (array), uniqueTwist, genreTrends.
+        Required JSON fields: 
+        - suggestedTitle
+        - targetAudience
+        - visualStyle
+        - narrativeStructure
+        - estimatedChapters
+        - worldSetting (Extract the specific location/culture discussed)
+        - culturalContext (Any specific cultural notes mentioned)
+        
+        Chat Log: ${chatLog}
     `,
 
-    complexCharacters: (premise: string, language: string) => `
-        Create a cast of characters for this story: "${premise}".
+    // 3. Style Research (NEW)
+    researchArtStyle: (style: string, culturalSetting: string, language: string) => `
+        Act as an Art Director. Research and define the Visual Style Guide.
         
-        OUTPUT LANGUAGE: ${language}.
+        Selected Style: "${style}"
+        Cultural Setting: "${culturalSetting}"
         
-        Return JSON Array. Each object: name, role (MAIN, SUPPORTING, ANTAGONIST), personality, and description (visuals).
+        Task: Create a detailed description of how to draw this comic/animation to ensure it looks authentic to the style AND the culture.
+        
+        Specific Instructions:
+        - If Style is "Manga", describe inking, screen tones (if B&W), or vibrant coloring (if Color), and dynamic paneling typical of Manga.
+        - If Style is "2D Animation" or "Anime", describe cel-shading, line weight, and compositing to look like a frame from a show.
+        - If Style is "3D Animation", describe lighting (e.g. subsurface scattering), texture quality, and rendering style (Pixar-esque vs Realistic).
+        - If Cultural Setting is "Vietnam", describe Vietnamese facial features, common architectural details, and fashion nuances to avoid looking "Western" or "Generic Asian".
+        
+        Output a plain text paragraph (in ${language}) that can be used as a system instruction for an artist AI.
     `,
 
-    seriesBible: (theme: string, style: string, language: string) => `
-        Write a Series Bible for a "${style}" comic. Theme: "${theme}".
+    // 4. Character Design - Uses Style Guide
+    characterDesign: (name: string, styleGuide: string, description: string, worldSetting: string) => `
+        Create an image generation prompt for a character named "${name}".
         
-        OUTPUT LANGUAGE: ${language}.
+        INPUTS:
+        - Style Guide: "${styleGuide}"
+        - World Setting: "${worldSetting}"
+        - Character Description: "${description}"
         
-        Return JSON: worldSetting, mainConflict, characterArcs.
+        INSTRUCTIONS:
+        Write a high-quality, descriptive prompt for an image generator.
+        1. STRICTLY follow the 'Style Guide'. 
+        2. Ensure the character's ethnicity and fashion matches the 'World Setting' and 'Name' (e.g. Vietnamese name -> Vietnamese features).
+        3. Do NOT use Western comic tropes (like Superman muscles) unless specified.
+        4. Focus on facial features, skin tone, hair texture, and culturally accurate clothing.
     `,
 
+    characterImagePrompt: (name: string, description: string, styleGuide: string) => `
+        Generate a character design for: ${name}.
+        Visual Description: ${description}
+        Art Style: ${styleGuide}
+        Full body character design sheet, white background, high quality.
+    `,
+
+    // 5. Panel Art - Uses Style Guide & Setting
+    panelImagePrompt: (styleGuide: string, description: string, charDesc: string, worldSetting: string) => `
+        Create a comic panel image prompt.
+        
+        - Visual Style: ${styleGuide}
+        - Environment/Location: ${worldSetting} (Ensure architecture, streets, and props match this location accurately).
+        - Action: ${description}
+        - Characters: ${charDesc}
+        
+        Avoid generic Western backgrounds if the setting is specific (e.g. Vietnam). Use specific architectural details (e.g. motorbikes, narrow tube houses for Vietnam).
+    `,
+
+    // 6. Scripting
     scriptGeneration: (
         chapterNumber: number,
         format: string | null,
@@ -61,115 +115,38 @@ export const PROMPTS = {
         concept: string,
         characters: string,
         summary: string,
-        originalScript: string
+        worldSetting: string
     ) => `
         Write a comic script for Chapter ${chapterNumber}.
         Format: ${format}. Style: ${style}.
         Target Length: ${panelCount} panels.
+        World Setting: ${worldSetting}.
         
         OUTPUT LANGUAGE: ${language}.
         
-        Concept: ${concept}
+        Story Concept: ${concept}
         Characters: ${characters}
-        Chapter Summary: ${summary}
+        Summary: ${summary}
         
-        ${originalScript ? `Adapt this original text: "${originalScript.substring(0, 5000)}..."` : ''}
-        
-        STRICT JSON OUTPUT FORMAT:
-        {
-            "title": "Chapter Title",
-            "panels": [
-                {
-                    "description": "Visual description of the scene",
-                    "dialogue": "Character Name: What they say",
-                    "caption": "Narrator text or sound effect (SFX)",
-                    "charactersInvolved": ["Character Name 1"]
-                }
-            ]
-        }
+        Output JSON: { "title": "...", "panels": [ { "description": "...", "dialogue": "...", "caption": "...", "charactersInvolved": [] } ] }
     `,
 
-    censor: (type: string, text: string) => `
-        Check this ${type} content for safety issues (hate speech, explicit violence, sexual content). Content: "${text.substring(0, 1000)}".
-        Return JSON: { passed: boolean, report: string }
-    `,
-
-    characterDesign: (name: string, style: string, theme: string, description: string) => `
-        Refine the visual description for character "${name}".
-        CRITICAL: The art style MUST be "${style}". 
-        Theme: "${theme}". 
-        Original Description: "${description}". 
-        
-        Output a concise, high-quality image generation prompt that explicitly mentions the "${style}" style, character features, clothing, signature accessories, and a hint of their personality in the expression. 
-        Do not include negative prompts.
-    `,
-
-    characterImagePrompt: (name: string, refinedDesc: string, style: string) => `
-        Character Reference Sheet for ${name}. Style: ${style}.
-        Visual Description: ${refinedDesc}.
-        
-        Requirements:
-        - Include a Full-body standing pose (Neutral/Confident).
-        - Include a Dynamic Action pose or expressive gesture relevant to their role.
-        - Include a Close-up Portrait showing facial details and emotion.
-        
-        White background, high quality concept art, clean lines. Ensure character consistency (clothing, hair, face) across all poses.
-    `,
-
-    panelImagePrompt: (style: string, description: string, charDesc: string) => `
-        Create a comic panel in the style of "${style}". 
-        Scene Description: ${description}. 
-        Characters involved (ensure visual consistency): ${charDesc}. 
-        High resolution, detailed background, dynamic composition.
-    `,
-
-    summarizeChapter: (text: string) => `Summarize this comic chapter in 3 sentences: ${text}`,
-
-    voiceConsistency: (
-        charName: string, 
-        charRole: string | undefined, 
-        charDesc: string, 
-        voiceName: string, 
-        voiceList: string
-    ) => `
-        Act as a Voice Casting Director.
-        Character: "${charName}"
-        Role: ${charRole}
-        Personality/Description: "${charDesc}"
-        
-        Selected Voice: "${voiceName}"
-        
-        Available Voices:
-        ${voiceList}
-        
-        Is the selected voice a good fit for this character?
-        If not, suggest the best alternative from the list.
-        
-        Output JSON: { "isSuitable": boolean, "suggestion": string, "reason": string }
-    `,
+    // Helpers
+    storyConcept: (theme: string, style: string, language: string) => `Generate unique story concept. Theme: ${theme}. Style: ${style}. Output JSON in ${language}: { premise, similarStories, uniqueTwist, genreTrends }`,
     
-    analyzeConsistency: (charName: string, style: string) => `
-        Analyze this uploaded image for character: "${charName}". Target Project Style: "${style}". Is this image consistent? Return JSON: { isConsistent, critique }.
-    `,
+    complexCharacters: (premise: string, language: string, setting: string) => `Create character cast for: ${premise}. Setting: ${setting}. Output JSON in ${language}: [ { name, role, personality, description } ]. Names must fit the setting.`,
+    
+    seriesBible: (theme: string, style: string, language: string) => `Write Series Bible. Theme: ${theme}. Output JSON in ${language}: { worldSetting, mainConflict, characterArcs }`,
 
-    translatePanels: (panelsJson: string, languages: string[]) => `
-        You are a professional comic translator.
-        Translate the 'dialogue' and 'caption' fields in the following JSON to these languages: ${languages.join(", ")}.
-        
-        Input Panels JSON:
-        ${panelsJson}
-        
-        Return the exact same JSON structure, but insert a 'translations' object into each panel. 
-        Example Output Structure per panel:
-        {
-           "id": "...",
-           ...,
-           "translations": {
-               "Vietnamese": { "dialogue": "...", "caption": "..." },
-               "Japanese": { "dialogue": "...", "caption": "..." }
-           }
-        }
-        
-        Ensure the translation matches the tone of a comic book.
-    `
+    continuityCheck: (panelsText: string, characters: string, worldSetting: string) => `Check script for logic/plot holes. Setting: ${worldSetting}. Characters: ${characters}. Script: ${panelsText}. Return plain text report.`,
+
+    censor: (type: string, text: string) => `Check for hate/violence/sexual content. Content: ${text}. Return JSON: { passed: boolean, report: string }`,
+
+    translatePanels: (panelsJson: string, languages: string[]) => `Translate 'dialogue' and 'caption' to ${languages.join(', ')}. Input: ${panelsJson}. Return JSON with 'translations' object added to each panel.`,
+    
+    voiceConsistency: (name: string, role: string, desc: string, voice: string, list: string) => `Check if voice '${voice}' fits character '${name}' (${role}, ${desc}). List: ${list}. JSON: { isSuitable, suggestion, reason }`,
+    
+    analyzeConsistency: (charName: string, style: string) => `Analyze image for style consistency with '${style}'. Character: ${charName}. JSON: { isConsistent, critique }`,
+    
+    summarizeChapter: (text: string) => `Summarize in 3 sentences: ${text}`
 };

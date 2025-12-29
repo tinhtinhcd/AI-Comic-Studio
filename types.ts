@@ -8,7 +8,7 @@ export enum AgentRole {
   TRANSLATOR = 'TRANSLATOR',
   CHARACTER_DESIGNER = 'CHARACTER_DESIGNER',
   PANEL_ARTIST = 'PANEL_ARTIST',
-  TYPESETTER = 'TYPESETTER', // NEW: Chuyên gia dàn trang
+  TYPESETTER = 'TYPESETTER',
   CINEMATOGRAPHER = 'CINEMATOGRAPHER',
   VOICE_ACTOR = 'VOICE_ACTOR',
   PUBLISHER = 'PUBLISHER',
@@ -62,9 +62,9 @@ export interface Character {
 export interface BookPage {
     id: string;
     pageNumber: number;
-    panels: string[]; // List of panel IDs included in this page
+    panels: string[];
     layoutType: 'GRID_2x2' | 'FULL_PAGE' | 'TEXT_HEAVY' | 'SPLASH';
-    renderUrl?: string; // Preview image of the laid out page
+    renderUrl?: string;
 }
 
 export enum WorkflowStage {
@@ -74,7 +74,7 @@ export enum WorkflowStage {
   CENSORING_SCRIPT = 'CENSORING_SCRIPT',
   DESIGNING_CHARACTERS = 'DESIGNING_CHARACTERS',
   VISUALIZING_PANELS = 'VISUALIZING_PANELS',
-  PRINTING = 'PRINTING', // NEW: Giai đoạn in ấn
+  PRINTING = 'PRINTING',
   POST_PRODUCTION = 'POST_PRODUCTION',
   COMPLETED = 'COMPLETED'
 }
@@ -93,8 +93,8 @@ export interface AgentTask {
     description: string;
     isCompleted: boolean;
     createdAt: number;
-    type: 'USER' | 'SYSTEM'; // Distinguish between manual and AI tasks
-    targetChapter?: number; // Linked to specific chapter workflow
+    type: 'USER' | 'SYSTEM';
+    targetChapter?: number;
 }
 
 export interface ResearchData {
@@ -103,7 +103,8 @@ export interface ResearchData {
   visualStyle: string;
   narrativeStructure: string;
   estimatedChapters: string; 
-  worldSetting: string;
+  worldSetting: string; // Dynamic cultural setting
+  culturalContext?: string; // Additional context notes
   chapterOutlines?: { chapterNumber: number; summary: string }[];
   colorPalette: string[];
   keyThemes: string[];
@@ -125,7 +126,7 @@ export interface ChapterArchive {
 }
 
 export type StoryFormat = 'SHORT_STORY' | 'LONG_SERIES' | 'EPISODIC' | null;
-export type PublicationType = 'COMIC' | 'NOVEL'; // NEW: Comic vs Novel distinction
+export type PublicationType = 'COMIC' | 'NOVEL';
 
 export interface Message {
   role: 'user' | 'agent';
@@ -140,7 +141,7 @@ export interface ComicProject {
   title: string;
   theme: string;
   storyFormat: StoryFormat;
-  publicationType: PublicationType; // NEW
+  publicationType: PublicationType;
   modelTier?: 'STANDARD' | 'PREMIUM';
   originalScript?: string;
   masterLanguage: string;
@@ -159,14 +160,16 @@ export interface ComicProject {
   researchChatHistory: Message[]; 
   marketAnalysis?: ResearchData | null;
   censorReport?: string;
+  continuityReport?: string;
   isCensored: boolean;
   style: string;
+  artStyleGuide?: string; // NEW: The AI's research on the chosen style
   language: string;
   coverImage?: string;
   characters: Character[];
   panels: ComicPanel[];
-  pages?: BookPage[]; // NEW: Layout pages
-  agentTasks: AgentTask[]; // NEW: Todo list per agent
+  pages?: BookPage[];
+  agentTasks: AgentTask[];
   workflowStage: WorkflowStage;
   logs: SystemLog[];
 }

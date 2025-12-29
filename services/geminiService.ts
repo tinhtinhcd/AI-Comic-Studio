@@ -1,6 +1,6 @@
 
-import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { ComicPanel, Character, ResearchData, StoryFormat, StoryConcept, Message, PanelTranslation, ChapterArchive } from "../types";
+import { GoogleGenAI } from "@google/genai";
+import { ComicPanel, Character, ResearchData, StoryFormat, StoryConcept, Message } from "../types";
 import { PROMPTS } from "./prompts";
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -11,11 +11,9 @@ const getTextModel = (tier: 'STANDARD' | 'PREMIUM' = 'STANDARD') =>
 const getImageModel = (tier: 'STANDARD' | 'PREMIUM' = 'STANDARD') => 
     'gemini-2.5-flash-image'; 
 
-// Helper to clean Markdown JSON blocks
 const cleanAndParseJSON = (text: string) => {
     try {
         let cleanText = text.trim();
-        // Remove markdown code blocks if present
         if (cleanText.startsWith("```json")) {
             cleanText = cleanText.replace(/^```json\s*/, "").replace(/\s*```$/, "");
         } else if (cleanText.startsWith("```")) {
@@ -24,7 +22,7 @@ const cleanAndParseJSON = (text: string) => {
         return JSON.parse(cleanText);
     } catch (e) {
         console.error("JSON Parse Error. Raw Text:", text);
-        throw new Error("Failed to parse AI response. Please try again.");
+        throw new Error("Failed to parse AI response.");
     }
 };
 
@@ -38,13 +36,12 @@ export const analyzeUploadedManuscript = async (scriptContent: string, language:
     return cleanAndParseJSON(response.text!);
 };
 
-export const sendResearchChatMessage = async (history: Message[], newMessage: string, context: { theme: string, storyFormat: StoryFormat, totalChapters?: string, language: string, originalScript?: string }, tier: 'STANDARD' | 'PREMIUM'): Promise<string> => {
+export const sendResearchChatMessage = async (history: Message[], newMessage: string, context: any, tier: 'STANDARD' | 'PREMIUM'): Promise<string> => {
     const ai = getAI();
     const contents = history.map(m => ({
         role: m.role === 'user' ? 'user' : 'model',
         parts: [{ text: m.content }]
     }));
-    
     contents.push({ role: 'user', parts: [{ text: newMessage }] });
 
     const response = await ai.models.generateContent({
@@ -52,7 +49,6 @@ export const sendResearchChatMessage = async (history: Message[], newMessage: st
         contents: contents,
         config: { systemInstruction: PROMPTS.researchChatSystem(context.theme, context.storyFormat, context.language) }
     });
-
     return response.text!;
 };
 
@@ -67,27 +63,33 @@ export const extractStrategyFromChat = async (history: Message[], language: stri
     return cleanAndParseJSON(response.text!);
 };
 
+// NEW: Research the Art Style based on Name & Culture
+export const generateArtStyleGuide = async (styleName: string, culturalSetting: string, language: string, tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'): Promise<string> => {
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+        model: getTextModel(tier),
+        contents: PROMPTS.researchArtStyle(styleName, culturalSetting, language)
+    });
+    return response.text!;
+};
+
 export const generateStoryConceptsWithSearch = async (theme: string, style: string, language: string, tier: 'STANDARD' | 'PREMIUM'): Promise<StoryConcept> => {
     const ai = getAI();
     const response = await ai.models.generateContent({
         model: getTextModel(tier),
         contents: PROMPTS.storyConcept(theme, style, language),
-        config: { 
-            tools: tier === 'PREMIUM' ? [{ googleSearch: {} }] : undefined,
-            responseMimeType: "application/json"
-        }
+        config: { responseMimeType: "application/json" }
     });
     return cleanAndParseJSON(response.text!);
 };
 
-export const generateComplexCharacters = async (concept: StoryConcept, language: string, tier: 'STANDARD' | 'PREMIUM'): Promise<Character[]> => {
+export const generateComplexCharacters = async (concept: StoryConcept, language: string, setting: string, tier: 'STANDARD' | 'PREMIUM'): Promise<Character[]> => {
     const ai = getAI();
     const response = await ai.models.generateContent({
         model: getTextModel(tier),
-        contents: PROMPTS.complexCharacters(concept.premise, language),
+        contents: PROMPTS.complexCharacters(concept.premise, language, setting),
         config: { responseMimeType: "application/json" }
     });
-
     const chars = cleanAndParseJSON(response.text!);
     return chars.map((c: any) => ({ ...c, id: crypto.randomUUID() }));
 };
@@ -114,10 +116,11 @@ export const generateScript = async (
     chapterSummary: string,
     chapterNumber: number,
     originalScript?: string,
-    previousSummaries?: string[],
+    worldSetting?: string,
     targetPanelCount?: number
 ): Promise<{ title: string, panels: ComicPanel[] }> => {
     const ai = getAI();
+    const setting = worldSetting || bible?.worldSetting || "Standard";
     
     const response = await ai.models.generateContent({
         model: getTextModel(tier),
@@ -129,8 +132,8 @@ export const generateScript = async (
             targetPanelCount || 20, 
             concept?.premise || theme, 
             characters.map(c => c.name).join(", "), 
-            chapterSummary, 
-            originalScript || ""
+            chapterSummary,
+            setting // Passed to prompt
         ),
         config: { responseMimeType: "application/json" }
     });
@@ -142,63 +145,20 @@ export const generateScript = async (
     };
 };
 
-export const batchTranslatePanels = async (panels: ComicPanel[], languages: string[], tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'): Promise<ComicPanel[]> => {
-    if (languages.length === 0) return panels;
-
+export const generateCharacterDesign = async (name: string, styleGuide: string, description: string, worldSetting: string, tier: 'STANDARD' | 'PREMIUM'): Promise<{ description: string, imageUrl: string }> => {
     const ai = getAI();
-    const panelsMin = panels.map(p => ({
-        id: p.id,
-        dialogue: p.dialogue, 
-        caption: p.caption
-    }));
-
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview", 
-            contents: PROMPTS.translatePanels(JSON.stringify(panelsMin), languages),
-            config: { responseMimeType: "application/json" }
-        });
-
-        const translatedData = cleanAndParseJSON(response.text!);
-        
-        return panels.map(p => {
-            const tPanel = translatedData.find((tp: any) => tp.id === p.id);
-            const existingTranslations = p.translations || {};
-            const newTranslations = tPanel ? { ...existingTranslations, ...tPanel.translations } : existingTranslations;
-
-            return {
-                ...p,
-                translations: newTranslations
-            };
-        });
-    } catch (e) {
-        console.error("Translation failed", e);
-        return panels; 
-    }
-};
-
-export const censorContent = async (text: string, type: 'SCRIPT' | 'IMAGE'): Promise<{ passed: boolean, report: string }> => {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview", 
-        contents: PROMPTS.censor(type, text),
-        config: { responseMimeType: "application/json" }
-    });
-    return cleanAndParseJSON(response.text!);
-};
-
-export const generateCharacterDesign = async (name: string, theme: string, style: string, language: string, isLongFormat: boolean, tier: 'STANDARD' | 'PREMIUM', description?: string): Promise<{ description: string, imageUrl: string }> => {
-    const ai = getAI();
+    
+    // 1. Refine Description
     const descResp = await ai.models.generateContent({
         model: getTextModel(tier),
-        contents: PROMPTS.characterDesign(name, style, theme, description || '')
+        contents: PROMPTS.characterDesign(name, styleGuide, description, worldSetting)
     });
     const refinedDesc = descResp.text!;
 
+    // 2. Generate Image
     const response = await ai.models.generateContent({
         model: getImageModel(tier),
-        contents: PROMPTS.characterImagePrompt(name, refinedDesc, style),
-        config: { } 
+        contents: PROMPTS.characterImagePrompt(name, refinedDesc, styleGuide),
     });
 
     let imageUrl = '';
@@ -209,18 +169,17 @@ export const generateCharacterDesign = async (name: string, theme: string, style
              }
         }
     }
-    
     return { description: refinedDesc, imageUrl };
 };
 
-export const generatePanelImage = async (panel: ComicPanel, style: string, characters: Character[], tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'): Promise<string> => {
+export const generatePanelImage = async (panel: ComicPanel, styleGuide: string, characters: Character[], worldSetting: string, tier: 'STANDARD' | 'PREMIUM'): Promise<string> => {
     const ai = getAI();
     const charDesc = characters.filter(c => panel.charactersInvolved.includes(c.name))
         .map(c => `${c.name}: ${c.description}`).join(". ");
     
     const response = await ai.models.generateContent({
         model: getImageModel(tier),
-        contents: PROMPTS.panelImagePrompt(style, panel.description, charDesc),
+        contents: PROMPTS.panelImagePrompt(styleGuide, panel.description, charDesc, worldSetting),
     });
 
     let imageUrl = '';
@@ -234,50 +193,37 @@ export const generatePanelImage = async (panel: ComicPanel, style: string, chara
     return imageUrl;
 };
 
+// ... (Other functions: generatePanelVideo, summarizeChapter, generateVoiceover, etc. remain mostly the same, but using updated types)
+// Re-exporting them to ensure file integrity
 export const generatePanelVideo = async (panel: ComicPanel, style: string): Promise<string> => {
     if (!panel.imageUrl) return '';
     const ai = getAI();
     const base64Data = panel.imageUrl.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
-    
     try {
         let operation = await ai.models.generateVideos({
             model: 'veo-3.1-fast-generate-preview', 
             prompt: `Cinematic motion for a comic panel. ${style} style. ${panel.description}. Subtle movement, parallax effect, atmospheric.`,
-            image: {
-                imageBytes: base64Data,
-                mimeType: 'image/png' 
-            },
-            config: {
-                numberOfVideos: 1,
-                aspectRatio: '16:9',
-                resolution: '720p'
-            }
+            image: { imageBytes: base64Data, mimeType: 'image/png' },
+            config: { numberOfVideos: 1, aspectRatio: '16:9', resolution: '720p' }
         });
-
         while (!operation.done) {
             await new Promise(resolve => setTimeout(resolve, 5000)); 
             operation = await ai.operations.getVideosOperation({operation: operation});
         }
-
         const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
         if (videoUri) {
             const response = await fetch(`${videoUri}&key=${process.env.API_KEY}`);
             const blob = await response.blob();
             return URL.createObjectURL(blob);
         }
-    } catch (e) {
-        console.error("Veo generation failed", e);
-    }
+    } catch (e) { console.error("Veo generation failed", e); }
     return '';
 };
 
 export const summarizeChapter = async (panels: ComicPanel[], tier: 'STANDARD' | 'PREMIUM'): Promise<string> => {
     const ai = getAI();
     const text = panels.map(p => p.description).join(" ");
-    const response = await ai.models.generateContent({
-        model: getTextModel(tier),
-        contents: PROMPTS.summarizeChapter(text)
-    });
+    const response = await ai.models.generateContent({ model: getTextModel(tier), contents: PROMPTS.summarizeChapter(text) });
     return response.text!;
 };
 
@@ -286,36 +232,24 @@ export const generateVoiceover = async (text: string, voiceName: string): Promis
     const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
         contents: { parts: [{ text }] },
-        config: {
-            responseModalities: ["AUDIO"],
-            speechConfig: {
-                voiceConfig: {
-                    prebuiltVoiceConfig: { voiceName }
-                }
-            }
-        }
+        config: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } } }
     });
-
     if (response.candidates && response.candidates[0].content.parts) {
         for (const part of response.candidates[0].content.parts) {
-             if (part.inlineData) {
-                 return `data:audio/mp3;base64,${part.inlineData.data}`; 
-             }
+             if (part.inlineData) { return `data:audio/mp3;base64,${part.inlineData.data}`; }
         }
     }
     return '';
 };
 
-export const analyzeCharacterConsistency = async (imageBase64: string, targetStyle: string, characterName: string, tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'): Promise<{ isConsistent: boolean, critique: string }> => {
+export const analyzeCharacterConsistency = async (imageBase64: string, targetStyle: string, characterName: string, tier: 'STANDARD' | 'PREMIUM'): Promise<{ isConsistent: boolean, critique: string }> => {
     const ai = getAI();
     const cleanBase64 = imageBase64.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
-    
     const response = await ai.models.generateContent({ 
         model: getTextModel(tier), 
         contents: { parts: [{ inlineData: { mimeType: 'image/png', data: cleanBase64 } }, { text: PROMPTS.analyzeConsistency(characterName, targetStyle) }] }, 
         config: { responseMimeType: "application/json" } 
     });
-    
     return cleanAndParseJSON(response.text!);
 };
 
@@ -328,12 +262,51 @@ export const verifyCharacterVoice = async (character: Character, voiceName: stri
         - Fenrir: Intense, aggressive, rough, growly (Male). Good for warriors, monsters, or angry characters.
         - Zephyr: Balanced, neutral, clear, breezy (Female/Androgynous). Good for narrators, professionals, or smart characters.
     `;
-
     const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: PROMPTS.voiceConsistency(character.name, character.role, character.personality || character.description, voiceName, VOICE_DESCRIPTIONS),
         config: { responseMimeType: "application/json" }
     });
-
     return cleanAndParseJSON(response.text!);
+};
+
+export const batchTranslatePanels = async (panels: ComicPanel[], languages: string[], tier: 'STANDARD' | 'PREMIUM'): Promise<ComicPanel[]> => {
+    if (languages.length === 0) return panels;
+    const ai = getAI();
+    const panelsMin = panels.map(p => ({ id: p.id, dialogue: p.dialogue, caption: p.caption }));
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview", 
+            contents: PROMPTS.translatePanels(JSON.stringify(panelsMin), languages),
+            config: { responseMimeType: "application/json" }
+        });
+        const translatedData = cleanAndParseJSON(response.text!);
+        return panels.map(p => {
+            const tPanel = translatedData.find((tp: any) => tp.id === p.id);
+            const newTranslations = tPanel ? { ...p.translations, ...tPanel.translations } : p.translations;
+            return { ...p, translations: newTranslations };
+        });
+    } catch (e) { return panels; }
+};
+
+export const censorContent = async (text: string, type: 'SCRIPT' | 'IMAGE'): Promise<{ passed: boolean, report: string }> => {
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview", 
+        contents: PROMPTS.censor(type, text),
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text!);
+};
+
+export const checkContinuity = async (panels: ComicPanel[], characters: Character[], seriesBible: any, tier: 'STANDARD' | 'PREMIUM'): Promise<string> => {
+    const ai = getAI();
+    const panelsText = panels.map((p, i) => `Panel ${i+1}: ${p.description}. Dialogue: ${p.dialogue}`).join("\n");
+    const charNames = characters.map(c => c.name).join(", ");
+    const setting = seriesBible?.worldSetting || "Standard Setting";
+    const response = await ai.models.generateContent({
+        model: getTextModel(tier),
+        contents: PROMPTS.continuityCheck(panelsText, charNames, setting)
+    });
+    return response.text!;
 };
