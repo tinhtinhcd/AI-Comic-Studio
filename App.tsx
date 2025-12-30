@@ -12,20 +12,41 @@ const App: React.FC = () => {
   const [project, setProject] = useState<ComicProject>(INITIAL_PROJECT_STATE);
   const [showPreview, setShowPreview] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [uiLanguage, setUiLanguage] = useState<'en' | 'vi'>('vi');
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  // Initialize Language from localStorage (Default: 'vi')
+  const [uiLanguage, setUiLanguage] = useState<'en' | 'vi'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('ai_comic_lang') as 'en' | 'vi') || 'vi';
+    }
+    return 'vi';
+  });
+
+  // Initialize Theme from localStorage (Default: 'light')
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('ai_comic_theme') as 'light' | 'dark') || 'light';
+    }
+    return 'light';
+  });
 
   const updateProject = (updates: Partial<ComicProject>) => {
     setProject(prev => ({ ...prev, ...updates }));
   };
 
+  // Persist Theme changes
   useEffect(() => {
+    localStorage.setItem('ai_comic_theme', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  // Persist Language changes
+  useEffect(() => {
+    localStorage.setItem('ai_comic_lang', uiLanguage);
+  }, [uiLanguage]);
 
   return (
     <div className={`flex h-screen font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
