@@ -1,4 +1,5 @@
 
+
 export enum AgentRole {
   PROJECT_MANAGER = 'PROJECT_MANAGER',
   MARKET_RESEARCHER = 'MARKET_RESEARCHER',
@@ -24,6 +25,30 @@ export interface Agent {
   department: string;
 }
 
+export interface UserProfile {
+    id: string;
+    username: string;
+    email: string; // Used for login ID
+    password?: string; // In real app, this is hashed. Here simplistic.
+    avatar?: string;
+    bio?: string;
+    studioName?: string;
+    joinDate: number;
+    stats?: {
+        projectsCount: number;
+        chaptersCount: number;
+        charactersCount: number;
+    }
+}
+
+export interface Asset {
+    id: string;
+    name: string;
+    type: 'BACKGROUND' | 'PROP' | 'REFERENCE';
+    imageUrl: string;
+    description: string;
+}
+
 export interface PanelTranslation {
     dialogue: string;
     caption?: string;
@@ -37,6 +62,8 @@ export interface ComicPanel {
   translations?: Record<string, PanelTranslation>; 
   charactersInvolved: string[];
   imageUrl?: string;
+  layoutSketch?: string; 
+  backgroundAssetId?: string; 
   videoUrl?: string;
   audioUrl?: string; 
   captionAudioUrl?: string;
@@ -57,7 +84,8 @@ export interface Character {
   name: string;
   description: string;
   imageUrl?: string;
-  variants?: CharacterVariant[]; // History of designs
+  referenceImage?: string; 
+  variants?: CharacterVariant[]; 
   voice?: string; 
   isGenerating?: boolean;
   isLocked?: boolean;
@@ -112,10 +140,10 @@ export interface ResearchData {
   visualStyle: string;
   narrativeStructure: string;
   estimatedChapters: string; 
-  worldSetting: string; // Dynamic cultural setting
-  culturalContext?: string; // Additional context notes
+  worldSetting: string; 
+  culturalContext?: string; 
   chapterOutlines?: { chapterNumber: number; summary: string }[];
-  extractedCharacters?: { name: string; role: string; description: string; personality: string }[]; // NEW FIELD
+  extractedCharacters?: { name: string; role: string; description: string; personality: string }[];
   colorPalette: string[];
   keyThemes: string[];
 }
@@ -147,13 +175,14 @@ export interface Message {
 
 export interface ComicProject {
   id?: string;
+  ownerId?: string; // NEW: To link project to specific user
   lastModified?: number;
   title: string;
   theme: string;
   storyFormat: StoryFormat;
   publicationType: PublicationType;
   modelTier?: 'STANDARD' | 'PREMIUM';
-  imageModel?: 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview'; // NEW FIELD
+  imageModel?: 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview';
   originalScript?: string;
   masterLanguage: string;
   targetLanguages: string[];
@@ -162,6 +191,7 @@ export interface ComicProject {
   currentChapter?: number;
   targetPanelCount?: number;
   completedChapters: ChapterArchive[];
+  seriesSummary?: string; 
   seriesBible?: {
       worldSetting: string;
       mainConflict: string;
@@ -177,6 +207,7 @@ export interface ComicProject {
   artStyleGuide?: string; 
   language: string;
   coverImage?: string;
+  assets: Asset[]; 
   characters: Character[];
   panels: ComicPanel[];
   pages?: BookPage[];

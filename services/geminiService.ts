@@ -1,38 +1,28 @@
+// ... imports
 import { GoogleGenAI } from "@google/genai";
 import { ComicPanel, Character, ResearchData, StoryFormat, StoryConcept, Message, ComicProject } from "../types";
 import { PROMPTS } from "./prompts";
 
-interface StoredKey {
-    id: string;
-    key: string;
-    timestamp: number;
-    isActive: boolean;
-}
+// ... existing helper functions (getDynamicApiKey, getAI, getTextModel, cleanAndParseJSON)
 
-// HELPER: Get API Key with priority: LocalStorage (Active User Key) > Environment (System)
 export const getDynamicApiKey = (): string => {
     try {
         const rawStore = localStorage.getItem('ai_comic_keystore_v2');
         if (rawStore) {
-            const keys: StoredKey[] = JSON.parse(rawStore);
-            const activeKey = keys.find(k => k.isActive);
+            const keys: any[] = JSON.parse(rawStore);
+            const activeKey = keys.find((k: any) => k.isActive);
             if (activeKey && activeKey.key.trim().length > 0) {
                 return activeKey.key.trim();
             }
         }
-        
-        // Fallback to legacy single key if v2 doesn't exist
         const legacyKey = localStorage.getItem('ai_comic_user_api_key');
         if (legacyKey && legacyKey.trim().length > 0) return legacyKey.trim();
-
     } catch (e) {
         console.error("Error reading API key store", e);
     }
-
     return process.env.API_KEY || '';
 };
 
-// Initialize AI with dynamic key
 const getAI = () => new GoogleGenAI({ apiKey: getDynamicApiKey() });
 
 const getTextModel = (tier: 'STANDARD' | 'PREMIUM' = 'STANDARD') => 
@@ -53,6 +43,8 @@ const cleanAndParseJSON = (text: string) => {
     }
 };
 
+// ... export Analyze, Research, Strategy, ArtStyle, Concepts, Characters, Bible, Script, CharDesign functions (unchanged) ...
+// RE-EXPORTING THEM TO KEEP FILE VALID
 export const analyzeUploadedManuscript = async (scriptContent: string, language: string, tier: 'STANDARD' | 'PREMIUM'): Promise<ResearchData> => {
     const ai = getAI();
     const response = await ai.models.generateContent({
@@ -118,9 +110,6 @@ export const generateComplexCharacters = async (
 ): Promise<Character[]> => {
     const ai = getAI();
     let contents = "";
-
-    // IMPORTANT: If source text (manuscript) is provided, use extraction prompt.
-    // Otherwise, use generation prompt based on concept.
     if (sourceText && sourceText.length > 100) {
         contents = PROMPTS.extractCharactersFromText(sourceText, language);
     } else {
@@ -175,7 +164,7 @@ export const generateScript = async (
             concept?.premise || theme, 
             characters.map(c => c.name).join(", "), 
             chapterSummary,
-            setting // Passed to prompt
+            setting
         ),
         config: { responseMimeType: "application/json" }
     });
@@ -193,18 +182,17 @@ export const generateCharacterDesign = async (
     description: string, 
     worldSetting: string, 
     tier: 'STANDARD' | 'PREMIUM',
-    imageModel: string = 'gemini-2.5-flash-image'
+    imageModel: string = 'gemini-2.5-flash-image',
+    referenceImage?: string // NEW: Optional Reference
 ): Promise<{ description: string, imageUrl: string }> => {
     const ai = getAI();
     
-    // 1. Refine Description
     const descResp = await ai.models.generateContent({
         model: getTextModel(tier),
         contents: PROMPTS.characterDesign(name, styleGuide, description, worldSetting)
     });
     const refinedDesc = descResp.text!;
 
-    // 2. Generate Image with specific config based on model
     let imageConfig = {};
     if (imageModel === 'gemini-3-pro-image-preview') {
         imageConfig = {
@@ -215,9 +203,24 @@ export const generateCharacterDesign = async (
         };
     }
 
+    // Build parts: Text Prompt + Optional Image
+    const parts: any[] = [{ text: PROMPTS.characterImagePrompt(name, refinedDesc, styleGuide) }];
+    
+    if (referenceImage) {
+        const cleanBase64 = referenceImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+        parts.push({
+             inlineData: {
+                 mimeType: "image/png",
+                 data: cleanBase64
+             }
+        });
+        // Add note to prompt to use image as reference
+        parts[0].text += " Use the attached image as a strict visual reference for the character's facial features and hair.";
+    }
+
     const response = await ai.models.generateContent({
         model: imageModel,
-        contents: PROMPTS.characterImagePrompt(name, refinedDesc, styleGuide),
+        contents: { parts: parts },
         config: imageConfig
     });
 
@@ -232,13 +235,15 @@ export const generateCharacterDesign = async (
     return { description: refinedDesc, imageUrl };
 };
 
+// --- UPDATED generatePanelImage TO SUPPORT ASSETS ---
 export const generatePanelImage = async (
     panel: ComicPanel, 
     styleGuide: string, 
     characters: Character[], 
     worldSetting: string, 
     tier: 'STANDARD' | 'PREMIUM',
-    imageModel: string = 'gemini-2.5-flash-image'
+    imageModel: string = 'gemini-2.5-flash-image',
+    assetImage?: string // NEW: Optional Background Reference
 ): Promise<string> => {
     const ai = getAI();
     const charDesc = characters.filter(c => panel.charactersInvolved.includes(c.name))
@@ -254,9 +259,51 @@ export const generatePanelImage = async (
         };
     }
 
+    const promptText = PROMPTS.panelImagePrompt(styleGuide, panel.description, charDesc, worldSetting);
+    const parts: any[] = [{ text: promptText }];
+
+    // --- FEATURE: SKETCH CONTROL (Highest Priority) ---
+    if (panel.layoutSketch) {
+        const cleanBase64 = panel.layoutSketch.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+        parts.push({
+            inlineData: {
+                mimeType: "image/png",
+                data: cleanBase64
+            }
+        });
+        parts[0].text += " STRICTLY follow the composition, redline corrections, and layout of the attached sketch.";
+    } 
+    // --- FEATURE: BACKGROUND ASSET (Medium Priority) ---
+    else if (assetImage) {
+        const cleanBase64 = assetImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+        parts.push({
+            inlineData: {
+                mimeType: "image/png",
+                data: cleanBase64
+            }
+        });
+        parts[0].text += " Use the attached image as the BACKGROUND SETTING. Keep the architecture and lighting but place the characters inside it.";
+    }
+    // --- FEATURE: CHARACTER ANCHOR (Low Priority Fallback) ---
+    else {
+        // If no layout sketch or bg asset, check if characters have Reference Anchors
+        // We only append the FIRST main character's ref image to avoid confusing the model with too many inputs
+        const mainChar = characters.find(c => panel.charactersInvolved.includes(c.name) && c.referenceImage);
+        if (mainChar && mainChar.referenceImage) {
+             const cleanBase64 = mainChar.referenceImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+             parts.push({
+                 inlineData: {
+                     mimeType: "image/png",
+                     data: cleanBase64
+                 }
+             });
+             parts[0].text += ` Use the attached image as a reference for character ${mainChar.name}.`;
+        }
+    }
+
     const response = await ai.models.generateContent({
         model: imageModel,
-        contents: PROMPTS.panelImagePrompt(styleGuide, panel.description, charDesc, worldSetting),
+        contents: { parts: parts },
         config: imageConfig
     });
 
@@ -271,13 +318,13 @@ export const generatePanelImage = async (
     return imageUrl;
 };
 
+// ... remaining exports (video, summary, voice, consistency, translate, censor, continuity, marketing) ...
+// RE-EXPORTING
 export const generatePanelVideo = async (panel: ComicPanel, style: string): Promise<string> => {
     if (!panel.imageUrl) return '';
     const ai = getAI();
     const base64Data = panel.imageUrl.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
     
-    // Note: Veo model requires a paid API key. 
-    // If this call fails with 404/Not Found, it usually means the key is invalid for Veo.
     let operation = await ai.models.generateVideos({
         model: 'veo-3.1-fast-generate-preview', 
         prompt: `Cinematic motion for a comic panel. ${style} style. ${panel.description}. Subtle movement, parallax effect, atmospheric.`,
@@ -290,7 +337,6 @@ export const generatePanelVideo = async (panel: ComicPanel, style: string): Prom
     }
     const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
     if (videoUri) {
-        // USE DYNAMIC KEY HERE
         const apiKey = getDynamicApiKey();
         const response = await fetch(`${videoUri}&key=${apiKey}`);
         const blob = await response.blob();
@@ -332,7 +378,6 @@ export const analyzeCharacterConsistency = async (imageBase64: string, targetSty
     return cleanAndParseJSON(response.text!);
 };
 
-// IMPROVED VOICE VERIFICATION
 export const verifyCharacterVoice = async (character: Character, voiceName: string): Promise<{ isSuitable: boolean; suggestion: string; reason: string }> => {
     const ai = getAI();
     const VOICE_DESCRIPTIONS = `
@@ -391,10 +436,8 @@ export const checkContinuity = async (panels: ComicPanel[], characters: Characte
     return response.text!;
 };
 
-// NEW: Marketing Generator for Publisher
 export const generateMarketingCopy = async (project: ComicProject): Promise<{ blurb: string, socialPost: string, tagline: string }> => {
     const ai = getAI();
-    // Gather context
     const summary = project.completedChapters?.[0]?.summary || project.storyConcept?.premise || "An epic story.";
     const audience = project.marketAnalysis?.targetAudience || "General Audience";
     

@@ -457,5 +457,6 @@ export const INITIAL_PROJECT_STATE: ComicProject = {
   agentTasks: [], // NEW
   completedChapters: [],
   workflowStage: WorkflowStage.IDLE,
-  logs: []
+  logs: [],
+  assets: []
 };

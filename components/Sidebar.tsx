@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Agent, AgentRole } from '../types';
+import { Agent, AgentRole, UserProfile } from '../types';
 import { AGENTS, TRANSLATIONS } from '../constants';
-import { Users, BookOpen, PenTool, Layout, Palette, Megaphone, Mic, Video, Globe, TrendingUp, ShieldAlert, Archive, Briefcase, ChevronRight, Moon, Sun } from 'lucide-react';
+import { Users, BookOpen, PenTool, Layout, Palette, Megaphone, Mic, Video, Globe, TrendingUp, ShieldAlert, Archive, Briefcase, ChevronRight, Moon, Sun, LogOut } from 'lucide-react';
 import { Logo } from './Logo';
 
 interface SidebarProps {
@@ -13,9 +13,11 @@ interface SidebarProps {
   setUiLanguage: (lang: 'en' | 'vi') => void;
   theme: 'light' | 'dark';
   setTheme: (theme: 'light' | 'dark') => void;
+  currentUser: UserProfile;
+  onLogout: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentRole, onSelectRole, projectTitle, uiLanguage, setUiLanguage, theme, setTheme }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentRole, onSelectRole, projectTitle, uiLanguage, setUiLanguage, theme, setTheme, currentUser, onLogout }) => {
   const t = (key: string) => (TRANSLATIONS[uiLanguage] as any)[key] || key;
   
   const getIcon = (role: AgentRole) => {
@@ -97,6 +99,20 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, onSelectRole, projectTit
       </div>
 
       <div className="p-4 border-t space-y-3 border-gray-100 dark:border-gray-700">
+         {/* User Profile Snippet */}
+         <div className="flex items-center gap-3 p-2 rounded-xl bg-indigo-50 dark:bg-gray-700/50 border border-indigo-100 dark:border-gray-600">
+             <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-600 overflow-hidden shrink-0 border border-gray-200 dark:border-gray-500">
+                 <img src={currentUser.avatar} className="w-full h-full object-cover"/>
+             </div>
+             <div className="flex-1 min-w-0 hidden lg:block">
+                 <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{currentUser.username}</p>
+                 <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{currentUser.studioName || "Comic Artist"}</p>
+             </div>
+             <button onClick={onLogout} className="hidden lg:block p-1.5 rounded-lg hover:bg-white dark:hover:bg-gray-600 text-gray-400 hover:text-red-500 transition-colors" title="Logout">
+                 <LogOut className="w-4 h-4"/>
+             </button>
+         </div>
+
          <div className="rounded-xl p-2 hidden lg:flex items-center justify-between border shadow-sm bg-white dark:bg-gray-700 border-gray-100 dark:border-gray-600">
              <div className="flex gap-2">
                 <button 
@@ -125,16 +141,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, onSelectRole, projectTit
                     className={`px-2 py-1 text-[10px] font-bold rounded ${uiLanguage === 'vi' ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
                  >VN</button>
              </div>
-         </div>
-
-         <div className="rounded-xl p-4 hidden lg:block border shadow-sm bg-white dark:bg-gray-700 border-gray-100 dark:border-gray-600">
-            <div className="flex justify-between items-center mb-2">
-                <p className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">{t('sidebar.cloud')}</p>
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">{t('sidebar.online')}</span>
-            </div>
-            <div className="w-full h-1 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-600">
-                <div className="bg-emerald-500 h-full w-full animate-pulse"></div>
-            </div>
          </div>
       </div>
     </div>

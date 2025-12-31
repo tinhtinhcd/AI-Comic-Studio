@@ -1,17 +1,50 @@
+
 /// <reference lib="dom" />
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import AgentWorkspace from './components/AgentWorkspace';
 import FinalComicView from './components/FinalComicView';
-import { AgentRole, ComicProject } from './types';
+import { LoginScreen } from './components/LoginScreen';
+import { AgentRole, ComicProject, UserProfile } from './types';
 import { INITIAL_PROJECT_STATE } from './constants';
-import { Menu, X } from 'lucide-react';
+import * as AuthService from './services/authService';
+import { Menu, X, Maximize2, Minimize2 } from 'lucide-react';
 
 const App: React.FC = () => {
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [activeRole, setActiveRole] = useState<AgentRole>(AgentRole.PROJECT_MANAGER);
   const [project, setProject] = useState<ComicProject>(INITIAL_PROJECT_STATE);
   const [showPreview, setShowPreview] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  // Initialize Auth
+  useEffect(() => {
+      const user = AuthService.getCurrentUser();
+      if (user) setCurrentUser(user);
+  }, []);
+
+  const handleLogin = (user: UserProfile) => {
+      setCurrentUser(user);
+      // Reset project state to clean slate on login (or load from their last session in future)
+      setProject({ ...INITIAL_PROJECT_STATE, ownerId: user.id });
+  };
+
+  const handleLogout = () => {
+      AuthService.logout();
+      setCurrentUser(null);
+      setProject(INITIAL_PROJECT_STATE);
+  };
+
+  const toggleFullScreen = () => {
+      if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().then(() => setIsFullScreen(true));
+      } else {
+          if (document.exitFullscreen) {
+              document.exitFullscreen().then(() => setIsFullScreen(false));
+          }
+      }
+  };
 
   // Initialize Language from localStorage (Default: 'vi')
   const [uiLanguage, setUiLanguage] = useState<'en' | 'vi'>(() => {
@@ -48,8 +81,21 @@ const App: React.FC = () => {
     localStorage.setItem('ai_comic_lang', uiLanguage);
   }, [uiLanguage]);
 
+  if (!currentUser) {
+      return <LoginScreen onLogin={handleLogin} />;
+  }
+
   return (
     <div className={`flex h-screen font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+      {/* Full Screen Toggle (Floating) */}
+      <button 
+          onClick={toggleFullScreen}
+          className="fixed bottom-4 left-4 z-50 p-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-full shadow-lg hover:scale-110 transition-transform opacity-50 hover:opacity-100"
+          title="Toggle Full Screen"
+      >
+          {isFullScreen ? <Minimize2 className="w-5 h-5"/> : <Maximize2 className="w-5 h-5"/>}
+      </button>
+
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-gray-900/20 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
@@ -62,6 +108,8 @@ const App: React.FC = () => {
                 setUiLanguage={setUiLanguage}
                 theme={theme}
                 setTheme={setTheme}
+                currentUser={currentUser}
+                onLogout={handleLogout}
               />
            </div>
         </div>
@@ -77,6 +125,8 @@ const App: React.FC = () => {
             setUiLanguage={setUiLanguage}
             theme={theme}
             setTheme={setTheme}
+            currentUser={currentUser}
+            onLogout={handleLogout}
          />
       </div>
 
@@ -100,6 +150,8 @@ const App: React.FC = () => {
              updateProject={updateProject}
              onAgentChange={setActiveRole} 
              uiLanguage={uiLanguage}
+             currentUser={currentUser}
+             onUpdateUser={setCurrentUser}
            />
         </div>
 

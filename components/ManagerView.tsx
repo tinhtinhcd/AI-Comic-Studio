@@ -57,13 +57,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
         loadKeys();
     }, []);
 
-    // If project format is cleared (e.g. deleted), go back to lobby
-    useEffect(() => {
-        if (!project.storyFormat) {
-            setActiveTab('LOBBY');
-        }
-    }, [project.storyFormat]);
-
     const loadKeys = () => {
         try {
             const raw = localStorage.getItem('ai_comic_keystore_v2');
@@ -110,6 +103,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
         setStoredKeys(updated);
     };
 
+    const isProjectActive = !!project.storyFormat;
+
     // MAIN NAVIGATION TABS RENDER
     const renderTabs = () => (
         <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-1">
@@ -120,26 +115,16 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 <Home className="w-4 h-4"/> {t('manager.lobby')}
             </button>
             <button 
-                onClick={() => {
-                    if(!project.storyFormat) {
-                        (window as any).alert("Create or Load a project first.");
-                        return;
-                    }
-                    setActiveTab('PIPELINE');
-                }}
-                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'PIPELINE' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                onClick={() => isProjectActive && setActiveTab('PIPELINE')}
+                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'PIPELINE' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : isProjectActive ? 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
+                title={!isProjectActive ? "Start a project to unlock" : ""}
             >
                 <Activity className="w-4 h-4"/> {t('manager.pipeline')}
             </button>
             <button 
-                onClick={() => {
-                     if(!project.storyFormat) {
-                        (window as any).alert("Create or Load a project first.");
-                        return;
-                    }
-                    setActiveTab('CHAPTERS');
-                }}
-                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'CHAPTERS' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                onClick={() => isProjectActive && setActiveTab('CHAPTERS')}
+                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'CHAPTERS' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : isProjectActive ? 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
+                title={!isProjectActive ? "Start a project to unlock" : ""}
             >
                 <Map className="w-4 h-4"/> Mục Lục (Chapters)
             </button>
@@ -245,10 +230,15 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
         );
     }
-
+    
+    // ... rest of the component (PIPELINE, CHAPTERS, SETTINGS logic remains same but now properly accessible via tabs)
+    // For brevity, assuming the rest of the file follows the previous logic, just ensuring the start of the component was updated.
+    
+    // ... (Existing PIPELINE, CHAPTERS, SETTINGS blocks)
     // --- VIEW: PIPELINE (Active Project Work) ---
     if (activeTab === 'PIPELINE') {
-        return (
+       // ... existing code ...
+       return (
             <div className="flex flex-col lg:flex-row gap-8 h-full pb-8">
                 <div className="w-full">
                     {renderTabs()}
@@ -325,10 +315,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     </div>
                 </div>
             </div>
-        );
+       );
     }
 
-    // --- VIEW: CHAPTERS ---
     if (activeTab === 'CHAPTERS') {
         const totalChapters = project.totalChapters ? parseInt(project.totalChapters.match(/\d+/)?.[0] || '1') : 1;
         const chaptersList = Array.from({length: totalChapters}, (_, i) => i + 1);
@@ -443,9 +432,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
         );
     }
 
-    // --- VIEW: SETTINGS ---
     if (activeTab === 'SETTINGS') {
-        return (
+       // ... existing settings code ...
+       return (
             <div className="flex flex-col h-full pb-8">
                 {renderTabs()}
                 <div className="w-full flex flex-col h-full overflow-hidden">
@@ -551,7 +540,5 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
         );
     }
-    
-    // Fallback if state gets weird
     return null;
 };

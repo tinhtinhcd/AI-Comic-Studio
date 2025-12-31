@@ -2,26 +2,21 @@
 import React, { useState } from 'react';
 import { AgentRole, ComicProject, Character, ComicPanel } from '../types';
 import { AGENTS } from '../constants';
-import { Printer, Users, Loader2, ScanFace, CheckCircle, AlertTriangle, Play, Film, FileText, ShieldAlert, Activity, Globe, Plus, BookOpen, Mic, Clapperboard, Download, Megaphone, Share2, Sparkles, FolderDown, CheckSquare, Square } from 'lucide-react';
+import { Printer, Users, Loader2, ScanFace, CheckCircle, AlertTriangle, Play, Film, FileText, ShieldAlert, Activity, Globe, Plus, BookOpen, Mic, Clapperboard, Download, Megaphone, Share2, Sparkles, FolderDown, CheckSquare, Square, X } from 'lucide-react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import * as GeminiService from '../services/geminiService';
+import JSZip from 'jszip';
 
-// --- TYPESETTER VIEW ---
-export const TypesetterView: React.FC<{
-    project: ComicProject;
-    handleFinishPrinting: () => void;
-    role: AgentRole;
-    t: (k: string) => string;
-}> = ({ project, handleFinishPrinting, role, t }) => {
+export const TypesetterView: React.FC<any> = ({ project, handleFinishPrinting, role, t }) => {
     const panels = project.panels || [];
     return (
         <div className="max-w-7xl mx-auto w-full px-6 pb-24">
              <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-6">
-                    <img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-gray-500 shadow-md" />
+                    <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-gray-500 shadow-md" />
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role].name)}</h2>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2>
                         <p className="text-gray-500 dark:text-gray-400">Lettering & Page Layout</p>
                     </div>
                 </div>
@@ -29,15 +24,14 @@ export const TypesetterView: React.FC<{
                     <Printer className="w-5 h-5"/> {t('ui.confirm')}
                 </button>
             </div>
-
+            
             <div className="bg-gray-100 dark:bg-gray-800 p-8 rounded-xl overflow-x-auto border border-gray-200 dark:border-gray-700">
                  <div className="flex gap-8 min-w-max">
-                     {/* Simulating Pages - Grouping panels into pages of 4 for visualization */}
                      {Array.from({ length: Math.ceil(panels.length / 4) }).map((_, pageIdx) => (
                          <div key={pageIdx} className="w-[400px] h-[600px] bg-white shadow-2xl flex flex-col relative shrink-0 border border-gray-200">
                              <div className="absolute -top-6 left-0 font-bold text-gray-500 dark:text-gray-400 text-xs">Page {pageIdx + 1}</div>
                              <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-4">
-                                 {panels.slice(pageIdx * 4, (pageIdx + 1) * 4).map((panel) => (
+                                 {panels.slice(pageIdx * 4, (pageIdx + 1) * 4).map((panel: any) => (
                                      <div key={panel.id} className="relative border border-gray-900 bg-gray-100 overflow-hidden">
                                           {panel.imageUrl && <img src={panel.imageUrl} className="w-full h-full object-cover grayscale-[0.2]" />}
                                           <div className="absolute inset-0 p-2 pointer-events-none">
@@ -61,33 +55,21 @@ export const TypesetterView: React.FC<{
     );
 };
 
-// --- VOICE VIEW ---
-export const VoiceView: React.FC<{
-    project: ComicProject;
-    handleUpdateCharacterVoice: (index: number, voice: string) => void;
-    handleVerifyVoice: (char: Character) => void;
-    applyVoiceSuggestion: (index: number, voice: string) => void;
-    voiceAnalysis: Record<string, {isSuitable: boolean, suggestion: string, reason: string}>;
-    analyzingVoiceId: string | null;
-    role: AgentRole;
-    t: (k: string) => string;
-    availableVoices: string[];
-}> = ({ project, handleUpdateCharacterVoice, handleVerifyVoice, applyVoiceSuggestion, voiceAnalysis, analyzingVoiceId, role, t, availableVoices }) => {
+export const VoiceView: React.FC<any> = ({ project, handleUpdateCharacterVoice, handleVerifyVoice, applyVoiceSuggestion, voiceAnalysis, analyzingVoiceId, role, t, availableVoices }) => {
     const characters = project.characters || [];
     return (
         <div className="max-w-7xl mx-auto w-full px-6 pb-8">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-6">
-                    <img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-pink-200 shadow-md" />
+                    <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-pink-200 shadow-md" />
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role].name)}</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Audio Casting & Direction</p>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2>
                     </div>
                 </div>
             </div>
-
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {characters.map((char, idx) => {
+                {characters.map((char: any, idx: number) => {
                     const analysis = voiceAnalysis[char.id];
                     return (
                         <div key={char.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm hover:border-pink-300 dark:hover:border-pink-500 transition-all group">
@@ -100,7 +82,6 @@ export const VoiceView: React.FC<{
                                     <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-2 py-0.5 rounded border border-gray-100 dark:border-gray-600">{char.role}</span>
                                 </div>
                             </div>
-                            
                             <div className="mb-4">
                                 <label className="text-xs font-bold text-gray-400 uppercase block mb-1 flex items-center gap-2">
                                     {t('voice.actor')}
@@ -112,12 +93,11 @@ export const VoiceView: React.FC<{
                                         onChange={(e) => handleUpdateCharacterVoice(idx, (e.target as HTMLSelectElement).value)}
                                         className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg py-2 pl-3 pr-8 text-sm font-medium text-gray-700 dark:text-gray-300 focus:border-pink-300 outline-none appearance-none"
                                     >
-                                        {availableVoices.map(v => <option key={v} value={v}>{v}</option>)}
+                                        {availableVoices.map((v: string) => <option key={v} value={v}>{v}</option>)}
                                     </select>
                                     <Mic className="w-4 h-4 text-gray-400 absolute right-2 top-2.5 pointer-events-none"/>
                                 </div>
                             </div>
-
                             <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50 dark:border-gray-700">
                                 <button 
                                     onClick={() => handleVerifyVoice(char)}
@@ -128,9 +108,8 @@ export const VoiceView: React.FC<{
                                     {t('voice.audit')}
                                 </button>
                             </div>
-
                             {analysis && (
-                                <div className={`mt-4 p-4 rounded-xl text-xs border animate-in fade-in slide-in-from-top-2 ${analysis.isSuitable ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-300 border-amber-100 dark:border-amber-800'}`}>
+                                <div className={`mt-4 p-4 rounded-xl text-xs border ${analysis.isSuitable ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-300 border-amber-100 dark:border-amber-800'}`}>
                                     <p className="font-bold mb-2 flex items-center gap-2 text-sm">
                                         {analysis.isSuitable ? <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400"/> : <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400"/>}
                                         {analysis.isSuitable ? t('voice.match') : t('voice.mismatch')}
@@ -154,263 +133,202 @@ export const VoiceView: React.FC<{
     );
 };
 
-// --- MOTION VIEW ---
-export const MotionView: React.FC<{
-    project: ComicProject;
-    handleGeneratePanelVideo: (panel: ComicPanel, index: number) => void;
-    loading: boolean;
-    role: AgentRole;
-    t: (k: string) => string;
-}> = ({ project, handleGeneratePanelVideo, loading, role, t }) => {
-     const [isCompiling, setIsCompiling] = useState(false);
-     const [progress, setProgress] = useState(0);
-     const [selectedPanelIds, setSelectedPanelIds] = useState<Set<string>>(new Set());
-     
-     const panels = project.panels || [];
-
-     const toggleSelection = (id: string) => {
-         const newSet = new Set(selectedPanelIds);
-         if (newSet.has(id)) {
-             newSet.delete(id);
-         } else {
-             newSet.add(id);
-         }
-         setSelectedPanelIds(newSet);
-     };
-
-     const hasVideos = panels.some(p => p.videoUrl);
-
-     const handleCompileMovie = async () => {
-        const videoPanels = panels.filter(p => p.videoUrl && selectedPanelIds.has(p.id));
-        
-        if (videoPanels.length < 2) {
-            (window as any).alert("Please select at least 2 video panels to merge.");
-            return;
-        }
-
-        setIsCompiling(true);
-        setProgress(0);
-        try {
-            const ffmpeg = new FFmpeg();
-            // Use unpkg to serve the worker/core files which often works better for dynamic loading than esm.sh directly for the worker
-            const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-            await ffmpeg.load({
-                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-            });
-
-            ffmpeg.on('progress', ({ progress }) => {
-                setProgress(Math.round(progress * 100));
-            });
-
-            let fileList = '';
-            for (let i = 0; i < videoPanels.length; i++) {
-                const filename = `input${i}.mp4`;
-                // Fetch the blob from the stored URL
-                await ffmpeg.writeFile(filename, await fetchFile(videoPanels[i].videoUrl));
-                fileList += `file '${filename}'\n`;
-            }
-            await ffmpeg.writeFile('concat_list.txt', fileList);
-
-            // Run concatenation
-            await ffmpeg.exec(['-f', 'concat', '-safe', '0', '-i', 'concat_list.txt', '-c', 'copy', 'output.mp4']);
-
-            const data = await ffmpeg.readFile('output.mp4');
-            const url = URL.createObjectURL(new Blob([(data as any).buffer], { type: 'video/mp4' }));
-
-            // Download
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${project.title.replace(/\s+/g, '_')}_MotionComic_Merged.mp4`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-        } catch (e: any) {
-            console.error(e);
-            (window as any).alert("Video compilation failed. NOTE: Your browser must support 'SharedArrayBuffer' (Desktop Chrome/Edge/Firefox). If on mobile, please download clips individually.");
-        } finally {
-            setIsCompiling(false);
-            setProgress(0);
-        }
-     };
-
-     return (
+export const MotionView: React.FC<any> = ({ project, handleGeneratePanelVideo, loading, role, t }) => {
+    const [selectedPanelIds, setSelectedPanelIds] = useState<Set<string>>(new Set());
+    const panels = project.panels || [];
+    const toggleSelection = (id: string) => { const newSet = new Set(selectedPanelIds); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); setSelectedPanelIds(newSet); };
+    
+    return (
         <div className="max-w-7xl mx-auto w-full px-6 pb-24">
              <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-6">
-                    <img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-orange-200 shadow-md" />
+                    <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-orange-200 shadow-md" />
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role].name)}</h2>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2>
                         <p className="text-gray-500 dark:text-gray-400">Video Generation (Veo)</p>
                     </div>
                 </div>
-                
-                {hasVideos && (
-                    <button 
-                        onClick={handleCompileMovie} 
-                        disabled={isCompiling || loading}
-                        className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-orange-200 dark:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isCompiling ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin"/> {progress > 0 ? `${progress}%` : t('ui.loading')}
-                            </>
-                        ) : (
-                            <>
-                                <Clapperboard className="w-5 h-5"/> Merge Selected ({Array.from(selectedPanelIds).filter(id => panels.find(p => p.id === id)?.videoUrl).length})
-                            </>
-                        )}
-                    </button>
-                )}
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {panels.map((panel, idx) => {
-                    const isSelected = selectedPanelIds.has(panel.id);
-                    return (
-                        <div key={panel.id} className={`bg-white dark:bg-gray-800 border ${isSelected ? 'border-orange-500 ring-2 ring-orange-200 dark:ring-orange-900' : 'border-gray-200 dark:border-gray-700'} rounded-2xl overflow-hidden shadow-sm group relative`}>
-                            {/* Checkbox for merging */}
-                            {panel.videoUrl && (
-                                <button 
-                                    onClick={() => toggleSelection(panel.id)}
-                                    className={`absolute top-2 right-2 z-20 p-1.5 rounded-lg shadow-md transition-all ${isSelected ? 'bg-orange-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-orange-500'}`}
-                                >
-                                    {isSelected ? <CheckSquare className="w-5 h-5"/> : <Square className="w-5 h-5"/>}
-                                </button>
-                            )}
-
-                            <div className="aspect-video bg-gray-900 relative">
-                                 {panel.videoUrl ? (
-                                     <video src={panel.videoUrl} className="w-full h-full object-cover" controls loop playsInline />
-                                 ) : panel.imageUrl ? (
-                                     <img src={panel.imageUrl} className="w-full h-full object-cover opacity-80" />
-                                 ) : (
-                                     <div className="flex items-center justify-center h-full text-gray-600"><Film className="w-8 h-8"/></div>
-                                 )}
-
-                                 {!panel.videoUrl && (
-                                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-                                         {panel.isGenerating ? (
-                                             <Loader2 className="w-10 h-10 text-white animate-spin"/>
-                                         ) : (
-                                             <button 
-                                                onClick={() => handleGeneratePanelVideo(panel, idx)}
-                                                className="w-12 h-12 rounded-full bg-orange-600 text-white flex items-center justify-center shadow-lg hover:bg-orange-700 transition-all transform group-hover:scale-110"
-                                             >
-                                                 <Play className="w-5 h-5 fill-current ml-1"/>
-                                             </button>
-                                         )}
-                                     </div>
-                                 )}
-                            </div>
-                            <div className="p-4 flex justify-between items-start">
-                                <div>
-                                    <h4 className="font-bold text-sm text-gray-700 dark:text-gray-200 mb-1">Panel #{idx+1}</h4>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{panel.description}</p>
-                                </div>
-                                {panel.videoUrl && (
-                                    <a href={panel.videoUrl} download={`Panel_${idx+1}.mp4`} className="text-gray-400 hover:text-orange-500" title="Download Clip">
-                                        <Download className="w-4 h-4"/>
-                                    </a>
-                                )}
-                            </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {panels.map((panel: any, idx: number) => (
+                     <div key={panel.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm group relative">
+                        {panel.videoUrl && <button onClick={() => toggleSelection(panel.id)} className={`absolute top-2 right-2 z-20 p-1.5 rounded-lg shadow-md transition-all ${selectedPanelIds.has(panel.id) ? 'bg-orange-600 text-white' : 'bg-white text-gray-400'}`}>{selectedPanelIds.has(panel.id) ? <CheckSquare className="w-5 h-5"/> : <Square className="w-5 h-5"/>}</button>}
+                        <div className="aspect-video bg-gray-900 relative">
+                             {panel.videoUrl ? <video src={panel.videoUrl} className="w-full h-full object-cover" controls loop playsInline /> : panel.imageUrl ? <img src={panel.imageUrl} className="w-full h-full object-cover opacity-80" /> : <div className="flex items-center justify-center h-full text-gray-600"><Film className="w-8 h-8"/></div>}
+                             {!panel.videoUrl && <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors"><button onClick={() => handleGeneratePanelVideo(panel, idx)} className="w-12 h-12 rounded-full bg-orange-600 text-white flex items-center justify-center shadow-lg"><Play className="w-5 h-5 fill-current ml-1"/></button></div>}
                         </div>
-                    );
-                })}
-            </div>
+                     </div>
+                ))}
+             </div>
         </div>
-     );
+    )
 };
 
-// --- CONTINUITY VIEW ---
-export const ContinuityView: React.FC<{
-    project: ComicProject;
-    handleRunContinuityCheck: () => void;
-    loading: boolean;
-    role: AgentRole;
-    t: (k: string) => string;
-}> = ({ project, handleRunContinuityCheck, loading, role, t }) => {
-     return (
+export const ContinuityView: React.FC<any> = ({ project, handleRunContinuityCheck, loading, role, t }) => (
+    <div className="max-w-7xl mx-auto w-full px-6 pb-24">
+         <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-6">
+                <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-teal-500 shadow-md" />
+                <div><h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2></div>
+            </div>
+            <button onClick={handleRunContinuityCheck} disabled={loading} className="bg-teal-600 text-white px-6 py-3 rounded-xl font-bold">Check Continuity</button>
+        </div>
+        <div className="bg-white dark:bg-gray-800 border p-6 rounded-2xl">{project.continuityReport || "No report."}</div>
+    </div>
+);
+
+export const CensorView: React.FC<any> = ({ project, handleRunCensorCheck, loading, role, t }) => (
+    <div className="max-w-7xl mx-auto w-full px-6 pb-24">
+         <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-6">
+                <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-red-500 shadow-md" />
+                <div><h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2></div>
+            </div>
+            <button onClick={handleRunCensorCheck} disabled={loading} className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold">Run Scan</button>
+        </div>
+        <div className="bg-white dark:bg-gray-800 border p-6 rounded-2xl">{project.censorReport || "No report."}</div>
+    </div>
+);
+
+export const TranslatorView: React.FC<any> = ({ project, updateProject, handleAddLanguage, loading, role, t }) => {
+    const [newLang, setNewLang] = useState('');
+
+    const handleAdd = () => {
+        if (newLang && !project.targetLanguages.includes(newLang)) {
+            handleAddLanguage(newLang);
+            setNewLang('');
+        }
+    };
+
+    return (
         <div className="max-w-7xl mx-auto w-full px-6 pb-24">
              <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-6">
-                    <img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-teal-500 shadow-md" />
+                    <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-cyan-500 shadow-md" />
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role].name)}</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Logic & Plot Consistency</p>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2>
+                        <p className="text-gray-500 dark:text-gray-400">Localization & Translation</p>
                     </div>
                 </div>
-                <button onClick={handleRunContinuityCheck} disabled={loading} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-teal-200 dark:shadow-none transition-all disabled:opacity-50">
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin"/> : <ScanFace className="w-5 h-5"/>}
-                    Check Continuity
-                </button>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
-                 <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                     <FileText className="w-5 h-5 text-teal-600 dark:text-teal-400"/> Continuity Report
-                 </h3>
-                 <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-xl border border-gray-100 dark:border-gray-700 min-h-[200px] text-sm leading-relaxed whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300">
-                     {project.continuityReport || <span className="text-gray-400 italic">No report generated yet. Run a check to analyze the script logic.</span>}
-                 </div>
-            </div>
-        </div>
-    );
-};
-
-// --- CENSOR VIEW ---
-export const CensorView: React.FC<{
-    project: ComicProject;
-    handleRunCensorCheck: () => void;
-    loading: boolean;
-    role: AgentRole;
-    t: (k: string) => string;
-}> = ({ project, handleRunCensorCheck, loading, role, t }) => {
-     return (
-        <div className="max-w-7xl mx-auto w-full px-6 pb-24">
-             <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-6">
-                    <img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-red-500 shadow-md" />
-                    <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role].name)}</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Content Safety & Compliance</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Language Management */}
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
+                        <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
+                            <Globe className="w-5 h-5 text-cyan-600"/> Target Languages
+                        </h3>
+                        <div className="flex flex-wrap gap-2 mb-6">
+                            {project.targetLanguages.map(lang => (
+                                <span key={lang} className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-2 ${lang === project.activeLanguage ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800' : 'bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-700'}`}>
+                                    {lang}
+                                    {lang === project.activeLanguage && <CheckCircle className="w-3 h-3"/>}
+                                </span>
+                            ))}
+                        </div>
+                        
+                        <div className="flex gap-2">
+                            <input 
+                                value={newLang}
+                                onChange={(e) => setNewLang(e.target.value)}
+                                placeholder="Add Language"
+                                className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-400"
+                            />
+                            <button 
+                                onClick={handleAdd}
+                                disabled={loading || !newLang}
+                                className="bg-cyan-600 hover:bg-cyan-700 text-white p-2 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                <Plus className="w-5 h-5"/>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <button onClick={handleRunCensorCheck} disabled={loading} className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-red-200 dark:shadow-none transition-all disabled:opacity-50">
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin"/> : <ShieldAlert className="w-5 h-5"/>}
-                    Run Compliance Scan
-                </button>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
-                     <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                         <Activity className="w-5 h-5 text-red-600"/> Status
-                     </h3>
-                     <div className={`p-4 rounded-xl border flex items-center gap-3 ${project.isCensored ? 'bg-red-50 dark:bg-red-900/30 border-red-100 dark:border-red-800 text-red-800 dark:text-red-300' : project.censorReport ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300' : 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`}>
-                         {project.isCensored ? <AlertTriangle className="w-6 h-6"/> : project.censorReport ? <CheckCircle className="w-6 h-6"/> : <ShieldAlert className="w-6 h-6 opacity-50"/>}
-                         <div>
-                             <p className="font-bold text-lg">{project.censorReport ? (project.isCensored ? 'Issues Detected' : 'Content Passed') : 'Pending Scan'}</p>
-                             <p className="text-xs opacity-80">{project.censorReport ? (project.isCensored ? 'Action required.' : 'Safe for publication.') : 'Awaiting analysis.'}</p>
+                {/* Translation Editor */}
+                <div className="lg:col-span-2 space-y-6">
+                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
+                         <div className="flex justify-between items-center mb-6">
+                             <h3 className="font-bold text-gray-800 dark:text-gray-100">Script Translation</h3>
+                             <div className="flex gap-2">
+                                 {project.targetLanguages.map(lang => (
+                                     <button 
+                                        key={lang}
+                                        onClick={() => updateProject({ activeLanguage: lang })}
+                                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${project.activeLanguage === lang ? 'bg-cyan-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200'}`}
+                                     >
+                                         {lang}
+                                     </button>
+                                 ))}
+                             </div>
+                         </div>
+                         
+                         <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                             {project.panels.map((panel: any, idx: number) => {
+                                 const currentTranslation = panel.translations?.[project.activeLanguage] || { dialogue: panel.dialogue, caption: panel.caption };
+                                 const masterTranslation = panel.translations?.[project.masterLanguage] || { dialogue: panel.dialogue, caption: panel.caption };
+
+                                 return (
+                                     <div key={panel.id} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700">
+                                         <div className="flex justify-between mb-2">
+                                             <span className="text-xs font-bold text-gray-400 uppercase">Panel {idx + 1}</span>
+                                             {panel.imageUrl && <img src={panel.imageUrl} className="w-8 h-8 object-cover rounded border border-gray-200"/>}
+                                         </div>
+                                         
+                                         {project.activeLanguage !== project.masterLanguage && (
+                                             <div className="mb-3 opacity-60">
+                                                 <p className="text-xs font-bold text-gray-500 mb-1">{project.masterLanguage}:</p>
+                                                 {masterTranslation.caption && <p className="text-xs text-gray-600 italic bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700 mb-1">{masterTranslation.caption}</p>}
+                                                 {masterTranslation.dialogue && <p className="text-xs text-gray-800 bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">{masterTranslation.dialogue}</p>}
+                                             </div>
+                                         )}
+
+                                         <div className="space-y-2">
+                                              {panel.caption && (
+                                                  <div>
+                                                      <label className="text-[10px] font-bold text-cyan-600 uppercase">Caption ({project.activeLanguage})</label>
+                                                      <textarea 
+                                                          className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-2 text-sm focus:border-cyan-400 outline-none resize-none"
+                                                          rows={2}
+                                                          value={currentTranslation.caption || ''}
+                                                          onChange={(e) => {
+                                                              const newPanels = [...project.panels];
+                                                              const newTranslations = { ...panel.translations, [project.activeLanguage]: { ...currentTranslation, caption: e.target.value } };
+                                                              newPanels[idx] = { ...panel, translations: newTranslations };
+                                                              updateProject({ panels: newPanels });
+                                                          }}
+                                                      />
+                                                  </div>
+                                              )}
+                                              {panel.dialogue && (
+                                                  <div>
+                                                      <label className="text-[10px] font-bold text-cyan-600 uppercase">Dialogue ({project.activeLanguage})</label>
+                                                      <textarea 
+                                                          className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-2 text-sm focus:border-cyan-400 outline-none resize-none font-comic"
+                                                          rows={2}
+                                                          value={currentTranslation.dialogue || ''}
+                                                          onChange={(e) => {
+                                                              const newPanels = [...project.panels];
+                                                              const newTranslations = { ...panel.translations, [project.activeLanguage]: { ...currentTranslation, dialogue: e.target.value } };
+                                                              newPanels[idx] = { ...panel, translations: newTranslations };
+                                                              updateProject({ panels: newPanels });
+                                                          }}
+                                                      />
+                                                  </div>
+                                              )}
+                                         </div>
+                                     </div>
+                                 );
+                             })}
                          </div>
                      </div>
-                 </div>
-
-                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
-                     <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                         <FileText className="w-5 h-5 text-red-600"/> Report Details
-                     </h3>
-                     <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-700 min-h-[150px] text-xs leading-relaxed whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-                         {project.censorReport || <span className="text-gray-400 italic">No report available.</span>}
-                     </div>
-                 </div>
+                </div>
             </div>
         </div>
     );
 };
 
-// --- NEW: PUBLISHER VIEW ---
 export const PublisherView: React.FC<{
     project: ComicProject;
     role: AgentRole;
@@ -418,32 +336,63 @@ export const PublisherView: React.FC<{
 }> = ({ project, role, t }) => {
     const [marketingData, setMarketingData] = useState<{blurb: string, socialPost: string, tagline: string} | null>(null);
     const [loading, setLoading] = useState(false);
+    const [showReader, setShowReader] = useState(false);
 
     const generateMarketing = async () => {
         setLoading(true);
         try {
             const data = await GeminiService.generateMarketingCopy(project);
             setMarketingData(data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
+        } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
-    const handleExportJSON = () => {
-        const dataStr = JSON.stringify(project, null, 2);
-        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-        const linkElement = document.createElement('a');
-        linkElement.setAttribute('href', dataUri);
-        linkElement.setAttribute('download', `${project.title.replace(/\s+/g, '_')}_Final.json`);
-        linkElement.click();
-    };
+    const handleExportCBZ = async () => {
+        const zip = new JSZip();
+        const panels = project.panels || [];
+        
+        panels.forEach((panel, i) => {
+            if (panel.imageUrl) {
+                const imgData = panel.imageUrl.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+                zip.file(`page_${String(i + 1).padStart(3, '0')}.png`, imgData, { base64: true });
+            }
+        });
 
-    const hasVideos = project.panels?.some(p => p.videoUrl);
+        const metadata = {
+            title: project.title,
+            series: project.storyConcept?.premise,
+            language: project.activeLanguage,
+            summary: project.marketAnalysis?.suggestedTitle
+        };
+        zip.file("ComicInfo.json", JSON.stringify(metadata, null, 2));
+
+        const content = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(content);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${project.title.replace(/\s+/g, '_')}.cbz`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     return (
         <div className="max-w-7xl mx-auto w-full px-6 pb-24">
+            {showReader && (
+                <div className="fixed inset-0 z-50 bg-black flex flex-col">
+                    <div className="p-4 flex justify-between items-center text-white bg-gray-900 border-b border-gray-800">
+                        <h3 className="font-bold">{project.title} - Reader</h3>
+                        <button onClick={() => setShowReader(false)}><X className="w-6 h-6"/></button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center gap-4">
+                        {project.panels.map((panel, idx) => (
+                             panel.imageUrl ? (
+                                 <img key={idx} src={panel.imageUrl} className="max-w-full max-h-screen object-contain shadow-2xl" />
+                             ) : null
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-6">
                     <img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-amber-500 shadow-md" />
@@ -453,161 +402,45 @@ export const PublisherView: React.FC<{
                     </div>
                 </div>
                 <div className="flex gap-2">
-                     <button onClick={handleExportJSON} className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-gray-300 dark:shadow-none transition-all">
-                        <Download className="w-5 h-5"/> Export Project JSON
+                     <button onClick={() => setShowReader(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg">
+                        <BookOpen className="w-5 h-5"/> Reader Mode
                     </button>
-                    {/* REPLACED PUBLISH WITH DOWNLOAD ASSETS BUTTON */}
-                    <button className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-amber-200 dark:shadow-none transition-all">
-                        <FolderDown className="w-5 h-5"/> Download Assets
+                    <button onClick={handleExportCBZ} className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg">
+                        <FolderDown className="w-5 h-5"/> Download .CBZ
                     </button>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Project Status Card */}
                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
                     <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2">
                         <Activity className="w-5 h-5 text-amber-600"/> Publication Ready
                     </h3>
-                    
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700">
-                             <div>
-                                 <p className="text-xs font-bold text-gray-500 uppercase">Format</p>
-                                 <p className="font-bold text-gray-800 dark:text-gray-200">{project.storyFormat}</p>
-                             </div>
-                             <CheckCircle className="w-6 h-6 text-emerald-500"/>
-                        </div>
                          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700">
-                             <div>
-                                 <p className="text-xs font-bold text-gray-500 uppercase">Total Panels</p>
-                                 <p className="font-bold text-gray-800 dark:text-gray-200">{project.panels?.length || 0}</p>
-                             </div>
+                             <div><p className="text-xs font-bold text-gray-500 uppercase">Format</p><p className="font-bold text-gray-800 dark:text-gray-200">{project.storyFormat}</p></div>
                              <CheckCircle className="w-6 h-6 text-emerald-500"/>
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700">
-                             <div>
-                                 <p className="text-xs font-bold text-gray-500 uppercase">Motion Enabled</p>
-                                 <p className="font-bold text-gray-800 dark:text-gray-200">{hasVideos ? 'Yes' : 'No'}</p>
-                             </div>
-                             {hasVideos ? <CheckCircle className="w-6 h-6 text-emerald-500"/> : <Activity className="w-6 h-6 text-gray-300"/>}
                         </div>
                     </div>
                 </div>
-
-                {/* Marketing Generator */}
+                
                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm flex flex-col">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                             <Sparkles className="w-5 h-5 text-amber-600"/> Marketing Kit
                         </h3>
-                        <button 
-                            onClick={generateMarketing} 
-                            disabled={loading}
-                            className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-3 py-1.5 rounded-lg border border-amber-100 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors flex items-center gap-1"
-                        >
-                            {loading ? <Loader2 className="w-3 h-3 animate-spin"/> : <Sparkles className="w-3 h-3"/>}
-                            Generate with AI
+                        <button onClick={generateMarketing} disabled={loading} className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-3 py-1.5 rounded-lg border border-amber-100 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors flex items-center gap-1">
+                            {loading ? <Loader2 className="w-3 h-3 animate-spin"/> : <Sparkles className="w-3 h-3"/>} AI Generate
                         </button>
                     </div>
-
                     {marketingData ? (
                         <div className="space-y-4 flex-1">
-                            <div>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Tagline</p>
-                                <p className="text-lg font-black text-gray-800 dark:text-gray-100 italic">"{marketingData.tagline}"</p>
-                            </div>
-                            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Back Cover Blurb</p>
-                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{marketingData.blurb}</p>
-                            </div>
-                            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
-                                <p className="text-[10px] font-bold text-blue-400 uppercase mb-2 flex items-center gap-1"><Share2 className="w-3 h-3"/> Social Media Post</p>
-                                <p className="text-sm text-blue-900 dark:text-blue-200 leading-relaxed font-medium">{marketingData.socialPost}</p>
-                            </div>
+                            <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Tagline</p><p className="text-lg font-black italic">"{marketingData.tagline}"</p></div>
+                            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-xl"><p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Blurb</p><p className="text-sm">{marketingData.blurb}</p></div>
                         </div>
                     ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-4 min-h-[200px]">
-                            <Megaphone className="w-12 h-12 opacity-20"/>
-                            <p className="text-sm">Generate catchy copy to promote your comic.</p>
-                        </div>
+                        <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-4 min-h-[200px]"><Megaphone className="w-12 h-12 opacity-20"/><p className="text-sm">Generate copy.</p></div>
                     )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- TRANSLATOR VIEW ---
-export const TranslatorView: React.FC<{
-    project: ComicProject;
-    updateProject: (updates: Partial<ComicProject>) => void;
-    handleAddLanguage: (lang: string) => void;
-    loading: boolean;
-    role: AgentRole;
-    t: (k: string) => string;
-}> = ({ project, updateProject, handleAddLanguage, loading, role, t }) => {
-    const [langInput, setLangInput] = useState('');
-
-    return (
-        <div className="max-w-7xl mx-auto w-full px-6 pb-24">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-6">
-                    <img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-cyan-500 shadow-md" />
-                    <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role].name)}</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Localization & Translation</p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
-                <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-cyan-600"/> Language Management
-                </h3>
-                
-                <div className="flex gap-4 mb-8">
-                    <div className="flex-1">
-                        <label className="text-xs font-bold text-gray-400 uppercase block mb-2">Master Language</label>
-                        <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 font-bold text-gray-700 dark:text-gray-300">
-                            {project.masterLanguage}
-                        </div>
-                    </div>
-                    <div className="flex-[2]">
-                        <label className="text-xs font-bold text-gray-400 uppercase block mb-2">Target Languages</label>
-                        <div className="flex flex-wrap gap-2">
-                            {project.targetLanguages.map(lang => (
-                                <span key={lang} className="px-3 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border border-cyan-100 dark:border-cyan-800 font-bold text-sm">
-                                    {lang}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex gap-2 items-end border-t border-gray-100 dark:border-gray-700 pt-6">
-                     <div className="flex-1">
-                        <label className="text-xs font-bold text-gray-400 uppercase block mb-2">{t('ui.add_lang')}</label>
-                        <input 
-                            value={langInput}
-                            onChange={(e) => setLangInput(e.target.value)}
-                            placeholder="e.g. French, Spanish..."
-                            className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-cyan-100 dark:focus:ring-cyan-900"
-                        />
-                     </div>
-                     <button 
-                        onClick={() => {
-                            if(langInput.trim()) {
-                                handleAddLanguage(langInput.trim());
-                                setLangInput('');
-                            }
-                        }}
-                        disabled={loading || !langInput.trim()}
-                        className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-cyan-200 dark:shadow-none transition-all disabled:opacity-50 h-[46px]"
-                     >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Plus className="w-4 h-4"/>}
-                        {t('ui.translate')}
-                     </button>
                 </div>
             </div>
         </div>
