@@ -415,14 +415,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                 )}
                             </div>
 
-                            <div>
-                                <label className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider mb-2 block">{t('manager.theme')}</label>
-                                <textarea
-                                    value={project.theme || inputText}
-                                    onChange={(e) => { setInputText((e.target as HTMLTextAreaElement).value); updateProject({ theme: (e.target as HTMLTextAreaElement).value }); }}
-                                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-sm text-gray-900 dark:text-gray-100 min-h-[100px] outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
-                                />
-                            </div>
+                            {/* MOVED THEME INPUT OUT OF HERE */}
+                            
                             <div>
                                 <label className="text-xs text-purple-600 dark:text-purple-400 font-bold uppercase tracking-wider mb-2 block flex justify-between">
                                     {t('manager.target_langs')}
@@ -474,6 +468,19 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> {t('manager.pipeline')}
                         </h3>
                         
+                        {/* THEME INPUT MOVED HERE */}
+                        <div className="mb-6">
+                            <label className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider mb-2 block flex items-center gap-2">
+                                <Lightbulb className="w-4 h-4"/> {t('manager.theme')}
+                            </label>
+                            <textarea
+                                value={project.theme || inputText}
+                                onChange={(e) => { setInputText((e.target as HTMLTextAreaElement).value); updateProject({ theme: (e.target as HTMLTextAreaElement).value }); }}
+                                placeholder={t('manager.themeplaceholder')}
+                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-sm text-gray-900 dark:text-gray-100 min-h-[100px] outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all placeholder-gray-400"
+                            />
+                        </div>
+
                         <div className="space-y-3">
                             <button onClick={handleStartResearch} disabled={loading || (!project.theme && !project.originalScript) || !project.storyFormat} className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all ${project.workflowStage === WorkflowStage.IDLE ? 'bg-gradient-to-r from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 shadow-md shadow-indigo-100 dark:shadow-none' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}>
                                 <div className="flex items-center gap-3"><TrendingUp className="w-4 h-4"/><span className="font-bold">{t('action.start_research')}</span></div>
@@ -526,6 +533,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     </div>
                 </div>
             </div>
-        );
-    }
+        </div>
+    );
 };

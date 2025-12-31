@@ -3,6 +3,7 @@ import React from 'react';
 import { Agent, AgentRole } from '../types';
 import { AGENTS, TRANSLATIONS } from '../constants';
 import { Users, BookOpen, PenTool, Layout, Palette, Megaphone, Mic, Video, Globe, TrendingUp, ShieldAlert, Archive, Briefcase, ChevronRight, Moon, Sun } from 'lucide-react';
+import { Logo } from './Logo';
 
 interface SidebarProps {
   currentRole: AgentRole;
@@ -48,11 +49,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, onSelectRole, projectTit
   return (
     <div className="w-20 lg:w-72 border-r flex flex-col h-full flex-shrink-0 transition-colors duration-300 z-20 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
       <div className="p-6 border-b flex items-center gap-4 border-gray-100 dark:border-gray-700">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg bg-gray-900 dark:bg-indigo-500 shadow-gray-200 dark:shadow-indigo-900/20">
-          <Briefcase className="text-white w-5 h-5" />
+        <div className="w-12 h-12 flex items-center justify-center shrink-0 hover:scale-105 transition-transform duration-300 cursor-pointer drop-shadow-md">
+          <Logo className="w-full h-full" />
         </div>
         <div className="hidden lg:block overflow-hidden">
-          <h1 className="font-bold text-base truncate tracking-tight text-gray-900 dark:text-gray-100">{t('app.title')}</h1>
+          <h1 className="font-bold text-base truncate tracking-tight text-gray-900 dark:text-gray-100 font-comic uppercase">{t('app.title')}</h1>
           <p className="text-xs truncate text-gray-500 dark:text-gray-400">{projectTitle === 'Untitled Comic' ? t('manager.new_project') : projectTitle}</p>
         </div>
       </div>
