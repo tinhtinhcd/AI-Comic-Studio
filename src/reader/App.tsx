@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { ComicProject } from './types';
 import * as StorageService from './services/storageService';
-import { BookOpen, ChevronLeft, Heart, Share2, Search, Star, Layers } from 'lucide-react';
+import { BookOpen, ChevronLeft, Heart, Share2, Search, X, Star, Layers } from 'lucide-react';
 import { Logo } from './components/Logo';
 
-const App: React.FC = () => {
+const ReaderApp: React.FC = () => {
     const [library, setLibrary] = useState<ComicProject[]>([]);
     const [readingProject, setReadingProject] = useState<ComicProject | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -17,6 +17,7 @@ const App: React.FC = () => {
     useEffect(() => {
         const loadContent = async () => {
             const projects = await StorageService.getActiveProjects();
+            // Filter only projects that have at least one panel with an image
             const publishable = projects.filter(p => p.panels && p.panels.length > 0 && p.panels.some(panel => panel.imageUrl));
             setLibrary(publishable);
         };
@@ -25,6 +26,7 @@ const App: React.FC = () => {
 
     const filteredLibrary = library.filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
+    // --- SUB-COMPONENT: READER VIEWER ---
     if (readingProject) {
         return (
             <div className="fixed inset-0 bg-black z-50 flex flex-col h-screen overflow-hidden">
@@ -48,6 +50,7 @@ const App: React.FC = () => {
 
                 <div className="flex-1 overflow-y-auto bg-black custom-scrollbar pt-20 pb-20">
                     <div className="max-w-2xl mx-auto min-h-screen bg-white dark:bg-gray-900 shadow-2xl">
+                        {/* Cover Splash */}
                         <div className="relative aspect-[3/4] w-full bg-gray-800 mb-2">
                             {readingProject.coverImage ? (
                                 <img src={readingProject.coverImage} className="w-full h-full object-cover" />
@@ -62,6 +65,7 @@ const App: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* Panels */}
                         <div className="flex flex-col">
                             {readingProject.panels.map((panel, idx) => (
                                 <div key={panel.id} className="w-full relative group">
@@ -72,6 +76,7 @@ const App: React.FC = () => {
                                             Rendering Panel {idx + 1}...
                                         </div>
                                     )}
+                                    {/* Overlay Text */}
                                     {(panel.dialogue || panel.caption) && (
                                         <div className="p-4 bg-white/5 dark:bg-black/50 backdrop-blur-sm border-b border-gray-800">
                                             {panel.caption && (
@@ -90,6 +95,7 @@ const App: React.FC = () => {
                             ))}
                         </div>
 
+                        {/* Footer */}
                         <div className="p-12 text-center bg-gray-50 dark:bg-gray-950">
                             <p className="text-gray-400 text-xs uppercase tracking-widest mb-4">End of Chapter</p>
                             <div className="flex justify-center gap-4">
@@ -196,4 +202,4 @@ const App: React.FC = () => {
     );
 };
 
-export default App;
+export default ReaderApp;
