@@ -6,8 +6,8 @@ import { resolve } from 'path'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   
-  // TARGET env var determines which app to build.
-  const target = process.env.TARGET || 'landing';
+  // DEFAULT TO READER if TARGET is not set
+  const target = process.env.TARGET || 'reader';
   const projectRoot = __dirname;
 
   let root = projectRoot;
@@ -15,25 +15,32 @@ export default defineConfig(({ mode }) => {
   let input: any = { main: resolve(projectRoot, 'index.html') };
   let base = '/'; 
 
-  // LOGIC: Each target maps to a sub-folder in src/
-  if (target === 'studio') {
+  // LOGIC: Configure build paths based on TARGET
+  if (target === 'reader') {
+    // READER IS NOW THE ROOT APP
+    root = resolve(projectRoot, 'src/reader');
+    outDir = resolve(projectRoot, 'dist'); // Builds to root dist
+    base = '/'; 
+    input = { main: resolve(projectRoot, 'src/reader/index.html') };
+  } else if (target === 'studio') {
     root = resolve(projectRoot, 'src/studio');
     outDir = resolve(projectRoot, 'dist/studio');
     base = '/studio/'; 
-    // Vite will look for index.html inside src/studio/
     input = { main: resolve(projectRoot, 'src/studio/index.html') };
-  } else if (target === 'reader') {
-    root = resolve(projectRoot, 'src/reader');
-    outDir = resolve(projectRoot, 'dist/reader');
-    base = '/reader/';
-    input = { main: resolve(projectRoot, 'src/reader/index.html') };
   } else if (target === 'admin') {
     root = resolve(projectRoot, 'src/admin');
     outDir = resolve(projectRoot, 'dist/admin');
     base = '/admin/';
     input = { main: resolve(projectRoot, 'src/admin/index.html') };
+  } else if (target === 'landing') {
+    // Landing Page moved to sub-directory or accessible via direct file if needed
+    // But for clean build, we put it in 'landing' folder
+    root = projectRoot;
+    outDir = resolve(projectRoot, 'dist/landing');
+    base = '/landing/';
+    input = { main: resolve(projectRoot, 'index.html') };
   } else {
-    // Landing page (default root build)
+    // Fallback
     root = projectRoot;
     outDir = resolve(projectRoot, 'dist');
     base = '/';
@@ -45,8 +52,8 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.API_KEY': JSON.stringify(process.env.API_KEY || env.API_KEY)
     },
-    root: root, // Sets the root context for Vite
-    base: base, // Sets the URL base path (e.g., /studio/)
+    root: root,
+    base: base,
     build: {
       outDir: outDir,
       emptyOutDir: true, 
@@ -56,7 +63,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       fs: {
-        allow: [projectRoot] // Allow serving files from root node_modules
+        allow: [projectRoot]
       }
     },
     resolve: {

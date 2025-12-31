@@ -78,8 +78,8 @@ const App: React.FC = () => {
   }, [uiLanguage]);
 
   const handleGoToReader = () => {
-      // In production, this redirects to the reader sub-path
-      window.location.href = '/reader/';
+      // Reader is now served at Root
+      window.location.href = '/';
   };
 
   if (!currentUser) {
