@@ -12,22 +12,28 @@ export default defineConfig(({ mode }) => {
   let root = '.';
   let outDir = 'dist';
   let input = { main: resolve(__dirname, 'index.html') };
+  let base = '/'; // Default base path
 
   if (target === 'studio') {
     root = 'src/studio';
     outDir = '../../dist/studio';
+    base = '/studio/'; // IMPORTANT: Assets will be loaded from /studio/assets/
     input = { main: resolve(__dirname, 'src/studio/index.html') };
   } else if (target === 'reader') {
     root = 'src/reader';
     outDir = '../../dist/reader';
+    base = '/reader/'; // IMPORTANT
     input = { main: resolve(__dirname, 'src/reader/index.html') };
   } else if (target === 'admin') {
     root = 'src/admin';
     outDir = '../../dist/admin';
+    base = '/admin/'; // IMPORTANT
     input = { main: resolve(__dirname, 'src/admin/index.html') };
   } else {
+    // Landing page
     root = '.';
-    outDir = 'dist/landing';
+    outDir = 'dist';
+    base = '/';
     input = { main: resolve(__dirname, 'index.html') };
   }
 
@@ -37,9 +43,10 @@ export default defineConfig(({ mode }) => {
       'process.env.API_KEY': JSON.stringify(process.env.API_KEY || env.API_KEY)
     },
     root: root,
+    base: base, // Inject the dynamic base path here
     build: {
       outDir: outDir,
-      emptyOutDir: true,
+      emptyOutDir: true, 
       rollupOptions: {
         input: input,
       },

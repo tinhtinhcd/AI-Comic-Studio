@@ -9,7 +9,7 @@
     "dev:studio": "TARGET=studio vite",
     "dev:reader": "TARGET=reader vite",
     "dev:admin": "TARGET=admin vite",
-    "build": "vite build",
+    "build": "npm run build:landing && npm run build:studio && npm run build:reader && npm run build:admin",
     "build:landing": "TARGET=landing vite build",
     "build:studio": "TARGET=studio vite build",
     "build:reader": "TARGET=reader vite build",
@@ -19,7 +19,7 @@
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.10",
     "@ffmpeg/util": "^0.12.1",
-    "@google/genai": "*",
+    "@google/genai": "^0.0.19",
     "jszip": "^3.10.1",
     "lucide-react": "^0.469.0",
     "react": "^18.3.1",
