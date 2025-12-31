@@ -1,9 +1,9 @@
 
 /// <reference lib="dom" />
 import React, { useState, useEffect } from 'react';
-import { ComicProject, WorkflowStage, ChapterArchive } from '../types';
+import { ComicProject, WorkflowStage, ChapterArchive, AgentRole } from '../types';
 import { AGENTS } from '../constants';
-import { Settings, ArrowLeft, FileText, CheckCircle, Archive, Activity, LayoutTemplate, BookOpen, Library, Smartphone, FolderOpen, TrendingUp, Palette, Printer, Plus, Trash2, ArrowRight, RotateCcw, AlertTriangle, Zap, Star, Map, Edit, Eye, Lock, Lightbulb, Key, Calendar, Home, Briefcase } from 'lucide-react';
+import { Settings, ArrowLeft, FileText, CheckCircle, Archive, Activity, LayoutTemplate, BookOpen, Library, Smartphone, FolderOpen, TrendingUp, Palette, Printer, Plus, Trash2, ArrowRight, RotateCcw, AlertTriangle, Zap, Star, Map, Edit, Eye, Lock, Lightbulb, Key, Calendar, Home, Briefcase, Users, BadgeCheck, Network } from 'lucide-react';
 
 interface ManagerViewProps {
     project: ComicProject;
@@ -44,11 +44,12 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     setInputText, inputText, loading, t, isLongFormat, supportedLanguages
 }) => {
     
-    const [activeTab, setActiveTab] = useState<'LOBBY' | 'PIPELINE' | 'CHAPTERS' | 'SETTINGS'>(
+    const [activeTab, setActiveTab] = useState<'LOBBY' | 'PIPELINE' | 'CHAPTERS' | 'TEAM' | 'SETTINGS'>(
         project.storyFormat ? 'PIPELINE' : 'LOBBY'
     );
     const [selectedChapterId, setSelectedChapterId] = useState<number>(project.currentChapter || 1);
     
+    // API KEY MANAGEMENT STATE
     const [apiKeyInput, setApiKeyInput] = useState('');
     const [storedKeys, setStoredKeys] = useState<StoredKey[]>([]);
 
@@ -105,41 +106,49 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     const isProjectActive = !!project.storyFormat;
 
     const renderTabs = () => (
-        <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-1">
+        <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-1 overflow-x-auto">
             <button 
                 onClick={() => setActiveTab('LOBBY')}
-                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'LOBBY' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'LOBBY' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
             >
                 <Home className="w-4 h-4"/> {t('manager.lobby')}
             </button>
             <button 
                 onClick={() => isProjectActive && setActiveTab('PIPELINE')}
-                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'PIPELINE' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : isProjectActive ? 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
+                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'PIPELINE' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : isProjectActive ? 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
                 title={!isProjectActive ? "Start a project to unlock" : ""}
             >
                 <Activity className="w-4 h-4"/> {t('manager.pipeline')}
             </button>
             <button 
                 onClick={() => isProjectActive && setActiveTab('CHAPTERS')}
-                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'CHAPTERS' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : isProjectActive ? 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
+                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'CHAPTERS' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : isProjectActive ? 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
                 title={!isProjectActive ? "Start a project to unlock" : ""}
             >
                 <Map className="w-4 h-4"/> Mục Lục (Chapters)
             </button>
             <button 
+                onClick={() => setActiveTab('TEAM')}
+                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'TEAM' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+            >
+                <Users className="w-4 h-4"/> Nhân Sự (Team)
+            </button>
+            <button 
                 onClick={() => setActiveTab('SETTINGS')}
-                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'SETTINGS' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'SETTINGS' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
             >
                 <Settings className="w-4 h-4"/> {t('manager.settings')}
             </button>
         </div>
     );
 
+    // --- VIEW: LOBBY ---
     if (activeTab === 'LOBBY') {
         return (
             <div className="flex flex-col h-full pb-8">
                 {renderTabs()}
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    {/* Active Projects List */}
                     <div>
                        <div className="flex justify-between items-center mb-4">
                            <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2"><Briefcase className="w-5 h-5 text-indigo-600 dark:text-indigo-400"/> {t('ui.resume')}</h3>
@@ -168,6 +177,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                        </div>
                     </div>
 
+                    {/* Start New Project */}
                     <div>
                         <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2"><LayoutTemplate className="w-5 h-5 text-indigo-600 dark:text-indigo-400"/> {t('ui.start_new')}</h3>
                         
@@ -225,6 +235,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
         );
     }
     
+    // --- VIEW: PIPELINE ---
     if (activeTab === 'PIPELINE') {
        return (
             <div className="flex flex-col lg:flex-row gap-8 h-full pb-8">
@@ -303,6 +314,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
        );
     }
 
+    // --- VIEW: CHAPTERS ---
     if (activeTab === 'CHAPTERS') {
         const totalChapters = project.totalChapters ? parseInt(project.totalChapters.match(/\d+/)?.[0] || '1') : 1;
         const chaptersList = Array.from({length: totalChapters}, (_, i) => i + 1);
@@ -417,6 +429,65 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
         );
     }
 
+    // --- VIEW: TEAM (Recruited Agents) ---
+    if (activeTab === 'TEAM') {
+        // Group agents by department for the visualizer
+        const departments: Record<string, AgentRole[]> = {
+            'dept.strategy': [AgentRole.MARKET_RESEARCHER, AgentRole.CONTINUITY_EDITOR],
+            'dept.writers': [AgentRole.SCRIPTWRITER, AgentRole.CENSOR, AgentRole.TRANSLATOR],
+            'dept.visuals': [AgentRole.CHARACTER_DESIGNER, AgentRole.PANEL_ARTIST],
+            'dept.production': [AgentRole.TYPESETTER, AgentRole.CINEMATOGRAPHER, AgentRole.VOICE_ACTOR, AgentRole.PUBLISHER, AgentRole.ARCHIVIST]
+        };
+
+        return (
+            <div className="flex flex-col h-full pb-8">
+                {renderTabs()}
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar animate-in fade-in">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 shadow-sm">
+                        <div className="text-center mb-10">
+                            <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-2">{t('team.title')}</h2>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-lg mx-auto">{t('team.desc')}</p>
+                        </div>
+
+                        <div className="space-y-8">
+                            {Object.entries(departments).map(([deptKey, roles]) => (
+                                <div key={deptKey}>
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="h-px bg-gray-200 dark:bg-gray-700 flex-1"></div>
+                                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-gray-50 dark:bg-gray-900 px-3 py-1 rounded-full">{t(deptKey)}</h3>
+                                        <div className="h-px bg-gray-200 dark:bg-gray-700 flex-1"></div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                        {roles.map(role => {
+                                            const agent = AGENTS[role];
+                                            return (
+                                                <div key={role} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all group">
+                                                    <div className="relative">
+                                                        <img src={agent.avatar} className="w-12 h-12 rounded-full border-2 border-white dark:border-gray-600 shadow-sm" />
+                                                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-gray-800 rounded-full flex items-center justify-center">
+                                                            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">{t(agent.name)}</h4>
+                                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1">{agent.description}</p>
+                                                        <div className="flex items-center gap-1 mt-1 text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <BadgeCheck className="w-3 h-3"/> {t('team.status_active')}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     if (activeTab === 'SETTINGS') {
        return (
             <div className="flex flex-col h-full pb-8">
@@ -424,6 +495,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 <div className="w-full flex flex-col h-full overflow-hidden">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex-1 overflow-y-auto">
                         <div className="space-y-6 max-w-2xl">
+                            {/* API KEY SECTION */}
                             <div className="bg-blue-50 dark:bg-blue-900/10 p-5 rounded-xl border border-blue-100 dark:border-blue-900">
                                 <label className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider mb-2 block flex items-center gap-2">
                                     <Key className="w-4 h-4"/> Gemini API Key Management
@@ -432,6 +504,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                     Hệ thống dùng Free Key mặc định (dễ hết quota). Hãy nhập thêm Key cá nhân của bạn để sử dụng ổn định hơn.
                                 </p>
                                 
+                                {/* ADD NEW KEY */}
                                 <div className="flex gap-2 mb-4">
                                     <div className="relative flex-1">
                                         <input 
@@ -447,6 +520,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                     </button>
                                 </div>
 
+                                {/* KEY LIST */}
                                 {storedKeys.length > 0 ? (
                                     <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
                                         {storedKeys.map((k) => (

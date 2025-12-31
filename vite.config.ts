@@ -8,33 +8,34 @@ export default defineConfig(({ mode }) => {
   
   // TARGET env var determines which app to build.
   const target = process.env.TARGET || 'landing';
+  const projectRoot = __dirname;
 
-  let root = '.';
-  let outDir = 'dist';
-  let input = { main: resolve(__dirname, 'index.html') };
+  let root = projectRoot;
+  let outDir = resolve(projectRoot, 'dist');
+  let input = { main: resolve(projectRoot, 'index.html') };
   let base = '/'; // Default base path
 
   if (target === 'studio') {
-    root = 'src/studio';
-    outDir = '../../dist/studio';
-    base = '/studio/'; // IMPORTANT: Assets will be loaded from /studio/assets/
-    input = { main: resolve(__dirname, 'src/studio/index.html') };
+    root = resolve(projectRoot, 'src/studio');
+    outDir = resolve(projectRoot, 'dist/studio');
+    base = '/studio/'; // Assets will be loaded from /studio/assets/
+    input = { main: resolve(projectRoot, 'src/studio/index.html') };
   } else if (target === 'reader') {
-    root = 'src/reader';
-    outDir = '../../dist/reader';
-    base = '/reader/'; // IMPORTANT
-    input = { main: resolve(__dirname, 'src/reader/index.html') };
+    root = resolve(projectRoot, 'src/reader');
+    outDir = resolve(projectRoot, 'dist/reader');
+    base = '/reader/';
+    input = { main: resolve(projectRoot, 'src/reader/index.html') };
   } else if (target === 'admin') {
-    root = 'src/admin';
-    outDir = '../../dist/admin';
-    base = '/admin/'; // IMPORTANT
-    input = { main: resolve(__dirname, 'src/admin/index.html') };
+    root = resolve(projectRoot, 'src/admin');
+    outDir = resolve(projectRoot, 'dist/admin');
+    base = '/admin/';
+    input = { main: resolve(projectRoot, 'src/admin/index.html') };
   } else {
-    // Landing page
-    root = '.';
-    outDir = 'dist';
+    // Landing page (default)
+    root = projectRoot;
+    outDir = resolve(projectRoot, 'dist');
     base = '/';
-    input = { main: resolve(__dirname, 'index.html') };
+    input = { main: resolve(projectRoot, 'index.html') };
   }
 
   return {
@@ -43,7 +44,7 @@ export default defineConfig(({ mode }) => {
       'process.env.API_KEY': JSON.stringify(process.env.API_KEY || env.API_KEY)
     },
     root: root,
-    base: base, // Inject the dynamic base path here
+    base: base,
     build: {
       outDir: outDir,
       emptyOutDir: true, 
@@ -53,8 +54,13 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       fs: {
-        allow: ['..']
+        allow: [projectRoot]
       }
+    },
+    resolve: {
+        alias: {
+            '@': resolve(projectRoot, 'src')
+        }
     }
   }
 })
