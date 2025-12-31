@@ -528,4 +528,4 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
         );
     }
-}
+};
