@@ -11,7 +11,7 @@ const MOCK_USERS: UserProfile[] = [
     { id: '3', username: 'MangaArtist99', email: 'manga@japan.jp', joinDate: Date.now() - 200000, studioName: 'Shonen Jump', stats: { projectsCount: 1, chaptersCount: 1, charactersCount: 2 } },
 ];
 
-const AdminApp: React.FC = () => {
+export const AdminApp: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'CONTENT' | 'FINANCE'>('DASHBOARD');
     const [users] = useState(MOCK_USERS);
 
