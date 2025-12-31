@@ -12,13 +12,15 @@ export default defineConfig(({ mode }) => {
 
   let root = projectRoot;
   let outDir = resolve(projectRoot, 'dist');
-  let input = { main: resolve(projectRoot, 'index.html') };
-  let base = '/'; // Default base path
+  let input: any = { main: resolve(projectRoot, 'index.html') };
+  let base = '/'; 
 
+  // LOGIC: Each target maps to a sub-folder in src/
   if (target === 'studio') {
     root = resolve(projectRoot, 'src/studio');
     outDir = resolve(projectRoot, 'dist/studio');
-    base = '/studio/'; // Assets will be loaded from /studio/assets/
+    base = '/studio/'; 
+    // Vite will look for index.html inside src/studio/
     input = { main: resolve(projectRoot, 'src/studio/index.html') };
   } else if (target === 'reader') {
     root = resolve(projectRoot, 'src/reader');
@@ -31,7 +33,7 @@ export default defineConfig(({ mode }) => {
     base = '/admin/';
     input = { main: resolve(projectRoot, 'src/admin/index.html') };
   } else {
-    // Landing page (default)
+    // Landing page (default root build)
     root = projectRoot;
     outDir = resolve(projectRoot, 'dist');
     base = '/';
@@ -43,8 +45,8 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.API_KEY': JSON.stringify(process.env.API_KEY || env.API_KEY)
     },
-    root: root,
-    base: base,
+    root: root, // Sets the root context for Vite
+    base: base, // Sets the URL base path (e.g., /studio/)
     build: {
       outDir: outDir,
       emptyOutDir: true, 
@@ -54,7 +56,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       fs: {
-        allow: [projectRoot]
+        allow: [projectRoot] // Allow serving files from root node_modules
       }
     },
     resolve: {
