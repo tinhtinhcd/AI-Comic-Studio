@@ -78,8 +78,8 @@ const App: React.FC = () => {
   }, [uiLanguage]);
 
   const handleGoToReader = () => {
-      // Reader is now served at Root
-      window.location.href = '/';
+      // Reader is now served at Root via /reader/
+      window.location.href = '/reader/';
   };
 
   if (!currentUser) {
@@ -88,12 +88,14 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex h-screen font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+      
+      {/* Full Screen Toggle - Moved to Top Right, Dynamic Position */}
       <button 
           onClick={toggleFullScreen}
-          className="fixed bottom-4 left-4 z-50 p-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-full shadow-lg hover:scale-110 transition-transform opacity-50 hover:opacity-100"
+          className={`fixed top-4 z-50 p-2 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-full shadow-lg hover:scale-110 transition-all duration-300 opacity-50 hover:opacity-100 ${showPreview ? 'right-[26rem]' : 'right-14'}`}
           title="Toggle Full Screen"
       >
-          {isFullScreen ? <Minimize2 className="w-5 h-5"/> : <Maximize2 className="w-5 h-5"/>}
+          {isFullScreen ? <Minimize2 className="w-4 h-4"/> : <Maximize2 className="w-4 h-4"/>}
       </button>
 
       {mobileMenuOpen && (
@@ -160,6 +162,7 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {/* View Toggle Button */}
         <button 
           onClick={() => setShowPreview(!showPreview)}
           className={`hidden lg:flex fixed top-4 z-30 p-2 rounded-l-lg shadow-md items-center gap-2 transition-all duration-300 border ${showPreview ? 'right-96' : 'right-0'} ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500 hover:text-indigo-600'}`}

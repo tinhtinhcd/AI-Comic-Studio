@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { UserProfile } from '../types';
-import { Camera, Edit2, Save, User, Mail, Briefcase, Calendar, Star, Layers, Users } from 'lucide-react';
+import { UserProfile, UserAIPreferences } from '../types';
+import { Camera, Edit2, Save, User, Mail, Briefcase, Calendar, Star, Layers, Users, BrainCircuit, Cpu, Paintbrush, Globe, Feather, Zap } from 'lucide-react';
 import * as AuthService from '../services/authService';
+import { DEFAULT_USER_PREFERENCES } from '../constants';
 
 interface UserProfileViewProps {
     user: UserProfile;
@@ -16,19 +17,31 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
         studioName: user.studioName || '',
         bio: user.bio || ''
     });
+    
+    // Default to existing or fallback to system default
+    const [aiPrefs, setAiPrefs] = useState<UserAIPreferences>(user.aiPreferences || DEFAULT_USER_PREFERENCES);
+    
+    const [deepSeekKeyInput, setDeepSeekKeyInput] = useState(localStorage.getItem('ai_comic_deepseek_key') || '');
+    const [openAIKeyInput, setOpenAIKeyInput] = useState(localStorage.getItem('ai_comic_openai_key') || '');
 
     const handleSave = async () => {
         try {
-            const updated = await AuthService.updateUserProfile(user.id, formData);
+            const updated = await AuthService.updateUserProfile(user.id, {
+                ...formData,
+                aiPreferences: aiPrefs
+            });
+            localStorage.setItem('ai_comic_deepseek_key', deepSeekKeyInput);
+            localStorage.setItem('ai_comic_openai_key', openAIKeyInput);
             onUpdate(updated);
             setIsEditing(false);
+            (window as any).alert("Profile & AI Preferences Updated!");
         } catch (e) {
             console.error(e);
         }
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6 pb-20">
+        <div className="max-w-6xl mx-auto p-6 pb-20">
             {/* Header / Banner */}
             <div className="relative h-48 rounded-3xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 mb-16 shadow-lg">
                 <div className="absolute -bottom-12 left-8 flex items-end gap-4">
@@ -112,15 +125,28 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                             </div>
                         </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl text-center border border-indigo-100 dark:border-indigo-800">
+                            <h4 className="text-xl font-black text-indigo-700 dark:text-indigo-300">{user.stats?.projectsCount || 0}</h4>
+                            <p className="text-[10px] font-bold text-indigo-500 uppercase">Projects</p>
+                        </div>
+                        <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl text-center border border-purple-100 dark:border-purple-800">
+                            <h4 className="text-xl font-black text-purple-700 dark:text-purple-300">{user.stats?.charactersCount || 0}</h4>
+                            <p className="text-[10px] font-bold text-purple-500 uppercase">Characters</p>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Right Column: Bio & Stats */}
+                {/* Right Column: AI Config Matrix (NEW) */}
                 <div className="lg:col-span-2 space-y-6">
+                    
+                    {/* 1. Bio Section */}
                     <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
                         <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 text-sm uppercase tracking-wider">Biography</h3>
                         {isEditing ? (
                             <textarea 
-                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg p-4 text-sm min-h-[150px]"
+                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg p-4 text-sm min-h-[100px]"
                                 value={formData.bio}
                                 onChange={(e) => setFormData({...formData, bio: e.target.value})}
                                 placeholder="Tell us about your creative style..."
@@ -132,27 +158,199 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                         )}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-800 text-center">
-                            <div className="w-10 h-10 mx-auto bg-indigo-200 dark:bg-indigo-700 text-indigo-700 dark:text-white rounded-full flex items-center justify-center mb-2">
-                                <Layers className="w-5 h-5"/>
-                            </div>
-                            <h4 className="text-2xl font-black text-indigo-900 dark:text-indigo-100">{user.stats?.projectsCount || 0}</h4>
-                            <p className="text-xs font-bold text-indigo-600 dark:text-indigo-300 uppercase">Projects</p>
+                    {/* 2. AI Preference Matrix */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+                            <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                                <BrainCircuit className="w-5 h-5 text-indigo-600"/>
+                                AI Engine Matrix (Late 2025)
+                            </h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Allocate models based on Cost vs. Performance for 2025.
+                            </p>
                         </div>
-                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-6 rounded-2xl border border-purple-100 dark:border-purple-800 text-center">
-                            <div className="w-10 h-10 mx-auto bg-purple-200 dark:bg-purple-700 text-purple-700 dark:text-white rounded-full flex items-center justify-center mb-2">
-                                <Users className="w-5 h-5"/>
+
+                        <div className="p-6">
+                            {/* Key Inputs */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                                    <label className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase block mb-1">DeepSeek API Key (Efficiency)</label>
+                                    {isEditing ? (
+                                        <input 
+                                            type="password"
+                                            value={deepSeekKeyInput}
+                                            onChange={(e) => setDeepSeekKeyInput(e.target.value)}
+                                            placeholder="sk-..."
+                                            className="w-full bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-700 rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    ) : (
+                                        <p className="text-sm font-mono text-gray-600 dark:text-gray-400">
+                                            {deepSeekKeyInput ? '••••••••••••••••' : 'Not Configured'}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800">
+                                    <label className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase block mb-1">OpenAI API Key (GPT-5)</label>
+                                    {isEditing ? (
+                                        <input 
+                                            type="password"
+                                            value={openAIKeyInput}
+                                            onChange={(e) => setOpenAIKeyInput(e.target.value)}
+                                            placeholder="sk-..."
+                                            className="w-full bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-700 rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    ) : (
+                                        <p className="text-sm font-mono text-gray-600 dark:text-gray-400">
+                                            {openAIKeyInput ? '••••••••••••••••' : 'Not Configured'}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                            <h4 className="text-2xl font-black text-purple-900 dark:text-purple-100">{user.stats?.charactersCount || 0}</h4>
-                            <p className="text-xs font-bold text-purple-600 dark:text-purple-300 uppercase">Characters</p>
-                        </div>
-                        <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 p-6 rounded-2xl border border-pink-100 dark:border-pink-800 text-center">
-                            <div className="w-10 h-10 mx-auto bg-pink-200 dark:bg-pink-700 text-pink-700 dark:text-white rounded-full flex items-center justify-center mb-2">
-                                <Star className="w-5 h-5"/>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b border-gray-100 dark:border-gray-700">
+                                            <th className="text-left py-3 px-4 font-bold text-gray-500 uppercase text-xs">Task Type</th>
+                                            <th className="text-left py-3 px-4 font-bold text-gray-500 uppercase text-xs">Preferred Model</th>
+                                            <th className="text-left py-3 px-4 font-bold text-gray-500 uppercase text-xs">Strategic Rationale</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                        {/* CREATIVE ROW */}
+                                        <tr className="group hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                                            <td className="py-4 px-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600"><Feather className="w-4 h-4"/></div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-800 dark:text-gray-200">Creative Writing</p>
+                                                        <p className="text-xs text-gray-500">Scriptwriting, Dialogue</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                {isEditing ? (
+                                                    <select 
+                                                        value={aiPrefs.creativeEngine}
+                                                        onChange={(e) => setAiPrefs({...aiPrefs, creativeEngine: (e.target.value as any)})}
+                                                        className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs font-bold w-full"
+                                                    >
+                                                        <option value="GEMINI">Gemini 3.0 Pro</option>
+                                                        <option value="DEEPSEEK">DeepSeek-V3</option>
+                                                        <option value="OPENAI">GPT-5 (Orion)</option>
+                                                    </select>
+                                                ) : (
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                                                        aiPrefs.creativeEngine === 'GEMINI' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
+                                                        aiPrefs.creativeEngine === 'DEEPSEEK' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 
+                                                        'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                    }`}>
+                                                        {aiPrefs.creativeEngine === 'GEMINI' ? 'Gemini 3.0' : aiPrefs.creativeEngine === 'DEEPSEEK' ? 'DeepSeek-V3' : 'GPT-5'}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="py-4 px-4 text-xs text-gray-500 italic">
+                                                GPT-5 offers best nuance/subtext for dialogue.
+                                            </td>
+                                        </tr>
+
+                                        {/* LOGIC ROW */}
+                                        <tr className="group hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                                            <td className="py-4 px-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-emerald-600"><Cpu className="w-4 h-4"/></div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-800 dark:text-gray-200">Reasoning & Logic</p>
+                                                        <p className="text-xs text-gray-500">Planning, Consistency</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                {isEditing ? (
+                                                    <select 
+                                                        value={aiPrefs.logicEngine}
+                                                        onChange={(e) => setAiPrefs({...aiPrefs, logicEngine: (e.target.value as any)})}
+                                                        className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs font-bold w-full"
+                                                    >
+                                                        <option value="GEMINI">Gemini 3.0 Flash</option>
+                                                        <option value="DEEPSEEK">DeepSeek-R1 (Best Value)</option>
+                                                        <option value="OPENAI">GPT-5 (Max IQ)</option>
+                                                    </select>
+                                                ) : (
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                                                        aiPrefs.logicEngine === 'GEMINI' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
+                                                        aiPrefs.logicEngine === 'DEEPSEEK' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 
+                                                        'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                    }`}>
+                                                        {aiPrefs.logicEngine === 'GEMINI' ? 'Gemini 3.0' : aiPrefs.logicEngine === 'DEEPSEEK' ? 'DeepSeek-R1' : 'GPT-5'}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="py-4 px-4 text-xs text-gray-500 italic">
+                                                DeepSeek-R1 rivals GPT-5 at 1/10th the cost.
+                                            </td>
+                                        </tr>
+
+                                        {/* TRANSLATION ROW */}
+                                        <tr className="group hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                                            <td className="py-4 px-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg text-cyan-600"><Globe className="w-4 h-4"/></div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-800 dark:text-gray-200">Translation</p>
+                                                        <p className="text-xs text-gray-500">Localization</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                {isEditing ? (
+                                                    <select 
+                                                        value={aiPrefs.translationEngine}
+                                                        onChange={(e) => setAiPrefs({...aiPrefs, translationEngine: (e.target.value as any)})}
+                                                        className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs font-bold w-full"
+                                                    >
+                                                        <option value="GEMINI">Gemini 3.0</option>
+                                                        <option value="DEEPSEEK">DeepSeek-V3</option>
+                                                        <option value="OPENAI">GPT-5</option>
+                                                    </select>
+                                                ) : (
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                                                        aiPrefs.translationEngine === 'GEMINI' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
+                                                        aiPrefs.translationEngine === 'DEEPSEEK' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' : 
+                                                        'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                    }`}>
+                                                        {aiPrefs.translationEngine === 'GEMINI' ? 'Gemini 3.0' : aiPrefs.translationEngine === 'DEEPSEEK' ? 'DeepSeek-V3' : 'GPT-5'}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="py-4 px-4 text-xs text-gray-500 italic">
+                                                Bulk tasks should use DeepSeek.
+                                            </td>
+                                        </tr>
+
+                                        {/* VISUAL ROW (LOCKED) */}
+                                        <tr className="group bg-gray-50/50 dark:bg-gray-900/30">
+                                            <td className="py-4 px-4">
+                                                <div className="flex items-center gap-3 opacity-70">
+                                                    <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg text-rose-600"><Paintbrush className="w-4 h-4"/></div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-800 dark:text-gray-200">Visual Art & Vision</p>
+                                                        <p className="text-xs text-gray-500">Image Gen, Image Analysis</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                <span className="px-3 py-1 rounded-full text-xs font-bold border bg-gray-100 text-gray-500 border-gray-200 flex items-center justify-center gap-1 w-fit">
+                                                    <Zap className="w-3 h-3"/> Gemini 3 (Locked)
+                                                </span>
+                                            </td>
+                                            <td className="py-4 px-4 text-xs text-gray-400 italic">
+                                                Native Multimodal required for Video/Art pipelines.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <h4 className="text-2xl font-black text-pink-900 dark:text-pink-100">{user.stats?.chaptersCount || 0}</h4>
-                            <p className="text-xs font-bold text-pink-600 dark:text-pink-300 uppercase">Chapters</p>
                         </div>
                     </div>
                 </div>

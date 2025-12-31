@@ -24,6 +24,16 @@ export interface Agent {
   department: string;
 }
 
+// Updated for Late 2025 Landscape
+export type AIProvider = 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
+
+export interface UserAIPreferences {
+    creativeEngine: AIProvider; // GPT-5 is best here
+    logicEngine: AIProvider;    // DeepSeek R1 or Gemini 3.0
+    translationEngine: AIProvider; // DeepSeek V3 is fastest
+    visualEngine: 'GEMINI';     // Gemini 3.0 / Imagen 4 only
+}
+
 export interface UserProfile {
     id: string;
     username: string;
@@ -33,6 +43,7 @@ export interface UserProfile {
     bio?: string;
     studioName?: string;
     joinDate: number;
+    aiPreferences?: UserAIPreferences;
     stats?: {
         projectsCount: number;
         chaptersCount: number;
@@ -181,6 +192,7 @@ export interface ComicProject {
   storyFormat: StoryFormat;
   publicationType: PublicationType;
   modelTier?: 'STANDARD' | 'PREMIUM';
+  textEngine?: 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
   imageModel?: 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview';
   originalScript?: string;
   masterLanguage: string;

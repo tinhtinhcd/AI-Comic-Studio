@@ -24,6 +24,15 @@ export interface Agent {
   department: string;
 }
 
+export type AIProvider = 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
+
+export interface UserAIPreferences {
+    creativeEngine: AIProvider; // For Scriptwriter, Character Description
+    logicEngine: AIProvider;    // For Project Manager, Continuity, Censor
+    translationEngine: AIProvider; // For Translator
+    visualEngine: 'GEMINI';     // Locked to Gemini for now
+}
+
 export interface UserProfile {
     id: string;
     username: string;
@@ -33,6 +42,7 @@ export interface UserProfile {
     bio?: string;
     studioName?: string;
     joinDate: number;
+    aiPreferences?: UserAIPreferences;
     stats?: {
         projectsCount: number;
         chaptersCount: number;
@@ -181,6 +191,7 @@ export interface ComicProject {
   storyFormat: StoryFormat;
   publicationType: PublicationType;
   modelTier?: 'STANDARD' | 'PREMIUM';
+  textEngine?: 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
   imageModel?: 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview';
   originalScript?: string;
   masterLanguage: string;

@@ -7,8 +7,8 @@ import process from 'node:process'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   
-  // DEFAULT TO READER if TARGET is not set
-  const target = process.env.TARGET || 'reader';
+  // DEFAULT TO LANDING PAGE (Ecosystem) if TARGET is not set
+  const target = process.env.TARGET || 'landing';
   const projectRoot = process.cwd();
 
   let root = projectRoot;
@@ -18,10 +18,9 @@ export default defineConfig(({ mode }) => {
 
   // LOGIC: Configure build paths based on TARGET
   if (target === 'reader') {
-    // READER IS NOW THE ROOT APP
     root = resolve(projectRoot, 'src/reader');
-    outDir = resolve(projectRoot, 'dist'); // Builds to root dist
-    base = '/'; 
+    outDir = resolve(projectRoot, 'dist/reader'); 
+    base = '/reader/'; 
     input = { main: resolve(projectRoot, 'src/reader/index.html') };
   } else if (target === 'studio') {
     root = resolve(projectRoot, 'src/studio');
@@ -34,11 +33,9 @@ export default defineConfig(({ mode }) => {
     base = '/admin/';
     input = { main: resolve(projectRoot, 'src/admin/index.html') };
   } else if (target === 'landing') {
-    // Landing Page moved to sub-directory or accessible via direct file if needed
-    // But for clean build, we put it in 'landing' folder
     root = projectRoot;
-    outDir = resolve(projectRoot, 'dist/landing');
-    base = '/landing/';
+    outDir = resolve(projectRoot, 'dist');
+    base = '/';
     input = { main: resolve(projectRoot, 'index.html') };
   } else {
     // Fallback

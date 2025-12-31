@@ -1,7 +1,11 @@
 
 import { Agent, AgentRole, WorkflowStage, ComicProject } from './types';
 
+// ... (Translations and Agents remain unchanged, re-exporting them would be too long, assume they exist)
+// We only need to update INITIAL_PROJECT_STATE
+
 export const TRANSLATIONS = {
+    // ... (Keep existing translations)
     en: {
         'app.title': 'AI Comic Studio',
         'dept.strategy': 'Editorial Dept.',
@@ -91,6 +95,7 @@ export const TRANSLATIONS = {
         'manager.target_langs': 'Languages',
         'manager.style': 'Art Style',
         'manager.image_engine': 'Artist Engine',
+        'manager.text_engine': 'Writing Engine',
         'manager.format': 'Format',
         'manager.pub_type': 'Publication Type',
         'manager.select_format': 'Select Pipeline',
@@ -160,6 +165,10 @@ export const TRANSLATIONS = {
         'err.no_panels': 'No panels generated.',
         'err.no_chars': 'No characters defined.',
         'err.no_art': 'Art not generated.',
+        'team.title': 'Personnel Roster',
+        'team.desc': 'Your AI Production Team is online and ready.',
+        'team.status_active': 'Active',
+        'team.status_idle': 'Standby',
     },
     vi: {
         'app.title': 'AI Comic Studio',
@@ -169,17 +178,17 @@ export const TRANSLATIONS = {
         'dept.production': 'Hậu Kỳ & Xuất Bản',
         'role.director': 'Tổng Biên Tập (Bạn)',
         'role.planner': 'Biên Tập Viên Chính',
-        'role.continuity': 'BTV Logic',
-        'role.scriptwriter': 'Biên Kịch',
-        'role.censor': 'Kiểm Duyệt',
+        'role.continuity': 'BTV Logic & Cốt Truyện',
+        'role.scriptwriter': 'Biên Kịch Chính',
+        'role.censor': 'Chuyên Viên Kiểm Duyệt',
         'role.translator': 'Biên Dịch Viên',
-        'role.designer': 'Thiết Kế Nhân Vật',
-        'role.artist': 'Họa Sĩ Phân Cảnh',
-        'role.typesetter': 'Chuyên gia Dàn trang (In ấn)',
-        'role.cinematographer': 'Đạo Diễn Chuyển Động',
-        'role.voice': 'Đạo Diễn Lồng Tiếng',
+        'role.designer': 'Thiết Kế Nhân Vật (Lead)',
+        'role.artist': 'Họa Sĩ Phân Cảnh (Artist)',
+        'role.typesetter': 'Kỹ Thuật Dàn Trang (Letterer)',
+        'role.cinematographer': 'Đạo Diễn Hình Ảnh (Motion)',
+        'role.voice': 'Đạo Diễn Lồng Tiếng (VO)',
         'role.publisher': 'Nhà Phát Hành',
-        'role.archivist': 'Lưu Trữ Viên',
+        'role.archivist': 'Thủ Thư Lưu Trữ',
         'sidebar.cloud': 'Lưu Trữ',
         'sidebar.online': 'Online',
         'step.strategy': '1. Đề cương',
@@ -250,6 +259,7 @@ export const TRANSLATIONS = {
         'manager.target_langs': 'Đa Ngôn Ngữ',
         'manager.style': 'Phong cách Vẽ',
         'manager.image_engine': 'Công cụ Vẽ (AI Model)',
+        'manager.text_engine': 'Trí Tuệ Viết (AI Text)',
         'manager.format': 'Quy mô',
         'manager.pub_type': 'Loại Ấn Phẩm (Book Type)',
         'manager.select_format': 'Chọn Quy Trình',
@@ -319,6 +329,10 @@ export const TRANSLATIONS = {
         'err.no_panels': 'Chưa có phân cảnh nào.',
         'err.no_chars': 'Chưa có nhân vật nào.',
         'err.no_art': 'Chưa vẽ xong tranh.',
+        'team.title': 'Danh Sách Nhân Sự',
+        'team.desc': 'Đội ngũ AI của bạn đang trực tuyến và sẵn sàng nhận lệnh.',
+        'team.status_active': 'Sẵn sàng',
+        'team.status_idle': 'Chờ việc',
     }
 };
 
@@ -327,7 +341,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.PROJECT_MANAGER,
     name: 'role.director',
     avatar: 'https://picsum.photos/seed/manager/100/100',
-    description: 'Supervises the pipeline.',
+    description: 'Senior Project Director. Oversees pipeline & resources.',
     color: 'bg-blue-600',
     department: 'dept.strategy'
   },
@@ -335,7 +349,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.MARKET_RESEARCHER,
     name: 'role.planner',
     avatar: 'https://picsum.photos/seed/researcher/100/100',
-    description: 'Defines style & audience.',
+    description: 'Lead Editor & Strategist. Defines style, audience & trends.',
     color: 'bg-indigo-500',
     department: 'dept.strategy'
   },
@@ -343,7 +357,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.CONTINUITY_EDITOR,
     name: 'role.continuity',
     avatar: 'https://picsum.photos/seed/logic/100/100',
-    description: 'Checks logic & plot holes.',
+    description: 'Logic Guardian. Checks plot holes and consistency.',
     color: 'bg-teal-600',
     department: 'dept.strategy'
   },
@@ -351,7 +365,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.SCRIPTWRITER,
     name: 'role.scriptwriter',
     avatar: 'https://picsum.photos/seed/writer/100/100',
-    description: 'Generates plot & dialogue.',
+    description: 'Lead Screenwriter. Generates plot, dialogue & beats.',
     color: 'bg-emerald-600',
     department: "dept.writers"
   },
@@ -359,7 +373,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.CENSOR,
     name: 'role.censor',
     avatar: 'https://picsum.photos/seed/censor/100/100',
-    description: 'Checks policy compliance.',
+    description: 'Compliance Officer. Ensures safety & policy adherence.',
     color: 'bg-red-600',
     department: "dept.writers"
   },
@@ -367,7 +381,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.TRANSLATOR,
     name: 'role.translator',
     avatar: 'https://picsum.photos/seed/translator/100/100',
-    description: 'Localizes script.',
+    description: 'Localization Specialist. Multilingual adaptation.',
     color: 'bg-cyan-600',
     department: "dept.writers"
   },
@@ -375,7 +389,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.CHARACTER_DESIGNER,
     name: 'role.designer',
     avatar: 'https://picsum.photos/seed/designer/100/100',
-    description: 'Visualizes characters.',
+    description: 'Lead Character Artist. Visualizes cast & costumes.',
     color: 'bg-purple-600',
     department: 'dept.visuals'
   },
@@ -383,7 +397,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.PANEL_ARTIST,
     name: 'role.artist',
     avatar: 'https://picsum.photos/seed/artist/100/100',
-    description: 'Draws static panel art.',
+    description: 'Director of Photography. Renders static panel art.',
     color: 'bg-rose-600',
     department: 'dept.visuals'
   },
@@ -391,7 +405,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.TYPESETTER,
     name: 'role.typesetter',
     avatar: 'https://picsum.photos/seed/printer/100/100',
-    description: 'Page layout & lettering.',
+    description: 'Layout Expert. Handles lettering, bubbles & print prep.',
     color: 'bg-slate-700',
     department: 'dept.production'
   },
@@ -399,7 +413,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.VOICE_ACTOR,
     name: 'role.voice',
     avatar: 'https://picsum.photos/seed/voice/100/100',
-    description: 'Generates speech.',
+    description: 'Audio Director. Generates speech & soundscapes.',
     color: 'bg-pink-600',
     department: 'dept.production'
   },
@@ -407,7 +421,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.CINEMATOGRAPHER,
     name: 'role.cinematographer',
     avatar: 'https://picsum.photos/seed/video/100/100',
-    description: 'Animates panels (Veo).',
+    description: 'Motion Director. Animates panels into video (Veo).',
     color: 'bg-orange-600',
     department: 'dept.production'
   },
@@ -415,7 +429,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.PUBLISHER,
     name: 'role.publisher',
     avatar: 'https://picsum.photos/seed/publisher/100/100',
-    description: 'Finalizes release.',
+    description: 'Distributor. Finalizes release & marketing materials.',
     color: 'bg-amber-600',
     department: 'dept.production'
   },
@@ -423,7 +437,7 @@ export const AGENTS: Record<AgentRole, Agent> = {
     id: AgentRole.ARCHIVIST,
     name: 'role.archivist',
     avatar: 'https://picsum.photos/seed/archivist/100/100',
-    description: 'Stores scripts (Text).',
+    description: 'Head Librarian. Manages script database & backups.',
     color: 'bg-stone-600',
     department: 'dept.production'
   }
@@ -435,6 +449,7 @@ export const INITIAL_PROJECT_STATE: ComicProject = {
   storyFormat: null,
   publicationType: 'COMIC', // Default
   modelTier: 'STANDARD', 
+  textEngine: 'GEMINI', // DEFAULT TO GEMINI
   imageModel: 'gemini-2.5-flash-image', // DEFAULT TO FAST
   totalChapters: '', 
   currentChapter: 1,
@@ -453,9 +468,41 @@ export const INITIAL_PROJECT_STATE: ComicProject = {
   characters: [],
   panels: [],
   pages: [],
-  agentTasks: [], // NEW
   completedChapters: [],
   workflowStage: WorkflowStage.IDLE,
-  logs: [],
-  assets: []
+  assets: [],
+  agentTasks: [
+      {
+          id: 'init-task-1',
+          role: AgentRole.MARKET_RESEARCHER,
+          description: 'Awaiting project briefing to analyze trends.',
+          isCompleted: false,
+          createdAt: Date.now(),
+          type: 'SYSTEM'
+      },
+      {
+          id: 'init-task-2',
+          role: AgentRole.SCRIPTWRITER,
+          description: 'Ready to draft story concepts.',
+          isCompleted: false,
+          createdAt: Date.now(),
+          type: 'SYSTEM'
+      }
+  ],
+  logs: [
+      {
+          id: 'log-init-1',
+          agentId: AgentRole.PROJECT_MANAGER,
+          message: 'System Initialized. All 13 Department Heads recruited and online.',
+          timestamp: Date.now(),
+          type: 'success'
+      },
+      {
+          id: 'log-init-2',
+          agentId: AgentRole.PROJECT_MANAGER,
+          message: 'Departments: Strategy, Writers Room, Visual Arts, and Production are standing by for new projects.',
+          timestamp: Date.now() + 100,
+          type: 'info'
+      }
+  ]
 };

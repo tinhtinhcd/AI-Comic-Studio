@@ -1,7 +1,9 @@
 
-import { Agent, AgentRole, WorkflowStage, ComicProject } from './types';
+import { Agent, AgentRole, WorkflowStage, ComicProject, UserAIPreferences } from './types';
 
+// ... existing translations ...
 export const TRANSLATIONS = {
+    // ... (Existing translations kept as is)
     en: {
         'app.title': 'AI Comic Studio',
         'dept.strategy': 'Editorial Dept.',
@@ -91,6 +93,7 @@ export const TRANSLATIONS = {
         'manager.target_langs': 'Languages',
         'manager.style': 'Art Style',
         'manager.image_engine': 'Artist Engine',
+        'manager.text_engine': 'Writing Engine',
         'manager.format': 'Format',
         'manager.pub_type': 'Publication Type',
         'manager.select_format': 'Select Pipeline',
@@ -254,6 +257,7 @@ export const TRANSLATIONS = {
         'manager.target_langs': 'Đa Ngôn Ngữ',
         'manager.style': 'Phong cách Vẽ',
         'manager.image_engine': 'Công cụ Vẽ (AI Model)',
+        'manager.text_engine': 'Trí Tuệ Viết (AI Text)',
         'manager.format': 'Quy mô',
         'manager.pub_type': 'Loại Ấn Phẩm (Book Type)',
         'manager.select_format': 'Chọn Quy Trình',
@@ -437,13 +441,22 @@ export const AGENTS: Record<AgentRole, Agent> = {
   }
 };
 
+// DEFAULT SETTINGS FOR LATE 2025
+export const DEFAULT_USER_PREFERENCES: UserAIPreferences = {
+    creativeEngine: 'OPENAI', // GPT-5 (Creative Lead)
+    logicEngine: 'DEEPSEEK', // DeepSeek-R1 (Logic Lead)
+    translationEngine: 'DEEPSEEK', // DeepSeek-V3 (Speed/Cost)
+    visualEngine: 'GEMINI' // Gemini 3.0 / Imagen 4 (Visual Only)
+};
+
 export const INITIAL_PROJECT_STATE: ComicProject = {
   title: 'Untitled Comic',
   theme: '',
   storyFormat: null,
-  publicationType: 'COMIC', // Default
+  publicationType: 'COMIC', 
   modelTier: 'STANDARD', 
-  imageModel: 'gemini-2.5-flash-image', // DEFAULT TO FAST
+  textEngine: 'OPENAI', // Defaulting to the best available in 2025
+  imageModel: 'gemini-2.5-flash-image', // Keeping 2.5 flash as "Fast" default, upgradable to 3.0 Pro
   totalChapters: '', 
   currentChapter: 1,
   targetPanelCount: 20, 
@@ -461,41 +474,9 @@ export const INITIAL_PROJECT_STATE: ComicProject = {
   characters: [],
   panels: [],
   pages: [],
+  agentTasks: [], 
   completedChapters: [],
   workflowStage: WorkflowStage.IDLE,
-  assets: [],
-  agentTasks: [
-      {
-          id: 'init-task-1',
-          role: AgentRole.MARKET_RESEARCHER,
-          description: 'Awaiting project briefing to analyze trends.',
-          isCompleted: false,
-          createdAt: Date.now(),
-          type: 'SYSTEM'
-      },
-      {
-          id: 'init-task-2',
-          role: AgentRole.SCRIPTWRITER,
-          description: 'Ready to draft story concepts.',
-          isCompleted: false,
-          createdAt: Date.now(),
-          type: 'SYSTEM'
-      }
-  ],
-  logs: [
-      {
-          id: 'log-init-1',
-          agentId: AgentRole.PROJECT_MANAGER,
-          message: 'System Initialized. All 13 Department Heads recruited and online.',
-          timestamp: Date.now(),
-          type: 'success'
-      },
-      {
-          id: 'log-init-2',
-          agentId: AgentRole.PROJECT_MANAGER,
-          message: 'Departments: Strategy, Writers Room, Visual Arts, and Production are standing by for new projects.',
-          timestamp: Date.now() + 100,
-          type: 'info'
-      }
-  ]
+  logs: [],
+  assets: []
 };

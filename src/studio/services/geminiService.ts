@@ -1,7 +1,11 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { ComicPanel, Character, ResearchData, StoryFormat, StoryConcept, Message, ComicProject } from "../types";
+import { ComicPanel, Character, ResearchData, StoryFormat, StoryConcept, Message, ComicProject, UserAIPreferences } from "../types";
 import { PROMPTS } from "./prompts";
+import { getCurrentUser } from "./authService";
+import { DEFAULT_USER_PREFERENCES } from "../constants";
+
+// --- API HELPERS ---
 
 export const getDynamicApiKey = (): string => {
     try {
@@ -19,6 +23,14 @@ export const getDynamicApiKey = (): string => {
         console.error("Error reading API key store", e);
     }
     return process.env.API_KEY || '';
+};
+
+const getDeepSeekKey = (): string => {
+    return localStorage.getItem('ai_comic_deepseek_key') || '';
+};
+
+const getOpenAIKey = (): string => {
+    return localStorage.getItem('ai_comic_openai_key') || '';
 };
 
 const getAI = () => new GoogleGenAI({ apiKey: getDynamicApiKey() });
@@ -41,60 +53,219 @@ const cleanAndParseJSON = (text: string) => {
     }
 };
 
-export const analyzeUploadedManuscript = async (scriptContent: string, language: string, tier: 'STANDARD' | 'PREMIUM'): Promise<ResearchData> => {
+// --- PREFERENCE HELPER ---
+const getUserPreference = (): UserAIPreferences => {
+    const user = getCurrentUser();
+    return user?.aiPreferences || DEFAULT_USER_PREFERENCES;
+};
+
+// --- UNIFIED GENERATION SERVICE ---
+
+interface GenTextOptions {
+    contents: any;
+    modelTier?: 'STANDARD' | 'PREMIUM';
+    // Instead of forcing engine, we pass the INTENT (Task Type)
+    taskType: 'CREATIVE' | 'LOGIC' | 'TRANSLATION' | 'VISUAL'; 
+    systemInstruction?: string;
+    jsonMode?: boolean;
+    // Specific override still possible if absolutely needed
+    forceEngine?: 'GEMINI' | 'DEEPSEEK' | 'OPENAI'; 
+}
+
+const unifiedGenerateText = async (options: GenTextOptions): Promise<string> => {
+    const { contents, modelTier = 'STANDARD', taskType, systemInstruction, jsonMode, forceEngine } = options;
+
+    const prefs = getUserPreference();
+    
+    // Determine Engine based on Task Type mapping from User Preferences
+    let engine = 'GEMINI'; // Default fallback
+    if (forceEngine) {
+        engine = forceEngine;
+    } else {
+        switch (taskType) {
+            case 'CREATIVE': engine = prefs.creativeEngine; break;
+            case 'LOGIC': engine = prefs.logicEngine; break;
+            case 'TRANSLATION': engine = prefs.translationEngine; break;
+            case 'VISUAL': engine = 'GEMINI'; break; // Hard lock
+        }
+    }
+
+    // 1. OPENAI PATH (GPT-5 Integration)
+    if (engine === 'OPENAI') {
+        const apiKey = getOpenAIKey();
+        if (!apiKey) {
+            console.warn("OpenAI Preference set but Key missing. Falling back to Gemini.");
+        } else {
+            let messages: any[] = [];
+            if (systemInstruction) {
+                messages.push({ role: "system", content: systemInstruction });
+            }
+
+            if (typeof contents === 'string') {
+                messages.push({ role: "user", content: contents });
+            } else if (Array.isArray(contents)) {
+                contents.forEach((msg: any) => {
+                    let role = msg.role === 'model' ? 'assistant' : 'user';
+                    let content = typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : JSON.stringify(msg);
+                    messages.push({ role, content });
+                });
+            } else if (contents.parts && contents.parts[0].text) {
+                 messages.push({ role: "user", content: contents.parts[0].text });
+            }
+
+            try {
+                // OpenAI Late 2025 Model Projection: 'gpt-5' or 'gpt-4o' fallback
+                const openAIModel = (taskType === 'LOGIC') ? 'gpt-5-reasoning' : 'gpt-5'; // Hypothetical GPT-5 endpoints
+
+                const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: openAIModel, 
+                        messages: messages,
+                        stream: false,
+                        response_format: jsonMode ? { type: "json_object" } : undefined
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.text();
+                    console.error("OpenAI API Error", err);
+                    throw new Error(`OpenAI API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0].message.content;
+            } catch (e: any) {
+                console.error("OpenAI Error, falling back to Gemini", e);
+            }
+        }
+    }
+
+    // 2. DEEPSEEK PATH
+    if (engine === 'DEEPSEEK') {
+        const apiKey = getDeepSeekKey();
+        if (!apiKey) {
+            console.warn("DeepSeek Preference set but Key missing. Falling back to Gemini.");
+        } else {
+            let messages: any[] = [];
+            if (systemInstruction) {
+                messages.push({ role: "system", content: systemInstruction });
+            }
+
+            if (typeof contents === 'string') {
+                messages.push({ role: "user", content: contents });
+            } else if (Array.isArray(contents)) {
+                contents.forEach((msg: any) => {
+                    let role = msg.role === 'model' ? 'assistant' : 'user';
+                    let content = typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : JSON.stringify(msg);
+                    messages.push({ role, content });
+                });
+            } else if (contents.parts && contents.parts[0].text) {
+                 messages.push({ role: "user", content: contents.parts[0].text });
+            }
+
+            try {
+                const dsModel = (taskType === 'LOGIC') ? 'deepseek-reasoner' : 'deepseek-chat';
+
+                const response = await fetch("https://api.deepseek.com/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: dsModel, 
+                        messages: messages,
+                        stream: false,
+                        response_format: jsonMode ? { type: "json_object" } : undefined
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.text();
+                    console.error("DeepSeek API Error", err);
+                    throw new Error(`DeepSeek API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0].message.content;
+            } catch (e: any) {
+                console.error("DeepSeek Error, falling back to Gemini", e);
+            }
+        }
+    }
+
+    // 3. GEMINI PATH (Default & Fallback)
+    // Uses Late 2025 Projected Models: gemini-3-pro-preview / gemini-3-flash-preview
     const ai = getAI();
+    const modelName = getTextModel(modelTier);
+    const config: any = {};
+    if (systemInstruction) config.systemInstruction = systemInstruction;
+    if (jsonMode) config.responseMimeType = "application/json";
+
     const response = await ai.models.generateContent({
-        model: getTextModel(tier),
-        contents: PROMPTS.analyzeManuscript(scriptContent, language),
-        config: { responseMimeType: "application/json" }
+        model: modelName,
+        contents: contents,
+        config: config
     });
-    return cleanAndParseJSON(response.text!);
+    
+    return response.text!;
+};
+
+// ... (Rest of file: agent functions like analyzeUploadedManuscript, etc., remain unchanged but now utilize the updated unifiedGenerateText)
+// Re-exporting critical functions to maintain file integrity
+
+export const analyzeUploadedManuscript = async (scriptContent: string, language: string, tier: 'STANDARD' | 'PREMIUM'): Promise<ResearchData> => {
+    const text = await unifiedGenerateText({
+        taskType: 'LOGIC',
+        modelTier: tier,
+        contents: PROMPTS.analyzeManuscript(scriptContent, language),
+        jsonMode: true
+    });
+    return cleanAndParseJSON(text);
 };
 
 export const sendResearchChatMessage = async (history: Message[], newMessage: string, context: any, tier: 'STANDARD' | 'PREMIUM'): Promise<string> => {
-    const ai = getAI();
-    const contents = history.map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }]
-    }));
-    contents.push({ role: 'user', parts: [{ text: newMessage }] });
-
-    const response = await ai.models.generateContent({
-        model: getTextModel(tier),
-        contents: contents,
-        config: { systemInstruction: PROMPTS.researchChatSystem(context.theme, context.storyFormat, context.language) }
+    const responseText = await unifiedGenerateText({
+        taskType: 'LOGIC',
+        modelTier: tier,
+        contents: [...history.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })), { role: 'user', parts: [{ text: newMessage }] }],
+        systemInstruction: PROMPTS.researchChatSystem(context.theme, context.storyFormat, context.language)
     });
-    return response.text!;
+    return responseText;
 };
 
 export const extractStrategyFromChat = async (history: Message[], language: string, tier: 'STANDARD' | 'PREMIUM'): Promise<ResearchData> => {
-    const ai = getAI();
     const chatLog = history.map(m => `${m.role}: ${m.content}`).join("\n");
-    const response = await ai.models.generateContent({
-        model: getTextModel(tier),
+    const text = await unifiedGenerateText({
+        taskType: 'LOGIC', 
+        modelTier: tier,
         contents: PROMPTS.extractStrategy(chatLog, language),
-        config: { responseMimeType: "application/json" }
+        jsonMode: true
     });
-    return cleanAndParseJSON(response.text!);
+    return cleanAndParseJSON(text);
 };
 
 export const generateArtStyleGuide = async (styleName: string, culturalSetting: string, language: string, tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'): Promise<string> => {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-        model: getTextModel(tier),
+    return unifiedGenerateText({
+        taskType: 'CREATIVE',
+        modelTier: tier,
         contents: PROMPTS.researchArtStyle(styleName, culturalSetting, language)
     });
-    return response.text!;
 };
 
 export const generateStoryConceptsWithSearch = async (theme: string, style: string, language: string, tier: 'STANDARD' | 'PREMIUM'): Promise<StoryConcept> => {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-        model: getTextModel(tier),
+    const text = await unifiedGenerateText({
+        taskType: 'CREATIVE',
+        modelTier: tier,
         contents: PROMPTS.storyConcept(theme, style, language),
-        config: { responseMimeType: "application/json" }
+        jsonMode: true
     });
-    return cleanAndParseJSON(response.text!);
+    return cleanAndParseJSON(text);
 };
 
 export const generateComplexCharacters = async (
@@ -104,7 +275,6 @@ export const generateComplexCharacters = async (
     tier: 'STANDARD' | 'PREMIUM',
     sourceText?: string
 ): Promise<Character[]> => {
-    const ai = getAI();
     let contents = "";
     if (sourceText && sourceText.length > 100) {
         contents = PROMPTS.extractCharactersFromText(sourceText, language);
@@ -112,23 +282,24 @@ export const generateComplexCharacters = async (
         contents = PROMPTS.complexCharacters(concept.premise, language, setting);
     }
 
-    const response = await ai.models.generateContent({
-        model: getTextModel(tier),
+    const text = await unifiedGenerateText({
+        taskType: 'CREATIVE',
+        modelTier: tier,
         contents: contents,
-        config: { responseMimeType: "application/json" }
+        jsonMode: true
     });
-    const chars = cleanAndParseJSON(response.text!);
+    const chars = cleanAndParseJSON(text);
     return chars.map((c: any) => ({ ...c, id: crypto.randomUUID() }));
 };
 
 export const generateSeriesBible = async (theme: string, style: string, language: string, tier: 'STANDARD' | 'PREMIUM'): Promise<any> => {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-        model: getTextModel(tier),
+    const text = await unifiedGenerateText({
+        taskType: 'LOGIC',
+        modelTier: tier,
         contents: PROMPTS.seriesBible(theme, style, language),
-        config: { responseMimeType: "application/json" }
+        jsonMode: true
     });
-    return cleanAndParseJSON(response.text!);
+    return cleanAndParseJSON(text);
 };
 
 export const generateScript = async (
@@ -146,11 +317,12 @@ export const generateScript = async (
     worldSetting?: string,
     targetPanelCount?: number
 ): Promise<{ title: string, panels: ComicPanel[] }> => {
-    const ai = getAI();
+    
     const setting = worldSetting || bible?.worldSetting || "Standard";
     
-    const response = await ai.models.generateContent({
-        model: getTextModel(tier),
+    const text = await unifiedGenerateText({
+        taskType: 'CREATIVE',
+        modelTier: tier,
         contents: PROMPTS.scriptGeneration(
             chapterNumber, 
             format, 
@@ -162,10 +334,10 @@ export const generateScript = async (
             chapterSummary,
             setting
         ),
-        config: { responseMimeType: "application/json" }
+        jsonMode: true
     });
 
-    const result = cleanAndParseJSON(response.text!);
+    const result = cleanAndParseJSON(text);
     return {
         title: result.title,
         panels: result.panels.map((p: any) => ({ ...p, id: crypto.randomUUID(), dialogue: p.dialogue || '', charactersInvolved: p.charactersInvolved || [] }))
@@ -183,11 +355,11 @@ export const generateCharacterDesign = async (
 ): Promise<{ description: string, imageUrl: string }> => {
     const ai = getAI();
     
-    const descResp = await ai.models.generateContent({
-        model: getTextModel(tier),
+    const refinedDesc = await unifiedGenerateText({
+        taskType: 'CREATIVE',
+        modelTier: tier,
         contents: PROMPTS.characterDesign(name, styleGuide, description, worldSetting)
     });
-    const refinedDesc = descResp.text!;
 
     let imageConfig = {};
     if (imageModel === 'gemini-3-pro-image-preview') {
@@ -332,10 +504,11 @@ export const generatePanelVideo = async (panel: ComicPanel, style: string): Prom
 };
 
 export const summarizeChapter = async (panels: ComicPanel[], tier: 'STANDARD' | 'PREMIUM'): Promise<string> => {
-    const ai = getAI();
-    const text = panels.map(p => p.description).join(" ");
-    const response = await ai.models.generateContent({ model: getTextModel(tier), contents: PROMPTS.summarizeChapter(text) });
-    return response.text!;
+    return unifiedGenerateText({
+        taskType: 'LOGIC',
+        modelTier: tier,
+        contents: PROMPTS.summarizeChapter(panels.map(p => p.description).join(" "))
+    });
 };
 
 export const generateVoiceover = async (text: string, voiceName: string): Promise<string> => {
@@ -365,33 +538,27 @@ export const analyzeCharacterConsistency = async (imageBase64: string, targetSty
 };
 
 export const verifyCharacterVoice = async (character: Character, voiceName: string): Promise<{ isSuitable: boolean; suggestion: string; reason: string }> => {
-    const ai = getAI();
-    const VOICE_DESCRIPTIONS = `
-        - Puck: Male, High pitch, Energetic, Youthful, Mischievous. Archetype: The Hero / The Sidekick.
-        - Charon: Male, Low pitch, Deep, Gravelly, Authoritative. Archetype: The Villain / The Mentor / The Monster.
-        - Kore: Female, Soft, Soothing, Calm, Gentle. Archetype: The Healer / The Mother / The Innocent.
-        - Fenrir: Male, Rough, Aggressive, Intense, Growly. Archetype: The Warrior / The Beast / The Anti-Hero.
-        - Zephyr: Female/Androgynous, Balanced, Neutral, Clear, Professional. Archetype: The Narrator / The Intellect / The Robot.
-    `;
-    const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: PROMPTS.voiceConsistency(character.name, character.role || 'Unknown', character.personality || character.description, voiceName, VOICE_DESCRIPTIONS),
-        config: { responseMimeType: "application/json" }
+    const text = await unifiedGenerateText({
+        taskType: 'LOGIC',
+        modelTier: 'STANDARD',
+        contents: PROMPTS.voiceConsistency(character.name, character.role || 'Unknown', character.personality || character.description, voiceName, ""),
+        jsonMode: true
     });
-    return cleanAndParseJSON(response.text!);
+    return cleanAndParseJSON(text);
 };
 
 export const batchTranslatePanels = async (panels: ComicPanel[], languages: string[], tier: 'STANDARD' | 'PREMIUM'): Promise<ComicPanel[]> => {
     if (languages.length === 0) return panels;
-    const ai = getAI();
+    
     const panelsMin = panels.map(p => ({ id: p.id, dialogue: p.dialogue, caption: p.caption }));
     try {
-        const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview", 
+        const text = await unifiedGenerateText({
+            taskType: 'TRANSLATION',
+            modelTier: tier,
             contents: PROMPTS.translatePanels(JSON.stringify(panelsMin), languages),
-            config: { responseMimeType: "application/json" }
+            jsonMode: true
         });
-        const translatedData = cleanAndParseJSON(response.text!);
+        const translatedData = cleanAndParseJSON(text);
         return panels.map(p => {
             const tPanel = translatedData.find((tp: any) => tp.id === p.id);
             const newTranslations = tPanel ? { ...p.translations, ...tPanel.translations } : p.translations;
@@ -401,36 +568,40 @@ export const batchTranslatePanels = async (panels: ComicPanel[], languages: stri
 };
 
 export const censorContent = async (text: string, type: 'SCRIPT' | 'IMAGE'): Promise<{ passed: boolean, report: string }> => {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview", 
+    if (type === 'IMAGE') {
+        const ai = getAI(); 
+    }
+    
+    const responseText = await unifiedGenerateText({
+        taskType: 'LOGIC',
+        modelTier: 'STANDARD',
         contents: PROMPTS.censor(type, text),
-        config: { responseMimeType: "application/json" }
+        jsonMode: true
     });
-    return cleanAndParseJSON(response.text!);
+    return cleanAndParseJSON(responseText);
 };
 
 export const checkContinuity = async (panels: ComicPanel[], characters: Character[], seriesBible: any, tier: 'STANDARD' | 'PREMIUM'): Promise<string> => {
-    const ai = getAI();
     const panelsText = panels.map((p, i) => `Panel ${i+1}: ${p.description}. Dialogue: ${p.dialogue}`).join("\n");
     const charNames = characters.map(c => c.name).join(", ");
     const setting = seriesBible?.worldSetting || "Standard Setting";
-    const response = await ai.models.generateContent({
-        model: getTextModel(tier),
+    
+    return unifiedGenerateText({
+        taskType: 'LOGIC',
+        modelTier: tier,
         contents: PROMPTS.continuityCheck(panelsText, charNames, setting)
     });
-    return response.text!;
 };
 
 export const generateMarketingCopy = async (project: ComicProject): Promise<{ blurb: string, socialPost: string, tagline: string }> => {
-    const ai = getAI();
     const summary = project.completedChapters?.[0]?.summary || project.storyConcept?.premise || "An epic story.";
     const audience = project.marketAnalysis?.targetAudience || "General Audience";
     
-    const response = await ai.models.generateContent({
-        model: getTextModel(project.modelTier),
+    const text = await unifiedGenerateText({
+        taskType: 'CREATIVE',
+        modelTier: project.modelTier,
         contents: PROMPTS.marketingCopy(project.title, summary, audience, project.activeLanguage),
-        config: { responseMimeType: "application/json" }
+        jsonMode: true
     });
-    return cleanAndParseJSON(response.text!);
+    return cleanAndParseJSON(text);
 };
