@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Users, BarChart3, ShieldAlert, Settings, LogOut, XCircle, Search, Wallet, Loader2 } from 'lucide-react';
 import { UserProfile } from '../types';
-import { Logo } from '../components/Logo';
+import { Logo } from './components/Logo';
 
 const AdminApp: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'CONTENT' | 'FINANCE'>('DASHBOARD');
