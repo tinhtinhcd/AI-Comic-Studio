@@ -1,6 +1,5 @@
-
 /// <reference lib="dom" />
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ComicProject, AgentRole, SystemLog } from '../types';
 import { INITIAL_PROJECT_STATE } from '../constants';
 import * as StorageService from '../services/storageService';
