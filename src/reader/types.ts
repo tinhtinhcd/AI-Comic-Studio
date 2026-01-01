@@ -1,5 +1,15 @@
 
 // Reader-specific types
+
+export interface Comment {
+    id: string;
+    user: string;
+    avatar: string;
+    text: string;
+    timestamp: number;
+    likes: number;
+}
+
 export interface ComicPanel {
   id: string;
   description: string;
@@ -8,8 +18,25 @@ export interface ComicPanel {
   imageUrl?: string;
 }
 
+export interface Chapter {
+    chapterNumber: number;
+    title: string;
+    thumbnail?: string; // Derived from first panel
+    panels: ComicPanel[];
+    comments?: Comment[];
+    likes?: number;
+    views?: number;
+    publishedAt?: number;
+}
+
+export interface Author {
+    name: string;
+    avatar: string;
+}
+
 export interface StoryConcept {
     premise: string;
+    genreTrends?: string;
 }
 
 export interface ComicProject {
@@ -18,9 +45,18 @@ export interface ComicProject {
   title: string;
   theme: string;
   style: string;
-  currentChapter?: number;
   coverImage?: string;
-  panels: ComicPanel[];
+  
+  // Enriched Data
+  author?: Author;
+  rating?: number;
+  viewCount?: string;
+  subscriberCount?: string;
+  tags?: string[];
+  status?: 'ONGOING' | 'COMPLETED' | 'HIATUS';
+  
+  // Structure
+  currentChapter?: number; // Pointer to last read
+  panels: ComicPanel[]; // Legacy support for single-chunk projects
   storyConcept?: StoryConcept;
-  // Minimal set needed for reading
 }

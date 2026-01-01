@@ -87,7 +87,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, onSelectRole, projectTit
         {deptOrder.map(deptNameKey => (
             <div key={deptNameKey}>
                 <div className="hidden lg:flex items-center gap-2 px-4 mb-2">
-                    <p className="text-[11px] font-bold uppercase tracking-wider whitespace-nowrap text-gray-400 dark:text-gray-500">{t(deptNameKey)}</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider whitespace-nowrap text-gray-400 dark:text-gray-400">{t(deptNameKey)}</p>
                     <div className="h-px flex-1 bg-gray-50 dark:bg-gray-700"></div>
                 </div>
                 

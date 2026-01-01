@@ -1,112 +1,315 @@
 
-import React, { useState, useEffect } from 'react';
-import { ComicProject } from './types';
-import * as StorageService from './services/storageService';
-import { BookOpen, ChevronLeft, Heart, Share2, Search, X, Star, Layers } from 'lucide-react';
-import { Logo } from './components/Logo';
+import React, { useState, useEffect, useRef } from 'react';
+import { ComicProject, Chapter, Comment } from './types';
+import * as StorageService from '../services/storageService';
+import { 
+    BookOpen, ChevronLeft, Heart, Share2, Search, X, Star, Layers, 
+    Home, Compass, Library, User, Bell, Settings, MessageCircle, 
+    MoreHorizontal, ArrowRight, PlayCircle, Clock, ThumbsUp 
+} from 'lucide-react';
+import { Logo } from '../components/Logo';
+
+// --- MOCK DATA GENERATORS (To fill gaps in backend data) ---
+const MOCK_COMMENTS: Comment[] = [
+    { id: '1', user: 'Kai_R', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Kai', text: 'The art style in this panel is insane! 🤯', timestamp: Date.now() - 100000, likes: 24 },
+    { id: '2', user: 'MangaLover99', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Manga', text: 'Finally a new update. Can\'t wait for the next arc.', timestamp: Date.now() - 500000, likes: 12 },
+    { id: '3', user: 'EditorSan', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Editor', text: 'Great pacing.', timestamp: Date.now() - 900000, likes: 5 },
+];
+
+const ENRICH_PROJECT = (p: any): ComicProject => ({
+    ...p,
+    author: { name: 'AI Studio', avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${p.title}` },
+    rating: (4 + Math.random()).toFixed(1),
+    viewCount: Math.floor(Math.random() * 500) + 'K',
+    subscriberCount: Math.floor(Math.random() * 20) + 'K',
+    tags: ['Fantasy', 'Action', 'Sci-Fi'].sort(() => 0.5 - Math.random()).slice(0, 2),
+    status: Math.random() > 0.5 ? 'ONGOING' : 'COMPLETED'
+});
+
+// --- SUB-COMPONENTS ---
+
+const BottomNav: React.FC<{ active: string, onChange: (v: string) => void }> = ({ active, onChange }) => (
+    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-safe z-40">
+        <div className="flex justify-around items-center h-16">
+            {['Home', 'Explore', 'Library', 'Profile'].map((item) => {
+                const isActive = active === item;
+                const Icon = item === 'Home' ? Home : item === 'Explore' ? Compass : item === 'Library' ? Library : User;
+                return (
+                    <button 
+                        key={item} 
+                        onClick={() => onChange(item)}
+                        className={`flex flex-col items-center gap-1 w-full h-full justify-center ${isActive ? 'text-indigo-600 dark:text-white' : 'text-gray-400'}`}
+                    >
+                        <Icon className={`w-6 h-6 ${isActive ? 'fill-current' : ''}`} />
+                        <span className="text-[10px] font-bold">{item}</span>
+                    </button>
+                )
+            })}
+        </div>
+    </div>
+);
+
+const CommentDrawer: React.FC<{ isOpen: boolean, onClose: () => void }> = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center pointer-events-none">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm pointer-events-auto transition-opacity" onClick={onClose}></div>
+            <div className="bg-white dark:bg-gray-900 w-full sm:max-w-md h-[70vh] sm:h-[600px] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col pointer-events-auto transform transition-transform duration-300 slide-in-from-bottom">
+                <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                    <h3 className="font-bold text-gray-900 dark:text-white">Comments (342)</h3>
+                    <button onClick={onClose}><X className="w-5 h-5 text-gray-500"/></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {MOCK_COMMENTS.map(c => (
+                        <div key={c.id} className="flex gap-3">
+                            <img src={c.avatar} className="w-8 h-8 rounded-full bg-gray-200"/>
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-gray-500">{c.user}</span>
+                                    <span className="text-[10px] text-gray-400">2h ago</span>
+                                </div>
+                                <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{c.text}</p>
+                                <div className="flex items-center gap-4 mt-2">
+                                    <button className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-indigo-500"><ThumbsUp className="w-3 h-3"/> {c.likes}</button>
+                                    <button className="text-[10px] text-gray-400 font-bold">Reply</button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
+                    <div className="relative">
+                        <input placeholder="Add a comment..." className="w-full bg-white dark:bg-gray-800 rounded-full py-3 pl-4 pr-12 text-sm border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 outline-none"/>
+                        <button className="absolute right-2 top-2 p-1 bg-indigo-600 rounded-full text-white"><ArrowRight className="w-4 h-4"/></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- MAIN APP ---
 
 const ReaderApp: React.FC = () => {
+    const [view, setView] = useState<'HOME' | 'DETAILS' | 'READ'>('HOME');
+    const [navTab, setNavTab] = useState('Home');
     const [library, setLibrary] = useState<ComicProject[]>([]);
-    const [readingProject, setReadingProject] = useState<ComicProject | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedProject, setSelectedProject] = useState<ComicProject | null>(null);
+    const [uiVisible, setUiVisible] = useState(true);
+    const [showComments, setShowComments] = useState(false);
+    const [scrollProgress, setScrollProgress] = useState(0);
 
-    const handleExit = () => {
-        // Since Reader is now Root, Creators go to /studio/
-        window.location.href = '/studio/';
-    };
-
+    // Load Data
     useEffect(() => {
         const loadContent = async () => {
             const projects = await StorageService.getActiveProjects();
-            // Filter only projects that have at least one panel with an image
-            const publishable = projects.filter(p => p.panels && p.panels.length > 0 && p.panels.some(panel => panel.imageUrl));
-            setLibrary(publishable);
+            // Filter valid projects and enrich them with mock metadata for the demo
+            const clean = projects
+                .filter(p => p.panels?.length > 0 && p.panels.some(panel => panel.imageUrl))
+                .map(ENRICH_PROJECT);
+            setLibrary(clean);
         };
         loadContent();
     }, []);
 
-    const filteredLibrary = library.filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase()));
+    const handleOpenProject = (project: ComicProject) => {
+        setSelectedProject(project);
+        setView('DETAILS');
+    };
 
-    // --- SUB-COMPONENT: READER VIEWER ---
-    if (readingProject) {
+    const handleReadChapter = () => {
+        setView('READ');
+    };
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+        const progress = (scrollTop / (scrollHeight - clientHeight)) * 100;
+        setScrollProgress(progress);
+    };
+
+    const toggleUi = () => setUiVisible(!uiVisible);
+
+    const handleBack = () => {
+        if (view === 'READ') setView('DETAILS');
+        else if (view === 'DETAILS') setView('HOME');
+    };
+
+    // --- VIEW: HOME ---
+    if (view === 'HOME') {
+        const featured = library[0]; // Simple logic: First item is featured
+        const trending = library.slice(1, 4);
+        const newArrivals = library;
+
         return (
-            <div className="fixed inset-0 bg-black z-50 flex flex-col h-screen overflow-hidden">
-                <div className="bg-gray-900/90 backdrop-blur-md text-white p-4 flex justify-between items-center border-b border-gray-800 absolute top-0 left-0 right-0 z-10">
-                    <button onClick={() => setReadingProject(null)} className="p-2 hover:bg-gray-800 rounded-full transition-colors flex items-center gap-2">
-                        <ChevronLeft className="w-6 h-6"/>
-                        <span className="sr-only">Back</span>
-                    </button>
-                    <div className="flex flex-col items-center">
-                        <div className="flex items-center gap-2">
-                            <Logo className="w-4 h-4" />
-                            <h2 className="font-bold text-sm md:text-base line-clamp-1">{readingProject.title}</h2>
-                        </div>
-                        <p className="text-[10px] text-gray-400 uppercase tracking-widest">Chapter {readingProject.currentChapter || 1}</p>
+            <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white pb-20">
+                {/* Header */}
+                <header className="sticky top-0 z-30 bg-white/80 dark:bg-black/80 backdrop-blur-md px-4 py-3 flex justify-between items-center border-b border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2">
+                        <Logo className="w-8 h-8"/>
+                        <span className="font-black text-lg tracking-tight hidden sm:block">ACS READER</span>
                     </div>
-                    <div className="flex gap-2">
-                        <button className="p-2 hover:bg-gray-800 rounded-full text-pink-500"><Heart className="w-5 h-5"/></button>
-                        <button className="p-2 hover:bg-gray-800 rounded-full text-gray-400"><Share2 className="w-5 h-5"/></button>
+                    <div className="flex items-center gap-4">
+                        <button className="p-2 text-gray-500 hover:text-indigo-600"><Search className="w-5 h-5"/></button>
+                        <button className="p-2 text-gray-500 hover:text-indigo-600 relative">
+                            <Bell className="w-5 h-5"/>
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-black"></span>
+                        </button>
                     </div>
-                </div>
+                </header>
 
-                <div className="flex-1 overflow-y-auto bg-black custom-scrollbar pt-20 pb-20">
-                    <div className="max-w-2xl mx-auto min-h-screen bg-white dark:bg-gray-900 shadow-2xl">
-                        {/* Cover Splash */}
-                        <div className="relative aspect-[3/4] w-full bg-gray-800 mb-2">
-                            {readingProject.coverImage ? (
-                                <img src={readingProject.coverImage} className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-indigo-900 to-black">
-                                    <h1 className="text-4xl font-black text-white uppercase text-center p-4">{readingProject.title}</h1>
+                {/* Content */}
+                <div className="space-y-8 pb-10">
+                    
+                    {/* Hero Section */}
+                    {featured ? (
+                        <div onClick={() => handleOpenProject(featured)} className="relative w-full aspect-[4/5] md:aspect-[21/9] cursor-pointer group">
+                            <div className="absolute inset-0">
+                                <img src={featured.coverImage || featured.panels[0].imageUrl} className="w-full h-full object-cover"/>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
+                                <span className="text-[10px] font-bold bg-indigo-600 text-white px-2 py-1 rounded uppercase tracking-wider mb-3 inline-block">Featured</span>
+                                <h1 className="text-4xl md:text-6xl font-black text-white mb-2 leading-none">{featured.title}</h1>
+                                <p className="text-gray-300 text-sm md:text-lg line-clamp-2 max-w-2xl mb-4">{featured.storyConcept?.premise || "An epic original series."}</p>
+                                <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+                                    <span>{featured.tags?.join(' • ')}</span>
                                 </div>
-                            )}
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8 pt-20">
-                                <h1 className="text-3xl font-bold text-white mb-2">{readingProject.title}</h1>
-                                <p className="text-gray-300 text-sm line-clamp-2">{readingProject.storyConcept?.premise || readingProject.theme}</p>
                             </div>
                         </div>
+                    ) : (
+                        <div className="p-12 text-center text-gray-500">
+                            <p>No content available. Create comics in the Studio first.</p>
+                            <a href="/studio/" className="text-indigo-500 font-bold mt-2 inline-block">Go to Studio</a>
+                        </div>
+                    )}
 
-                        {/* Panels */}
-                        <div className="flex flex-col">
-                            {readingProject.panels.map((panel, idx) => (
-                                <div key={panel.id} className="w-full relative group">
-                                    {panel.imageUrl ? (
-                                        <img src={panel.imageUrl} className="w-full h-auto block" loading="lazy" />
-                                    ) : (
-                                        <div className="aspect-video bg-gray-800 flex items-center justify-center text-gray-600 text-xs">
-                                            Rendering Panel {idx + 1}...
+                    {/* Trending Rails */}
+                    {trending.length > 0 && (
+                        <div className="px-4">
+                            <div className="flex justify-between items-end mb-4">
+                                <h2 className="text-xl font-bold">Trending Now</h2>
+                                <span className="text-xs font-bold text-indigo-500 cursor-pointer">View All</span>
+                            </div>
+                            <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
+                                {trending.map(p => (
+                                    <div key={p.id} onClick={() => handleOpenProject(p)} className="snap-start min-w-[140px] md:min-w-[180px] cursor-pointer group">
+                                        <div className="aspect-[3/4] rounded-lg overflow-hidden mb-2 relative">
+                                            <img src={p.coverImage || p.panels[0].imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                                            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] text-white font-bold">
+                                                #{Math.floor(Math.random() * 10) + 1}
+                                            </div>
                                         </div>
-                                    )}
-                                    {/* Overlay Text */}
-                                    {(panel.dialogue || panel.caption) && (
-                                        <div className="p-4 bg-white/5 dark:bg-black/50 backdrop-blur-sm border-b border-gray-800">
-                                            {panel.caption && (
-                                                <div className="mb-2 bg-yellow-100/90 text-black px-3 py-1 text-xs font-bold uppercase inline-block rounded shadow-sm">
-                                                    {panel.caption}
-                                                </div>
-                                            )}
-                                            {panel.dialogue && (
-                                                <p className="text-gray-900 dark:text-white font-medium text-sm md:text-base leading-relaxed font-comic bg-white/90 dark:bg-gray-800/90 p-3 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 max-w-[90%] mx-auto text-center">
-                                                    {panel.dialogue}
-                                                </p>
-                                            )}
+                                        <h3 className="font-bold text-sm truncate">{p.title}</h3>
+                                        <p className="text-xs text-gray-500">{p.author?.name}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* New Arrivals Grid */}
+                    <div className="px-4">
+                        <h2 className="text-xl font-bold mb-4">New Arrivals</h2>
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {newArrivals.map(p => (
+                                <div key={p.id} onClick={() => handleOpenProject(p)} className="cursor-pointer group">
+                                    <div className="aspect-[3/4] rounded-lg overflow-hidden mb-2 relative">
+                                        <img src={p.coverImage || p.panels[0].imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                                        <div className="absolute bottom-0 right-0 bg-indigo-600 text-white text-[10px] px-2 py-1 rounded-tl-lg font-bold">
+                                            UP
                                         </div>
-                                    )}
+                                    </div>
+                                    <h3 className="font-bold text-sm truncate">{p.title}</h3>
+                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                        <Heart className="w-3 h-3 fill-current text-gray-400"/> {p.rating}
+                                    </div>
                                 </div>
                             ))}
                         </div>
+                    </div>
+                </div>
 
-                        {/* Footer */}
-                        <div className="p-12 text-center bg-gray-50 dark:bg-gray-950">
-                            <p className="text-gray-400 text-xs uppercase tracking-widest mb-4">End of Chapter</p>
-                            <div className="flex justify-center gap-4">
-                                <button className="px-6 py-3 bg-gray-200 dark:bg-gray-800 rounded-full font-bold text-xs hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
-                                    <Heart className="w-4 h-4 inline mr-2 text-pink-500"/> Like
-                                </button>
-                                <button className="px-8 py-3 bg-indigo-600 text-white rounded-full font-bold text-xs hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-105">
-                                    Next Chapter
-                                </button>
+                <BottomNav active={navTab} onChange={setNavTab} />
+            </div>
+        );
+    }
+
+    // --- VIEW: SERIES DETAIL ---
+    if (view === 'DETAILS' && selectedProject) {
+        return (
+            <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
+                {/* Navbar Overlay */}
+                <div className="fixed top-0 left-0 right-0 p-4 z-40 flex justify-between items-center text-white mix-blend-difference">
+                    <button onClick={handleBack} className="p-2 bg-white/10 backdrop-blur-md rounded-full"><ChevronLeft className="w-6 h-6"/></button>
+                    <div className="flex gap-3">
+                        <button className="p-2 bg-white/10 backdrop-blur-md rounded-full"><Share2 className="w-5 h-5"/></button>
+                        <button className="p-2 bg-white/10 backdrop-blur-md rounded-full"><MoreHorizontal className="w-5 h-5"/></button>
+                    </div>
+                </div>
+
+                {/* Hero Header */}
+                <div className="relative w-full aspect-[4/3] md:aspect-[21/9]">
+                    <img src={selectedProject.coverImage || selectedProject.panels[0].imageUrl} className="w-full h-full object-cover"/>
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-white dark:to-black"></div>
+                    <div className="absolute bottom-0 left-0 right-0 p-6 pt-12">
+                        <div className="flex items-end gap-4 mb-4">
+                            <div className="w-24 h-32 md:w-32 md:h-48 rounded-lg overflow-hidden shadow-2xl border-2 border-white dark:border-gray-800 shrink-0 hidden md:block">
+                                <img src={selectedProject.coverImage || selectedProject.panels[0].imageUrl} className="w-full h-full object-cover"/>
                             </div>
+                            <div className="flex-1">
+                                <h1 className="text-3xl md:text-5xl font-black mb-2">{selectedProject.title}</h1>
+                                <div className="flex flex-wrap items-center gap-4 text-sm font-medium opacity-90">
+                                    <span className="text-indigo-600 dark:text-indigo-400">{selectedProject.author?.name}</span>
+                                    <span>•</span>
+                                    <div className="flex items-center gap-1"><Star className="w-4 h-4 fill-yellow-400 text-yellow-400"/> {selectedProject.rating}</div>
+                                    <span>•</span>
+                                    <div>{selectedProject.viewCount} Views</div>
+                                    <span>•</span>
+                                    <span className="text-emerald-500">{selectedProject.status}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Actions & Synopsis */}
+                <div className="px-6 -mt-4 relative z-10">
+                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-6">
+                        {selectedProject.storyConcept?.premise || "Experience a groundbreaking story generated by Artificial Intelligence. Every panel, dialogue, and character is crafted by the AI Comic Studio engine."}
+                    </p>
+
+                    <div className="flex gap-4 mb-8">
+                        <button onClick={handleReadChapter} className="flex-1 bg-indigo-600 text-white font-bold py-3.5 rounded-full shadow-lg shadow-indigo-600/30 hover:scale-105 transition-transform flex items-center justify-center gap-2">
+                            <BookOpen className="w-5 h-5"/> Read Ep. 1
+                        </button>
+                        <button className="p-3.5 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                            <Heart className="w-6 h-6"/>
+                        </button>
+                    </div>
+
+                    {/* Chapter List */}
+                    <div>
+                        <div className="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-800 pb-2">
+                            <h3 className="font-bold text-lg">Episodes</h3>
+                            <button className="text-xs font-bold text-gray-500 uppercase">Sort: Newest</button>
+                        </div>
+                        <div className="space-y-4 pb-20">
+                            {[1, 2, 3].map(ep => (
+                                <div key={ep} onClick={handleReadChapter} className="flex gap-4 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 cursor-pointer transition-colors group">
+                                    <div className="w-24 h-20 rounded-lg bg-gray-200 dark:bg-gray-800 overflow-hidden relative shrink-0">
+                                        {selectedProject.panels[0]?.imageUrl && <img src={selectedProject.panels[0].imageUrl} className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform"/>}
+                                        {ep === 1 && <div className="absolute inset-0 flex items-center justify-center bg-black/20"><span className="text-[10px] font-bold text-white uppercase tracking-widest">Read</span></div>}
+                                    </div>
+                                    <div className="flex-1 py-1">
+                                        <h4 className="font-bold text-sm mb-1 group-hover:text-indigo-500">Episode {ep}</h4>
+                                        <p className="text-xs text-gray-500 mb-2">24 May 2024</p>
+                                        <div className="flex items-center gap-3 text-xs text-gray-400">
+                                            <span className="flex items-center gap-1"><Heart className="w-3 h-3"/> 1.2K</span>
+                                            <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3"/> 45</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -114,93 +317,101 @@ const ReaderApp: React.FC = () => {
         );
     }
 
-    return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white font-sans selection:bg-pink-500 selection:text-white">
-            <nav className="fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Logo className="w-8 h-8" />
-                    <span className="font-black text-lg tracking-tighter">ACS READER</span>
-                </div>
-                
-                <div className="flex-1 max-w-md mx-8 hidden md:block relative">
-                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400"/>
-                    <input 
-                        className="w-full bg-gray-100 dark:bg-gray-900 rounded-full py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                        placeholder="Search comics, authors, genres..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <button onClick={handleExit} className="text-xs font-bold text-gray-500 hover:text-indigo-600 transition-colors">
-                        Are you a Creator?
+    // --- VIEW: IMMERSIVE READER ---
+    if (view === 'READ' && selectedProject) {
+        return (
+            <div className="fixed inset-0 bg-black z-50 flex flex-col h-screen">
+                {/* Reader Header */}
+                <div className={`fixed top-0 left-0 right-0 bg-gray-900/90 backdrop-blur-md text-white px-4 py-3 flex justify-between items-center border-b border-gray-800 z-50 transition-transform duration-300 ${uiVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+                    <button onClick={handleBack} className="p-2 hover:bg-gray-800 rounded-full transition-colors flex items-center gap-2">
+                        <ChevronLeft className="w-6 h-6"/>
+                        <span className="font-bold text-sm truncate max-w-[150px]">{selectedProject.title}</span>
                     </button>
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-indigo-500 p-[2px]">
-                        <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center">
-                            <span className="font-bold text-xs">U</span>
-                        </div>
+                    <div className="flex gap-2">
+                        <button className="p-2 hover:bg-gray-800 rounded-full text-gray-400"><Settings className="w-5 h-5"/></button>
                     </div>
                 </div>
-            </nav>
 
-            <div className="pt-24 pb-12 px-6 max-w-7xl mx-auto">
-                <div className="relative rounded-3xl overflow-hidden bg-gray-900 shadow-2xl h-[400px] md:h-[500px] flex items-end group cursor-pointer">
-                    <div className="absolute inset-0">
-                        <img 
-                            src="https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=2000" 
-                            className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" 
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
-                    </div>
-                    <div className="relative z-10 p-8 md:p-12 max-w-2xl">
-                        <span className="bg-pink-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mb-4 inline-block">Featured Original</span>
-                        <h1 className="text-4xl md:text-6xl font-black text-white mb-4 leading-tight">THE AI CHRONICLES</h1>
-                        <p className="text-gray-300 text-sm md:text-base mb-8 line-clamp-3">In a world where art creates itself, one creator must fight to find their own voice. A stunning visual journey generated entirely by AI Comic Studio.</p>
-                        <div className="flex gap-4">
-                            <button className="bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition-colors flex items-center gap-2">
-                                <BookOpen className="w-5 h-5"/> Read Now
+                {/* Progress Bar */}
+                {uiVisible && (
+                    <div className="fixed top-[60px] left-0 h-1 bg-indigo-600 z-50 transition-all" style={{width: `${scrollProgress}%`}}></div>
+                )}
+
+                {/* Content Area */}
+                <div 
+                    className="flex-1 overflow-y-auto bg-[#121212] custom-scrollbar" 
+                    onScroll={handleScroll}
+                    onClick={toggleUi}
+                >
+                    <div className="max-w-3xl mx-auto min-h-screen bg-white dark:bg-gray-900 shadow-2xl pb-32">
+                        {/* Title Splash */}
+                        <div className="py-20 px-8 text-center bg-gray-50 dark:bg-gray-950 mb-4">
+                            <h2 className="text-3xl font-black uppercase mb-2 text-gray-900 dark:text-white">Episode 1</h2>
+                            <p className="text-gray-500 text-sm tracking-widest">{selectedProject.title}</p>
+                        </div>
+
+                        {/* Panels */}
+                        <div className="flex flex-col">
+                            {selectedProject.panels.map((panel, idx) => (
+                                <div key={panel.id} className="w-full relative">
+                                    {panel.imageUrl ? (
+                                        <img src={panel.imageUrl} className="w-full h-auto block" loading="lazy" />
+                                    ) : (
+                                        <div className="aspect-video bg-gray-800 flex items-center justify-center text-gray-600 text-xs">
+                                            Rendering Panel {idx + 1}...
+                                        </div>
+                                    )}
+                                    {/* Webtoon-style spacing */}
+                                    <div className="h-2 bg-white dark:bg-gray-900"></div> 
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="p-12 text-center bg-gray-50 dark:bg-gray-950">
+                            <p className="text-gray-400 text-xs uppercase tracking-widest mb-6">To Be Continued</p>
+                            <div className="flex justify-center gap-6 mb-8">
+                                <div className="text-center">
+                                    <button className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-pink-500 hover:scale-110 transition-transform shadow-lg"><Heart className="w-6 h-6 fill-current"/></button>
+                                    <span className="text-[10px] text-gray-500 font-bold mt-2 block">Like</span>
+                                </div>
+                                <div className="text-center">
+                                    <button className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-white hover:scale-110 transition-transform shadow-lg"><Share2 className="w-6 h-6"/></button>
+                                    <span className="text-[10px] text-gray-500 font-bold mt-2 block">Share</span>
+                                </div>
+                            </div>
+                            <button className="px-8 py-4 bg-indigo-600 text-white rounded-full font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition-all w-full max-w-xs mx-auto flex items-center justify-center gap-2">
+                                Next Episode <ChevronLeft className="w-4 h-4 rotate-180"/>
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="px-6 max-w-7xl mx-auto pb-20 space-y-12">
-                <div>
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                        <Star className="w-5 h-5 text-yellow-500 fill-current"/> New Arrivals
-                    </h3>
-                    
-                    {filteredLibrary.length === 0 ? (
-                        <div className="text-center py-20 bg-gray-100 dark:bg-gray-900 rounded-2xl border border-dashed border-gray-300 dark:border-gray-800">
-                            <Layers className="w-12 h-12 text-gray-400 mx-auto mb-4"/>
-                            <p className="text-gray-500 font-medium">No published comics found.</p>
-                            <p className="text-xs text-gray-400 mt-2">Go to the Studio and create some panels!</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                            {filteredLibrary.map((project) => (
-                                <div key={project.id} onClick={() => setReadingProject(project)} className="group cursor-pointer">
-                                    <div className="aspect-[3/4] rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800 mb-3 relative shadow-md transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl ring-2 ring-transparent group-hover:ring-indigo-500">
-                                        {project.coverImage || (project.panels[0] && project.panels[0].imageUrl) ? (
-                                            <img src={project.coverImage || project.panels[0].imageUrl} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-gray-800 to-black">
-                                                <span className="font-black text-gray-700 text-4xl uppercase">{project.title.substring(0,2)}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <h4 className="font-bold text-sm truncate group-hover:text-indigo-500 transition-colors">{project.title}</h4>
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">{project.style}</p>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                {/* Footer UI (Comments & Nav) */}
+                <div className={`fixed bottom-0 left-0 right-0 bg-gray-900/90 backdrop-blur-md border-t border-gray-800 p-4 z-50 transition-transform duration-300 ${uiVisible ? 'translate-y-0' : 'translate-y-full'}`}>
+                    <div className="max-w-3xl mx-auto flex justify-between items-center text-white">
+                        <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors" disabled>
+                            <ChevronLeft className="w-5 h-5"/> Prev
+                        </button>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setShowComments(true); }}
+                            className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors text-sm font-bold"
+                        >
+                            <MessageCircle className="w-4 h-4"/> 342 Comments
+                        </button>
+                        <button className="flex items-center gap-2 text-white font-bold hover:text-indigo-400 transition-colors">
+                            Next <ChevronLeft className="w-5 h-5 rotate-180"/>
+                        </button>
+                    </div>
                 </div>
+
+                {/* Comment Drawer Overlay */}
+                <CommentDrawer isOpen={showComments} onClose={() => setShowComments(false)} />
             </div>
-        </div>
-    );
+        );
+    }
+
+    return null;
 };
 
 export default ReaderApp;
