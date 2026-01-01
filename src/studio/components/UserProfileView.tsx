@@ -21,20 +21,26 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
     // Default to existing or fallback to system default
     const [aiPrefs, setAiPrefs] = useState<UserAIPreferences>(user.aiPreferences || DEFAULT_USER_PREFERENCES);
     
-    const [deepSeekKeyInput, setDeepSeekKeyInput] = useState(localStorage.getItem('ai_comic_deepseek_key') || '');
-    const [openAIKeyInput, setOpenAIKeyInput] = useState(localStorage.getItem('ai_comic_openai_key') || '');
+    // Load from User Profile (DB) now, not localStorage
+    const [deepSeekKeyInput, setDeepSeekKeyInput] = useState(user.apiKeys?.deepseek || '');
+    const [openAIKeyInput, setOpenAIKeyInput] = useState(user.apiKeys?.openai || '');
+    const [geminiKeyInput, setGeminiKeyInput] = useState(user.apiKeys?.gemini || '');
 
     const handleSave = async () => {
         try {
             const updated = await AuthService.updateUserProfile(user.id, {
                 ...formData,
-                aiPreferences: aiPrefs
+                aiPreferences: aiPrefs,
+                apiKeys: {
+                    gemini: geminiKeyInput,
+                    deepseek: deepSeekKeyInput,
+                    openai: openAIKeyInput
+                }
             });
-            localStorage.setItem('ai_comic_deepseek_key', deepSeekKeyInput);
-            localStorage.setItem('ai_comic_openai_key', openAIKeyInput);
+            // No need to save to localStorage anymore, backend handles it.
             onUpdate(updated);
             setIsEditing(false);
-            (window as any).alert("Profile & AI Preferences Updated!");
+            (window as any).alert("Profile & AI Keys Saved to Database!");
         } catch (e) {
             console.error(e);
         }
@@ -163,47 +169,66 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                         <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
                             <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                                 <BrainCircuit className="w-5 h-5 text-indigo-600"/>
-                                AI Engine Matrix (Late 2025)
+                                AI Engine Matrix (Iron Triangle)
                             </h3>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Allocate models based on Cost vs. Performance for 2025.
+                                Keys are now synced to your account securely.
                             </p>
                         </div>
 
                         <div className="p-6">
                             {/* Key Inputs */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div className="space-y-4 mb-6">
                                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
-                                    <label className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase block mb-1">DeepSeek API Key (Efficiency)</label>
+                                    <label className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase block mb-1">Gemini API Key (Primary)</label>
                                     {isEditing ? (
                                         <input 
                                             type="password"
-                                            value={deepSeekKeyInput}
-                                            onChange={(e) => setDeepSeekKeyInput(e.target.value)}
-                                            placeholder="sk-..."
+                                            value={geminiKeyInput}
+                                            onChange={(e) => setGeminiKeyInput(e.target.value)}
+                                            placeholder="AIza..."
                                             className="w-full bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-700 rounded-lg px-3 py-2 text-sm"
                                         />
                                     ) : (
                                         <p className="text-sm font-mono text-gray-600 dark:text-gray-400">
-                                            {deepSeekKeyInput ? '••••••••••••••••' : 'Not Configured'}
+                                            {geminiKeyInput ? '••••••••••••••••' : 'System Default (Free Tier)'}
                                         </p>
                                     )}
                                 </div>
-                                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800">
-                                    <label className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase block mb-1">OpenAI API Key (GPT-5)</label>
-                                    {isEditing ? (
-                                        <input 
-                                            type="password"
-                                            value={openAIKeyInput}
-                                            onChange={(e) => setOpenAIKeyInput(e.target.value)}
-                                            placeholder="sk-..."
-                                            className="w-full bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-700 rounded-lg px-3 py-2 text-sm"
-                                        />
-                                    ) : (
-                                        <p className="text-sm font-mono text-gray-600 dark:text-gray-400">
-                                            {openAIKeyInput ? '••••••••••••••••' : 'Not Configured'}
-                                        </p>
-                                    )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                                        <label className="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase block mb-1">DeepSeek API Key</label>
+                                        {isEditing ? (
+                                            <input 
+                                                type="password"
+                                                value={deepSeekKeyInput}
+                                                onChange={(e) => setDeepSeekKeyInput(e.target.value)}
+                                                placeholder="sk-..."
+                                                className="w-full bg-white dark:bg-gray-900 border border-indigo-200 dark:border-indigo-700 rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        ) : (
+                                            <p className="text-sm font-mono text-gray-600 dark:text-gray-400">
+                                                {deepSeekKeyInput ? '••••••••••••••••' : 'Not Configured'}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800">
+                                        <label className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase block mb-1">OpenAI API Key</label>
+                                        {isEditing ? (
+                                            <input 
+                                                type="password"
+                                                value={openAIKeyInput}
+                                                onChange={(e) => setOpenAIKeyInput(e.target.value)}
+                                                placeholder="sk-..."
+                                                className="w-full bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-700 rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        ) : (
+                                            <p className="text-sm font-mono text-gray-600 dark:text-gray-400">
+                                                {openAIKeyInput ? '••••••••••••••••' : 'Not Configured'}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -213,7 +238,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                         <tr className="border-b border-gray-100 dark:border-gray-700">
                                             <th className="text-left py-3 px-4 font-bold text-gray-500 uppercase text-xs">Task Type</th>
                                             <th className="text-left py-3 px-4 font-bold text-gray-500 uppercase text-xs">Preferred Model</th>
-                                            <th className="text-left py-3 px-4 font-bold text-gray-500 uppercase text-xs">Strategic Rationale</th>
+                                            <th className="text-left py-3 px-4 font-bold text-gray-500 uppercase text-xs">Rationale</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -250,7 +275,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                                 )}
                                             </td>
                                             <td className="py-4 px-4 text-xs text-gray-500 italic">
-                                                GPT-5 offers best nuance/subtext for dialogue.
+                                                GPT-5 offers best nuance.
                                             </td>
                                         </tr>
 

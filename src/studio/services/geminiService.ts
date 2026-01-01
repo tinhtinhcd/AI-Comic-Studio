@@ -5,9 +5,16 @@ import { PROMPTS } from "./prompts";
 import { getCurrentUser } from "./authService";
 import { DEFAULT_USER_PREFERENCES } from "../constants";
 
-// --- API HELPERS ---
+// --- API HELPERS (SYNCED WITH USER PROFILE) ---
 
 export const getDynamicApiKey = (): string => {
+    // 1. Try User Profile (Cloud Sync)
+    const user = getCurrentUser();
+    if (user && user.apiKeys?.gemini) {
+        return user.apiKeys.gemini.trim();
+    }
+
+    // 2. Legacy LocalStorage fallback (Keystore V2)
     try {
         const rawStore = localStorage.getItem('ai_comic_keystore_v2');
         if (rawStore) {
@@ -17,19 +24,29 @@ export const getDynamicApiKey = (): string => {
                 return activeKey.key.trim();
             }
         }
-        const legacyKey = localStorage.getItem('ai_comic_user_api_key');
-        if (legacyKey && legacyKey.trim().length > 0) return legacyKey.trim();
     } catch (e) {
         console.error("Error reading API key store", e);
     }
+    
+    // 3. Environment Variable fallback
     return process.env.API_KEY || '';
 };
 
 const getDeepSeekKey = (): string => {
+    // 1. User Profile
+    const user = getCurrentUser();
+    if (user && user.apiKeys?.deepseek) return user.apiKeys.deepseek.trim();
+    
+    // 2. Legacy Local
     return localStorage.getItem('ai_comic_deepseek_key') || '';
 };
 
 const getOpenAIKey = (): string => {
+    // 1. User Profile
+    const user = getCurrentUser();
+    if (user && user.apiKeys?.openai) return user.apiKeys.openai.trim();
+
+    // 2. Legacy Local
     return localStorage.getItem('ai_comic_openai_key') || '';
 };
 
@@ -216,392 +233,99 @@ const unifiedGenerateText = async (options: GenTextOptions): Promise<string> => 
     return response.text!;
 };
 
-// ... (Rest of file: agent functions like analyzeUploadedManuscript, etc., remain unchanged but now utilize the updated unifiedGenerateText)
-// Re-exporting critical functions to maintain file integrity
-
+// ... (Rest of file remains unchanged - Functions use unifiedGenerateText)
+// Re-exporting for file validity
 export const analyzeUploadedManuscript = async (scriptContent: string, language: string, tier: 'STANDARD' | 'PREMIUM'): Promise<ResearchData> => {
-    const text = await unifiedGenerateText({
-        taskType: 'LOGIC',
-        modelTier: tier,
-        contents: PROMPTS.analyzeManuscript(scriptContent, language),
-        jsonMode: true
-    });
+    const text = await unifiedGenerateText({ taskType: 'LOGIC', modelTier: tier, contents: PROMPTS.analyzeManuscript(scriptContent, language), jsonMode: true });
     return cleanAndParseJSON(text);
 };
-
 export const sendResearchChatMessage = async (history: Message[], newMessage: string, context: any, tier: 'STANDARD' | 'PREMIUM'): Promise<string> => {
-    const responseText = await unifiedGenerateText({
-        taskType: 'LOGIC',
-        modelTier: tier,
-        contents: [...history.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })), { role: 'user', parts: [{ text: newMessage }] }],
-        systemInstruction: PROMPTS.researchChatSystem(context.theme, context.storyFormat, context.language)
-    });
+    const responseText = await unifiedGenerateText({ taskType: 'LOGIC', modelTier: tier, contents: [...history.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })), { role: 'user', parts: [{ text: newMessage }] }], systemInstruction: PROMPTS.researchChatSystem(context.theme, context.storyFormat, context.language) });
     return responseText;
 };
-
 export const extractStrategyFromChat = async (history: Message[], language: string, tier: 'STANDARD' | 'PREMIUM'): Promise<ResearchData> => {
     const chatLog = history.map(m => `${m.role}: ${m.content}`).join("\n");
-    const text = await unifiedGenerateText({
-        taskType: 'LOGIC', 
-        modelTier: tier,
-        contents: PROMPTS.extractStrategy(chatLog, language),
-        jsonMode: true
-    });
+    const text = await unifiedGenerateText({ taskType: 'LOGIC', modelTier: tier, contents: PROMPTS.extractStrategy(chatLog, language), jsonMode: true });
     return cleanAndParseJSON(text);
 };
-
 export const generateArtStyleGuide = async (styleName: string, culturalSetting: string, language: string, tier: 'STANDARD' | 'PREMIUM' = 'STANDARD'): Promise<string> => {
-    return unifiedGenerateText({
-        taskType: 'CREATIVE',
-        modelTier: tier,
-        contents: PROMPTS.researchArtStyle(styleName, culturalSetting, language)
-    });
+    return unifiedGenerateText({ taskType: 'CREATIVE', modelTier: tier, contents: PROMPTS.researchArtStyle(styleName, culturalSetting, language) });
 };
-
 export const generateStoryConceptsWithSearch = async (theme: string, style: string, language: string, tier: 'STANDARD' | 'PREMIUM'): Promise<StoryConcept> => {
-    const text = await unifiedGenerateText({
-        taskType: 'CREATIVE',
-        modelTier: tier,
-        contents: PROMPTS.storyConcept(theme, style, language),
-        jsonMode: true
-    });
+    const text = await unifiedGenerateText({ taskType: 'CREATIVE', modelTier: tier, contents: PROMPTS.storyConcept(theme, style, language), jsonMode: true });
     return cleanAndParseJSON(text);
 };
-
-export const generateComplexCharacters = async (
-    concept: StoryConcept, 
-    language: string, 
-    setting: string, 
-    tier: 'STANDARD' | 'PREMIUM',
-    sourceText?: string
-): Promise<Character[]> => {
-    let contents = "";
-    if (sourceText && sourceText.length > 100) {
-        contents = PROMPTS.extractCharactersFromText(sourceText, language);
-    } else {
-        contents = PROMPTS.complexCharacters(concept.premise, language, setting);
-    }
-
-    const text = await unifiedGenerateText({
-        taskType: 'CREATIVE',
-        modelTier: tier,
-        contents: contents,
-        jsonMode: true
-    });
-    const chars = cleanAndParseJSON(text);
-    return chars.map((c: any) => ({ ...c, id: crypto.randomUUID() }));
+export const generateComplexCharacters = async (concept: StoryConcept, language: string, setting: string, tier: 'STANDARD' | 'PREMIUM', sourceText?: string): Promise<Character[]> => {
+    let contents = ""; if (sourceText && sourceText.length > 100) { contents = PROMPTS.extractCharactersFromText(sourceText, language); } else { contents = PROMPTS.complexCharacters(concept.premise, language, setting); }
+    const text = await unifiedGenerateText({ taskType: 'CREATIVE', modelTier: tier, contents: contents, jsonMode: true });
+    const chars = cleanAndParseJSON(text); return chars.map((c: any) => ({ ...c, id: crypto.randomUUID() }));
 };
-
 export const generateSeriesBible = async (theme: string, style: string, language: string, tier: 'STANDARD' | 'PREMIUM'): Promise<any> => {
-    const text = await unifiedGenerateText({
-        taskType: 'LOGIC',
-        modelTier: tier,
-        contents: PROMPTS.seriesBible(theme, style, language),
-        jsonMode: true
-    });
+    const text = await unifiedGenerateText({ taskType: 'LOGIC', modelTier: tier, contents: PROMPTS.seriesBible(theme, style, language), jsonMode: true });
     return cleanAndParseJSON(text);
 };
-
-export const generateScript = async (
-    theme: string, 
-    style: string, 
-    language: string, 
-    format: StoryFormat, 
-    bible: any, 
-    tier: 'STANDARD' | 'PREMIUM',
-    concept: StoryConcept | undefined,
-    characters: Character[],
-    chapterSummary: string,
-    chapterNumber: number,
-    originalScript?: string,
-    worldSetting?: string,
-    targetPanelCount?: number
-): Promise<{ title: string, panels: ComicPanel[] }> => {
-    
+export const generateScript = async (theme: string, style: string, language: string, format: StoryFormat, bible: any, tier: 'STANDARD' | 'PREMIUM', concept: StoryConcept | undefined, characters: Character[], chapterSummary: string, chapterNumber: number, originalScript?: string, worldSetting?: string, targetPanelCount?: number): Promise<{ title: string, panels: ComicPanel[] }> => {
     const setting = worldSetting || bible?.worldSetting || "Standard";
-    
-    const text = await unifiedGenerateText({
-        taskType: 'CREATIVE',
-        modelTier: tier,
-        contents: PROMPTS.scriptGeneration(
-            chapterNumber, 
-            format, 
-            style, 
-            language, 
-            targetPanelCount || 20, 
-            concept?.premise || theme, 
-            characters.map(c => c.name).join(", "), 
-            chapterSummary,
-            setting
-        ),
-        jsonMode: true
-    });
-
-    const result = cleanAndParseJSON(text);
-    return {
-        title: result.title,
-        panels: result.panels.map((p: any) => ({ ...p, id: crypto.randomUUID(), dialogue: p.dialogue || '', charactersInvolved: p.charactersInvolved || [] }))
-    };
+    const text = await unifiedGenerateText({ taskType: 'CREATIVE', modelTier: tier, contents: PROMPTS.scriptGeneration(chapterNumber, format, style, language, targetPanelCount || 20, concept?.premise || theme, characters.map(c => c.name).join(", "), chapterSummary, setting), jsonMode: true });
+    const result = cleanAndParseJSON(text); return { title: result.title, panels: result.panels.map((p: any) => ({ ...p, id: crypto.randomUUID(), dialogue: p.dialogue || '', charactersInvolved: p.charactersInvolved || [] })) };
 };
-
-export const generateCharacterDesign = async (
-    name: string, 
-    styleGuide: string, 
-    description: string, 
-    worldSetting: string, 
-    tier: 'STANDARD' | 'PREMIUM',
-    imageModel: string = 'gemini-2.5-flash-image',
-    referenceImage?: string 
-): Promise<{ description: string, imageUrl: string }> => {
+export const generateCharacterDesign = async (name: string, styleGuide: string, description: string, worldSetting: string, tier: 'STANDARD' | 'PREMIUM', imageModel: string = 'gemini-2.5-flash-image', referenceImage?: string): Promise<{ description: string, imageUrl: string }> => {
     const ai = getAI();
-    
-    const refinedDesc = await unifiedGenerateText({
-        taskType: 'CREATIVE',
-        modelTier: tier,
-        contents: PROMPTS.characterDesign(name, styleGuide, description, worldSetting)
-    });
-
-    let imageConfig = {};
-    if (imageModel === 'gemini-3-pro-image-preview') {
-        imageConfig = {
-            imageConfig: {
-                aspectRatio: "1:1",
-                imageSize: "1K"
-            }
-        };
-    }
-
+    const refinedDesc = await unifiedGenerateText({ taskType: 'CREATIVE', modelTier: tier, contents: PROMPTS.characterDesign(name, styleGuide, description, worldSetting) });
+    let imageConfig = {}; if (imageModel === 'gemini-3-pro-image-preview') { imageConfig = { imageConfig: { aspectRatio: "1:1", imageSize: "1K" } }; }
     const parts: any[] = [{ text: PROMPTS.characterImagePrompt(name, refinedDesc, styleGuide) }];
-    
-    if (referenceImage) {
-        const cleanBase64 = referenceImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
-        parts.push({
-             inlineData: {
-                 mimeType: "image/png",
-                 data: cleanBase64
-             }
-        });
-        parts[0].text += " Use the attached image as a strict visual reference for the character's facial features and hair.";
-    }
-
-    const response = await ai.models.generateContent({
-        model: imageModel,
-        contents: { parts: parts },
-        config: imageConfig
-    });
-
-    let imageUrl = '';
-    if (response.candidates && response.candidates[0].content.parts) {
-        for (const part of response.candidates[0].content.parts) {
-             if (part.inlineData) {
-                 imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-             }
-        }
-    }
+    if (referenceImage) { const cleanBase64 = referenceImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, ""); parts.push({ inlineData: { mimeType: "image/png", data: cleanBase64 } }); parts[0].text += " Use the attached image as a strict visual reference for the character's facial features and hair."; }
+    const response = await ai.models.generateContent({ model: imageModel, contents: { parts: parts }, config: imageConfig });
+    let imageUrl = ''; if (response.candidates && response.candidates[0].content.parts) { for (const part of response.candidates[0].content.parts) { if (part.inlineData) { imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`; } } }
     return { description: refinedDesc, imageUrl };
 };
-
-export const generatePanelImage = async (
-    panel: ComicPanel, 
-    styleGuide: string, 
-    characters: Character[], 
-    worldSetting: string, 
-    tier: 'STANDARD' | 'PREMIUM',
-    imageModel: string = 'gemini-2.5-flash-image',
-    assetImage?: string
-): Promise<string> => {
+export const generatePanelImage = async (panel: ComicPanel, styleGuide: string, characters: Character[], worldSetting: string, tier: 'STANDARD' | 'PREMIUM', imageModel: string = 'gemini-2.5-flash-image', assetImage?: string): Promise<string> => {
     const ai = getAI();
-    const charDesc = characters.filter(c => panel.charactersInvolved.includes(c.name))
-        .map(c => `${c.name}: ${c.description}`).join(". ");
-    
-    let imageConfig = {};
-    if (imageModel === 'gemini-3-pro-image-preview') {
-        imageConfig = {
-            imageConfig: {
-                aspectRatio: "16:9",
-                imageSize: "1K"
-            }
-        };
-    }
-
+    const charDesc = characters.filter(c => panel.charactersInvolved.includes(c.name)).map(c => `${c.name}: ${c.description}`).join(". ");
+    let imageConfig = {}; if (imageModel === 'gemini-3-pro-image-preview') { imageConfig = { imageConfig: { aspectRatio: "16:9", imageSize: "1K" } }; }
     const promptText = PROMPTS.panelImagePrompt(styleGuide, panel.description, charDesc, worldSetting);
     const parts: any[] = [{ text: promptText }];
-
-    if (panel.layoutSketch) {
-        const cleanBase64 = panel.layoutSketch.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
-        parts.push({
-            inlineData: {
-                mimeType: "image/png",
-                data: cleanBase64
-            }
-        });
-        parts[0].text += " STRICTLY follow the composition, redline corrections, and layout of the attached sketch.";
-    } 
-    else if (assetImage) {
-        const cleanBase64 = assetImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
-        parts.push({
-            inlineData: {
-                mimeType: "image/png",
-                data: cleanBase64
-            }
-        });
-        parts[0].text += " Use the attached image as the BACKGROUND SETTING. Keep the architecture and lighting but place the characters inside it.";
-    }
-    else {
-        const mainChar = characters.find(c => panel.charactersInvolved.includes(c.name) && c.referenceImage);
-        if (mainChar && mainChar.referenceImage) {
-             const cleanBase64 = mainChar.referenceImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
-             parts.push({
-                 inlineData: {
-                     mimeType: "image/png",
-                     data: cleanBase64
-                 }
-             });
-             parts[0].text += ` Use the attached image as a reference for character ${mainChar.name}.`;
-        }
-    }
-
-    const response = await ai.models.generateContent({
-        model: imageModel,
-        contents: { parts: parts },
-        config: imageConfig
-    });
-
-    let imageUrl = '';
-    if (response.candidates && response.candidates[0].content.parts) {
-        for (const part of response.candidates[0].content.parts) {
-             if (part.inlineData) {
-                 imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-             }
-        }
-    }
+    if (panel.layoutSketch) { const cleanBase64 = panel.layoutSketch.replace(/^data:image\/(png|jpg|jpeg);base64,/, ""); parts.push({ inlineData: { mimeType: "image/png", data: cleanBase64 } }); parts[0].text += " STRICTLY follow the composition, redline corrections, and layout of the attached sketch."; } else if (assetImage) { const cleanBase64 = assetImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, ""); parts.push({ inlineData: { mimeType: "image/png", data: cleanBase64 } }); parts[0].text += " Use the attached image as the BACKGROUND SETTING. Keep the architecture and lighting but place the characters inside it."; } else { const mainChar = characters.find(c => panel.charactersInvolved.includes(c.name) && c.referenceImage); if (mainChar && mainChar.referenceImage) { const cleanBase64 = mainChar.referenceImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, ""); parts.push({ inlineData: { mimeType: "image/png", data: cleanBase64 } }); parts[0].text += ` Use the attached image as a reference for character ${mainChar.name}.`; } }
+    const response = await ai.models.generateContent({ model: imageModel, contents: { parts: parts }, config: imageConfig });
+    let imageUrl = ''; if (response.candidates && response.candidates[0].content.parts) { for (const part of response.candidates[0].content.parts) { if (part.inlineData) { imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`; } } }
     return imageUrl;
 };
-
 export const generatePanelVideo = async (panel: ComicPanel, style: string): Promise<string> => {
-    if (!panel.imageUrl) return '';
-    const ai = getAI();
-    const base64Data = panel.imageUrl.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
-    
-    let operation = await ai.models.generateVideos({
-        model: 'veo-3.1-fast-generate-preview', 
-        prompt: `Cinematic motion for a comic panel. ${style} style. ${panel.description}. Subtle movement, parallax effect, atmospheric.`,
-        image: { imageBytes: base64Data, mimeType: 'image/png' },
-        config: { numberOfVideos: 1, aspectRatio: '16:9', resolution: '720p' }
-    });
-    while (!operation.done) {
-        await new Promise(resolve => setTimeout(resolve, 5000)); 
-        operation = await ai.operations.getVideosOperation({operation: operation});
-    }
+    if (!panel.imageUrl) return ''; const ai = getAI(); const base64Data = panel.imageUrl.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+    let operation = await ai.models.generateVideos({ model: 'veo-3.1-fast-generate-preview', prompt: `Cinematic motion for a comic panel. ${style} style. ${panel.description}. Subtle movement, parallax effect, atmospheric.`, image: { imageBytes: base64Data, mimeType: 'image/png' }, config: { numberOfVideos: 1, aspectRatio: '16:9', resolution: '720p' } });
+    while (!operation.done) { await new Promise(resolve => setTimeout(resolve, 5000)); operation = await ai.operations.getVideosOperation({operation: operation}); }
     const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
-    if (videoUri) {
-        const apiKey = getDynamicApiKey();
-        const response = await fetch(`${videoUri}&key=${apiKey}`);
-        const blob = await response.blob();
-        return URL.createObjectURL(blob);
-    }
-    return '';
+    if (videoUri) { const apiKey = getDynamicApiKey(); const response = await fetch(`${videoUri}&key=${apiKey}`); const blob = await response.blob(); return URL.createObjectURL(blob); } return '';
 };
-
-export const summarizeChapter = async (panels: ComicPanel[], tier: 'STANDARD' | 'PREMIUM'): Promise<string> => {
-    return unifiedGenerateText({
-        taskType: 'LOGIC',
-        modelTier: tier,
-        contents: PROMPTS.summarizeChapter(panels.map(p => p.description).join(" "))
-    });
-};
-
+export const summarizeChapter = async (panels: ComicPanel[], tier: 'STANDARD' | 'PREMIUM'): Promise<string> => { return unifiedGenerateText({ taskType: 'LOGIC', modelTier: tier, contents: PROMPTS.summarizeChapter(panels.map(p => p.description).join(" ")) }); };
 export const generateVoiceover = async (text: string, voiceName: string): Promise<string> => {
     const ai = getAI();
-    const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: { parts: [{ text }] },
-        config: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } } }
-    });
-    if (response.candidates && response.candidates[0].content.parts) {
-        for (const part of response.candidates[0].content.parts) {
-             if (part.inlineData) { return `data:audio/mp3;base64,${part.inlineData.data}`; }
-        }
-    }
-    return '';
+    const response = await ai.models.generateContent({ model: "gemini-2.5-flash-preview-tts", contents: { parts: [{ text }] }, config: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } } } });
+    if (response.candidates && response.candidates[0].content.parts) { for (const part of response.candidates[0].content.parts) { if (part.inlineData) { return `data:audio/mp3;base64,${part.inlineData.data}`; } } } return '';
 };
-
 export const analyzeCharacterConsistency = async (imageBase64: string, targetStyle: string, characterName: string, tier: 'STANDARD' | 'PREMIUM'): Promise<{ isConsistent: boolean, critique: string }> => {
-    const ai = getAI();
-    const cleanBase64 = imageBase64.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
-    const response = await ai.models.generateContent({ 
-        model: getTextModel(tier), 
-        contents: { parts: [{ inlineData: { mimeType: 'image/png', data: cleanBase64 } }, { text: PROMPTS.analyzeConsistency(characterName, targetStyle) }] }, 
-        config: { responseMimeType: "application/json" } 
-    });
+    const ai = getAI(); const cleanBase64 = imageBase64.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+    const response = await ai.models.generateContent({ model: getTextModel(tier), contents: { parts: [{ inlineData: { mimeType: 'image/png', data: cleanBase64 } }, { text: PROMPTS.analyzeConsistency(characterName, targetStyle) }] }, config: { responseMimeType: "application/json" } });
     return cleanAndParseJSON(response.text!);
 };
-
 export const verifyCharacterVoice = async (character: Character, voiceName: string): Promise<{ isSuitable: boolean; suggestion: string; reason: string }> => {
-    const text = await unifiedGenerateText({
-        taskType: 'LOGIC',
-        modelTier: 'STANDARD',
-        contents: PROMPTS.voiceConsistency(character.name, character.role || 'Unknown', character.personality || character.description, voiceName, ""),
-        jsonMode: true
-    });
+    const text = await unifiedGenerateText({ taskType: 'LOGIC', modelTier: 'STANDARD', contents: PROMPTS.voiceConsistency(character.name, character.role || 'Unknown', character.personality || character.description, voiceName, ""), jsonMode: true });
     return cleanAndParseJSON(text);
 };
-
 export const batchTranslatePanels = async (panels: ComicPanel[], languages: string[], tier: 'STANDARD' | 'PREMIUM'): Promise<ComicPanel[]> => {
-    if (languages.length === 0) return panels;
-    
-    const panelsMin = panels.map(p => ({ id: p.id, dialogue: p.dialogue, caption: p.caption }));
-    try {
-        const text = await unifiedGenerateText({
-            taskType: 'TRANSLATION',
-            modelTier: tier,
-            contents: PROMPTS.translatePanels(JSON.stringify(panelsMin), languages),
-            jsonMode: true
-        });
-        const translatedData = cleanAndParseJSON(text);
-        return panels.map(p => {
-            const tPanel = translatedData.find((tp: any) => tp.id === p.id);
-            const newTranslations = tPanel ? { ...p.translations, ...tPanel.translations } : p.translations;
-            return { ...p, translations: newTranslations };
-        });
-    } catch (e) { return panels; }
+    if (languages.length === 0) return panels; const panelsMin = panels.map(p => ({ id: p.id, dialogue: p.dialogue, caption: p.caption }));
+    try { const text = await unifiedGenerateText({ taskType: 'TRANSLATION', modelTier: tier, contents: PROMPTS.translatePanels(JSON.stringify(panelsMin), languages), jsonMode: true }); const translatedData = cleanAndParseJSON(text); return panels.map(p => { const tPanel = translatedData.find((tp: any) => tp.id === p.id); const newTranslations = tPanel ? { ...p.translations, ...tPanel.translations } : p.translations; return { ...p, translations: newTranslations }; }); } catch (e) { return panels; }
 };
-
 export const censorContent = async (text: string, type: 'SCRIPT' | 'IMAGE'): Promise<{ passed: boolean, report: string }> => {
-    if (type === 'IMAGE') {
-        const ai = getAI(); 
-    }
-    
-    const responseText = await unifiedGenerateText({
-        taskType: 'LOGIC',
-        modelTier: 'STANDARD',
-        contents: PROMPTS.censor(type, text),
-        jsonMode: true
-    });
+    const responseText = await unifiedGenerateText({ taskType: 'LOGIC', modelTier: 'STANDARD', contents: PROMPTS.censor(type, text), jsonMode: true });
     return cleanAndParseJSON(responseText);
 };
-
 export const checkContinuity = async (panels: ComicPanel[], characters: Character[], seriesBible: any, tier: 'STANDARD' | 'PREMIUM'): Promise<string> => {
-    const panelsText = panels.map((p, i) => `Panel ${i+1}: ${p.description}. Dialogue: ${p.dialogue}`).join("\n");
-    const charNames = characters.map(c => c.name).join(", ");
-    const setting = seriesBible?.worldSetting || "Standard Setting";
-    
-    return unifiedGenerateText({
-        taskType: 'LOGIC',
-        modelTier: tier,
-        contents: PROMPTS.continuityCheck(panelsText, charNames, setting)
-    });
+    const panelsText = panels.map((p, i) => `Panel ${i+1}: ${p.description}. Dialogue: ${p.dialogue}`).join("\n"); const charNames = characters.map(c => c.name).join(", "); const setting = seriesBible?.worldSetting || "Standard Setting";
+    return unifiedGenerateText({ taskType: 'LOGIC', modelTier: tier, contents: PROMPTS.continuityCheck(panelsText, charNames, setting) });
 };
-
 export const generateMarketingCopy = async (project: ComicProject): Promise<{ blurb: string, socialPost: string, tagline: string }> => {
-    const summary = project.completedChapters?.[0]?.summary || project.storyConcept?.premise || "An epic story.";
-    const audience = project.marketAnalysis?.targetAudience || "General Audience";
-    
-    const text = await unifiedGenerateText({
-        taskType: 'CREATIVE',
-        modelTier: project.modelTier,
-        contents: PROMPTS.marketingCopy(project.title, summary, audience, project.activeLanguage),
-        jsonMode: true
-    });
+    const summary = project.completedChapters?.[0]?.summary || project.storyConcept?.premise || "An epic story."; const audience = project.marketAnalysis?.targetAudience || "General Audience";
+    const text = await unifiedGenerateText({ taskType: 'CREATIVE', modelTier: project.modelTier, contents: PROMPTS.marketingCopy(project.title, summary, audience, project.activeLanguage), jsonMode: true });
     return cleanAndParseJSON(text);
 };

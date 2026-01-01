@@ -27,10 +27,16 @@ export interface Agent {
 export type AIProvider = 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
 
 export interface UserAIPreferences {
-    creativeEngine: AIProvider; // For Scriptwriter, Character Description
-    logicEngine: AIProvider;    // For Project Manager, Continuity, Censor
-    translationEngine: AIProvider; // For Translator
-    visualEngine: 'GEMINI';     // Locked to Gemini for now
+    creativeEngine: AIProvider; 
+    logicEngine: AIProvider;    
+    translationEngine: AIProvider; 
+    visualEngine: 'GEMINI';     
+}
+
+export interface UserKeys {
+    gemini?: string;
+    deepseek?: string;
+    openai?: string;
 }
 
 export interface UserProfile {
@@ -43,6 +49,8 @@ export interface UserProfile {
     studioName?: string;
     joinDate: number;
     aiPreferences?: UserAIPreferences;
+    apiKeys?: UserKeys; 
+    credits?: number; // NEW: Free Trial Credits
     stats?: {
         projectsCount: number;
         chaptersCount: number;

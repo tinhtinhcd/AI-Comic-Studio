@@ -15,6 +15,7 @@ export const register = async (email: string, password: string, username: string
         studioName: `${username}'s Studio`,
         avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`, 
         bio: "Comic Creator",
+        credits: 100, // Starting Credits
         stats: { projectsCount: 0, chaptersCount: 0, charactersCount: 0 }
     };
 
@@ -44,6 +45,7 @@ export const login = async (email: string, password: string): Promise<UserProfil
             avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=Director',
             joinDate: Date.now(),
             studioName: 'Alpha Testing Studio',
+            credits: 99999, // Infinite for test user
             stats: { projectsCount: 12, chaptersCount: 45, charactersCount: 128 }
         };
         // We try to register it in DB silently so other features work

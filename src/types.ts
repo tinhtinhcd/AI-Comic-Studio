@@ -24,14 +24,19 @@ export interface Agent {
   department: string;
 }
 
-// Updated for Late 2025 Landscape
 export type AIProvider = 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
 
 export interface UserAIPreferences {
-    creativeEngine: AIProvider; // GPT-5 is best here
-    logicEngine: AIProvider;    // DeepSeek R1 or Gemini 3.0
-    translationEngine: AIProvider; // DeepSeek V3 is fastest
-    visualEngine: 'GEMINI';     // Gemini 3.0 / Imagen 4 only
+    creativeEngine: AIProvider; 
+    logicEngine: AIProvider;    
+    translationEngine: AIProvider; 
+    visualEngine: 'GEMINI';     
+}
+
+export interface UserKeys {
+    gemini?: string;
+    deepseek?: string;
+    openai?: string;
 }
 
 export interface UserProfile {
@@ -44,6 +49,8 @@ export interface UserProfile {
     studioName?: string;
     joinDate: number;
     aiPreferences?: UserAIPreferences;
+    apiKeys?: UserKeys; 
+    credits?: number; // NEW: Free Trial Credits
     stats?: {
         projectsCount: number;
         chaptersCount: number;

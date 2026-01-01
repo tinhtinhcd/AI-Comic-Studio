@@ -2,7 +2,7 @@
 import React from 'react';
 import { Agent, AgentRole, UserProfile } from '../types';
 import { AGENTS, TRANSLATIONS } from '../constants';
-import { Users, BookOpen, PenTool, Layout, Palette, Megaphone, Mic, Video, Globe, TrendingUp, ShieldAlert, Archive, Briefcase, ChevronRight, Moon, Sun, LogOut } from 'lucide-react';
+import { Users, BookOpen, PenTool, Layout, Palette, Megaphone, Mic, Video, Globe, TrendingUp, ShieldAlert, Archive, Briefcase, ChevronRight, Moon, Sun, LogOut, Coins, Zap } from 'lucide-react';
 import { Logo } from './Logo';
 
 interface SidebarProps {
@@ -48,6 +48,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, onSelectRole, projectTit
 
   const deptOrder = ['dept.strategy', "dept.writers", 'dept.visuals', 'dept.production'];
 
+  // Safe credit display
+  const credits = currentUser.credits ?? 0;
+  const isLowCredits = credits < 100;
+
   return (
     <div className="w-20 lg:w-72 border-r flex flex-col h-full flex-shrink-0 transition-colors duration-300 z-20 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
       <div className="p-6 border-b flex items-center gap-4 border-gray-100 dark:border-gray-700">
@@ -58,6 +62,25 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, onSelectRole, projectTit
           <h1 className="font-bold text-base truncate tracking-tight text-gray-900 dark:text-gray-100 font-comic uppercase">{t('app.title')}</h1>
           <p className="text-xs truncate text-gray-500 dark:text-gray-400">{projectTitle === 'Untitled Comic' ? t('manager.new_project') : projectTitle}</p>
         </div>
+      </div>
+
+      {/* CREDITS DISPLAY (NEW) */}
+      <div className="hidden lg:block px-4 pt-4">
+          <div className={`rounded-xl p-3 border ${isLowCredits ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' : 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 dark:from-amber-900/20 dark:to-yellow-900/20 dark:border-amber-800'}`}>
+              <div className="flex justify-between items-center mb-1">
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isLowCredits ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}`}>Free Trial Credits</span>
+                  <Zap className={`w-3 h-3 ${isLowCredits ? 'text-red-500' : 'text-amber-500'}`}/>
+              </div>
+              <div className="flex items-end gap-1">
+                  <span className={`text-xl font-black ${isLowCredits ? 'text-red-700 dark:text-red-300' : 'text-gray-800 dark:text-gray-100'}`}>{credits}</span>
+                  <span className="text-[10px] text-gray-500 mb-1">/ 1000</span>
+              </div>
+              {isLowCredits && (
+                  <button className="w-full mt-2 bg-red-600 text-white text-[10px] font-bold py-1 rounded hover:bg-red-700 transition-colors">
+                      Upgrade / Add Key
+                  </button>
+              )}
+          </div>
       </div>
 
       <div className="flex-1 py-6 space-y-6 overflow-y-auto px-3 custom-scrollbar">
