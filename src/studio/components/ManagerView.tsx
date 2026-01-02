@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ComicProject, WorkflowStage, AgentRole } from '../types';
 import { AGENTS } from '../constants';
-import { Settings, CheckCircle, Archive, Activity, LayoutTemplate, BookOpen, Library, Smartphone, FolderOpen, TrendingUp, Palette, Printer, Trash2, ArrowRight, RotateCcw, Map, Edit, Eye, Lock, Lightbulb, Home, Briefcase, BrainCircuit, FileText, Globe, X, Plus, Languages, Sliders } from 'lucide-react';
+import { Settings, CheckCircle, Archive, Activity, LayoutTemplate, BookOpen, Library, Smartphone, FolderOpen, TrendingUp, Palette, Printer, Trash2, ArrowRight, RotateCcw, Map, Edit, Eye, Lock, Lightbulb, Home, Briefcase, BrainCircuit, FileText, Globe, X, Plus, Languages, Sliders, Hash } from 'lucide-react';
 
 interface ManagerViewProps {
     project: ComicProject;
@@ -428,69 +428,67 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex-1 overflow-y-auto custom-scrollbar">
                         <div className="space-y-8 max-w-3xl">
                             
-                            {/* SECTION 1: PROJECT METADATA */}
-                            <div className="space-y-4">
-                                <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700 pb-2">
-                                    Project Configuration
+                            {/* SECTION 1: PROJECT IDENTITY */}
+                            <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+                                <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 mb-4">
+                                    <Briefcase className="w-5 h-5 text-indigo-600"/> Project Identity
                                 </h3>
-                                
-                                {/* Title */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Project Title</label>
-                                    <input 
-                                        type="text" 
-                                        value={project.title}
-                                        onChange={(e) => updateProject({ title: e.target.value })}
-                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                        placeholder="Enter project title..."
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Master Language */}
+                                <div className="space-y-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Master Language</label>
-                                        <div className="relative">
-                                            <select 
-                                                value={project.masterLanguage}
-                                                onChange={(e) => updateProject({ masterLanguage: e.target.value })}
-                                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-gray-100 appearance-none focus:ring-2 focus:ring-indigo-500 outline-none"
-                                            >
-                                                {supportedLanguages.map(lang => (
-                                                    <option key={lang} value={lang}>{lang}</option>
-                                                ))}
-                                            </select>
-                                            <Globe className="w-4 h-4 text-gray-400 absolute right-3 top-3.5 pointer-events-none"/>
-                                        </div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Project Title</label>
+                                        <input 
+                                            type="text" 
+                                            value={project.title}
+                                            onChange={(e) => updateProject({ title: e.target.value })}
+                                            className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                            placeholder="Enter project title..."
+                                        />
                                     </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Master Language</label>
+                                            <div className="relative">
+                                                <select 
+                                                    value={project.masterLanguage}
+                                                    onChange={(e) => updateProject({ masterLanguage: e.target.value })}
+                                                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-gray-100 appearance-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                                >
+                                                    {supportedLanguages.map(lang => (
+                                                        <option key={lang} value={lang}>{lang}</option>
+                                                    ))}
+                                                </select>
+                                                <Globe className="w-4 h-4 text-gray-400 absolute right-3 top-3.5 pointer-events-none"/>
+                                            </div>
+                                        </div>
 
-                                    {/* Art Style */}
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Art Style</label>
-                                        <div className="relative">
-                                            <input 
-                                                type="text" 
-                                                value={project.style}
-                                                onChange={(e) => updateProject({ style: e.target.value })}
-                                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                                placeholder="e.g. Manga, Cinematic..."
-                                            />
-                                            <Palette className="w-4 h-4 text-gray-400 absolute right-3 top-3.5 pointer-events-none"/>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Art Style</label>
+                                            <div className="relative">
+                                                <input 
+                                                    type="text" 
+                                                    value={project.style}
+                                                    onChange={(e) => updateProject({ style: e.target.value })}
+                                                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                                    placeholder="e.g. Manga, Cinematic..."
+                                                />
+                                                <Palette className="w-4 h-4 text-gray-400 absolute right-3 top-3.5 pointer-events-none"/>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* SECTION 2: LOCALIZATION (Target Languages) */}
-                            <div className="space-y-4">
-                                 <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center gap-2">
-                                    <Languages className="w-5 h-5 text-indigo-600"/> Localization
+                            {/* SECTION 2: LOCALIZATION */}
+                            <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+                                 <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 mb-4">
+                                    <Languages className="w-5 h-5 text-indigo-600"/> Localization & Markets
                                 </h3>
                                 <div>
-                                    <label className="text-xs text-gray-500 font-bold uppercase mb-2 block">Target Languages</label>
-                                    <div className="flex flex-wrap gap-2 mb-3 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700 min-h-[60px]">
+                                    <label className="text-xs text-gray-500 font-bold uppercase mb-2 block">Active Target Languages</label>
+                                    <div className="flex flex-wrap gap-2 mb-4 bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-200 dark:border-gray-600 min-h-[60px]">
                                         {project.targetLanguages?.map(lang => (
-                                            <span key={lang} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 flex items-center gap-2 group transition-all">
+                                            <span key={lang} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 flex items-center gap-2 group transition-all animate-in fade-in zoom-in">
                                                 {lang}
                                                 {lang !== project.masterLanguage && (
                                                     <button 
@@ -498,7 +496,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                                             const newLangs = project.targetLanguages.filter(l => l !== lang);
                                                             updateProject({ targetLanguages: newLangs });
                                                         }}
-                                                        className="text-indigo-400 hover:text-red-500 dark:text-indigo-500 dark:hover:text-red-400"
+                                                        className="text-indigo-400 hover:text-red-500 dark:text-indigo-500 dark:hover:text-red-400 transition-colors"
                                                     >
                                                         <X className="w-3 h-3"/>
                                                     </button>
@@ -508,13 +506,13 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                         {project.targetLanguages.length === 0 && <span className="text-gray-400 text-xs italic p-1">No additional languages selected.</span>}
                                     </div>
                                     
-                                    <p className="text-xs font-bold text-gray-400 uppercase mb-2">Available Languages</p>
+                                    <p className="text-xs font-bold text-gray-400 uppercase mb-2">Add Language</p>
                                     <div className="flex flex-wrap gap-2">
                                         {supportedLanguages.filter(l => !project.targetLanguages?.includes(l)).map(lang => (
                                             <button 
                                                 key={lang} 
                                                 onClick={() => handleAddLanguage(lang)} 
-                                                className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors flex items-center gap-1 bg-white dark:bg-gray-800"
+                                                className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-white dark:hover:bg-gray-700 hover:border-indigo-300 dark:hover:border-indigo-500 text-gray-600 dark:text-gray-300 transition-all flex items-center gap-1 bg-gray-50 dark:bg-gray-800/50"
                                             >
                                                 <Plus className="w-3 h-3"/> {lang}
                                             </button>
@@ -524,7 +522,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             </div>
 
                             {/* SECTION 3: AI CONFIG */}
-                            <div className="p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                            <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
                                 <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                                     <BrainCircuit className="w-5 h-5 text-purple-600"/> AI Engine Configuration
                                 </h3>
@@ -535,33 +533,40 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                         <div className="flex flex-col sm:flex-row gap-2">
                                             <button 
                                                 onClick={() => updateTextEngine('GEMINI')}
-                                                className={`flex-1 py-3 px-4 rounded-xl border text-sm font-bold transition-all flex flex-col items-center gap-1 ${project.textEngine === 'GEMINI' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'}`}
+                                                className={`flex-1 py-3 px-4 rounded-xl border text-sm font-bold transition-all flex flex-col items-center gap-1 ${project.textEngine === 'GEMINI' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300 shadow-sm' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                                             >
                                                 <span>Gemini 3.0</span>
                                                 <span className="text-[10px] font-normal opacity-70">Balanced</span>
                                             </button>
                                             <button 
                                                 onClick={() => updateTextEngine('DEEPSEEK')}
-                                                className={`flex-1 py-3 px-4 rounded-xl border text-sm font-bold transition-all flex flex-col items-center gap-1 ${project.textEngine === 'DEEPSEEK' ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-300 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'}`}
+                                                className={`flex-1 py-3 px-4 rounded-xl border text-sm font-bold transition-all flex flex-col items-center gap-1 ${project.textEngine === 'DEEPSEEK' ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-300 shadow-sm' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                                             >
                                                 <span>DeepSeek-V3</span>
                                                 <span className="text-[10px] font-normal opacity-70">Logic</span>
                                             </button>
                                             <button 
                                                 onClick={() => updateTextEngine('OPENAI')}
-                                                className={`flex-1 py-3 px-4 rounded-xl border text-sm font-bold transition-all flex flex-col items-center gap-1 ${project.textEngine === 'OPENAI' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'}`}
+                                                className={`flex-1 py-3 px-4 rounded-xl border text-sm font-bold transition-all flex flex-col items-center gap-1 ${project.textEngine === 'OPENAI' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300 shadow-sm' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                                             >
                                                 <span>GPT-5</span>
                                                 <span className="text-[10px] font-normal opacity-70">Creative</span>
                                             </button>
                                         </div>
                                     </div>
+                                    <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900 text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
+                                        <Hash className="w-4 h-4 mt-0.5 shrink-0"/>
+                                        <p>
+                                            Engine selection applies to <strong>Scriptwriting</strong> and <strong>Analysis</strong> tasks. 
+                                            Visual generation always uses Google's multimodal models for best consistency.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                             
                             {/* SECTION 4: ACTIONS */}
                             <div className="border-t border-gray-100 dark:border-gray-700 pt-6 mt-2 flex flex-col gap-3">
-                                <button onClick={handleExportProjectZip} className="w-full flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 text-xs font-bold py-3 px-6 rounded-xl transition-colors border border-gray-200 dark:border-gray-600">
+                                <button onClick={handleExportProjectZip} className="w-full flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold py-3 px-6 rounded-xl transition-colors border border-gray-200 dark:border-gray-600">
                                     <Archive className="w-4 h-4"/> {t('ui.export_zip_btn')}
                                 </button>
                                 
