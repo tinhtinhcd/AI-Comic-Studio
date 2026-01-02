@@ -362,22 +362,25 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
   const handleApproveResearchAndScript = async () => { onAgentChange(AgentRole.SCRIPTWRITER); setLoading(true); try { await handleGenerateConcept(); await handleGenerateCast(); await handleGenerateFinalScript(); } catch (e) { console.error(e); } finally { setLoading(false); } };
   const handleApproveScriptAndVisualize = async () => { if (project.isCensored) { (window as any).alert("Script unsafe."); return; } updateProject({ workflowStage: WorkflowStage.DESIGNING_CHARACTERS }); addLog(AgentRole.PROJECT_MANAGER, `Manually advancing to Character Design.`, 'info'); onAgentChange(AgentRole.CHARACTER_DESIGNER); };
   
-  const handleGenerateAllCharacters = async (selectedStyle: string) => { 
+  // MODIFIED: Accepts customStyle and customApiKey
+  const handleGenerateAllCharacters = async (selectedStyle: string, customApiKey?: string) => { 
       if (!project.characters || project.characters.length === 0) { (window as any).alert("No characters found. Please ensure the Cast has been generated in the Scriptwriter step."); return; } 
       setLoading(true); 
       updateProject({ style: selectedStyle }); 
       const currentImageModel = project.imageModel || 'gemini-2.5-flash-image'; 
-      addLog(AgentRole.CHARACTER_DESIGNER, `Starting batch generation for ${project.characters.length} characters. Style: ${selectedStyle}. Engine: ${currentImageModel}`, 'info'); 
+      addLog(AgentRole.CHARACTER_DESIGNER, `Starting batch generation for ${project.characters.length} characters. Style: ${selectedStyle}. Engine: ${currentImageModel}. Key Bypass: ${!!customApiKey}`, 'info'); 
       const charsStart = project.characters.map(c => { if (c.isLocked && c.imageUrl) return c; return { ...c, isGenerating: true, error: undefined }; }); 
       updateProject({ characters: [...charsStart] }); 
       await delay(100); 
       try { 
-          await checkApiKeyRequirement(); 
+          if (!customApiKey) await checkApiKeyRequirement(); 
+          
           addLog(AgentRole.CHARACTER_DESIGNER, "Generating Art Style Guide...", 'info'); 
           const worldSetting = project.seriesBible?.worldSetting || project.marketAnalysis?.worldSetting || ""; 
           let styleGuide = project.artStyleGuide; 
           try { 
               if (!styleGuide || !styleGuide.includes(selectedStyle)) { 
+                  // Pass custom key to text generation if needed, but for now we assume text gen is less restricted or uses default key
                   styleGuide = await GeminiService.generateArtStyleGuide(selectedStyle, worldSetting, project.masterLanguage, project.modelTier); 
                   updateProject({ artStyleGuide: styleGuide }); 
                   addLog(AgentRole.CHARACTER_DESIGNER, "New Style Guide enforced.", 'success'); 
@@ -391,15 +394,30 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                 if (workingChars[i].isLocked && workingChars[i].imageUrl) continue; 
                 addLog(AgentRole.CHARACTER_DESIGNER, `Generating ${workingChars[i].name}...`, 'info'); 
                 try { 
-                    const result = await GeminiService.generateCharacterDesign(workingChars[i].name, styleGuide!, workingChars[i].description, worldSetting, project.modelTier || 'STANDARD', currentImageModel); 
+                    const result = await GeminiService.generateCharacterDesign(
+                        workingChars[i].name, 
+                        styleGuide!, 
+                        workingChars[i].description, 
+                        worldSetting, 
+                        project.modelTier || 'STANDARD', 
+                        currentImageModel,
+                        undefined,
+                        customApiKey // PASS CUSTOM KEY
+                    ); 
                     workingChars[i] = { ...workingChars[i], imageUrl: result.imageUrl, description: result.description, isGenerating: false, error: undefined, variants: [...(workingChars[i].variants || []), { id: crypto.randomUUID(), imageUrl: result.imageUrl, style: selectedStyle, timestamp: Date.now() }] }; 
                 } catch (e: any) { 
                     console.error("Character Gen Error:", e);
                     workingChars[i] = { ...workingChars[i], isGenerating: false, error: e.message }; 
                     addLog(AgentRole.CHARACTER_DESIGNER, `Failed: ${workingChars[i].name}. ${e.message}`, 'error'); 
+                    
+                    if (e.message?.includes("429") || e.status === 429) {
+                         addLog(AgentRole.CHARACTER_DESIGNER, `Quota Limit Hit. Pausing for 10s...`, 'warning');
+                         await delay(10000); 
+                    }
                 } 
                 updateProject({ characters: [...workingChars] }); 
-                await delay(1500); 
+                // Delay to be safe even with custom key
+                await delay(2000); 
             } 
             addLog(AgentRole.CHARACTER_DESIGNER, "Batch generation complete.", 'success'); 
         } catch (e: any) { 
@@ -411,12 +429,14 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
     };
   
   const handleFinishCharacterDesign = async () => { updateProject({ workflowStage: WorkflowStage.VISUALIZING_PANELS }); addLog(AgentRole.CHARACTER_DESIGNER, "Character Designs finalized. Moving to Storyboard.", 'success'); onAgentChange(AgentRole.PANEL_ARTIST); };
-  const handleStartPanelGeneration = async (selectedStyle: string) => { 
+  
+  // MODIFIED: Accepts customStyle and customApiKey
+  const handleStartPanelGeneration = async (selectedStyle: string, customApiKey?: string) => { 
       setLoading(true); 
       try { 
-          await checkApiKeyRequirement(); 
+          if (!customApiKey) await checkApiKeyRequirement(); 
           const currentImageModel = project.imageModel || 'gemini-2.5-flash-image'; 
-          addLog(AgentRole.PANEL_ARTIST, `Drawing ${project.panels.length} panels in style: ${selectedStyle} (Engine: ${currentImageModel})...`, 'info'); 
+          addLog(AgentRole.PANEL_ARTIST, `Drawing ${project.panels.length} panels in style: ${selectedStyle}. Key Bypass: ${!!customApiKey}`, 'info'); 
           updateProject({ style: selectedStyle }); 
           const worldSetting = project.seriesBible?.worldSetting || project.marketAnalysis?.worldSetting || ""; 
           let styleGuide = project.artStyleGuide; 
@@ -432,14 +452,29 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                     updatedPanels[i] = { ...updatedPanels[i], isGenerating: true }; 
                     updateProject({ panels: [...updatedPanels] }); 
                     try { 
-                        const imageUrl = await GeminiService.generatePanelImage(updatedPanels[i], styleGuide!, project.characters, worldSetting, project.modelTier || 'STANDARD', currentImageModel); 
+                        const imageUrl = await GeminiService.generatePanelImage(
+                            updatedPanels[i], 
+                            styleGuide!, 
+                            project.characters, 
+                            worldSetting, 
+                            project.modelTier || 'STANDARD', 
+                            currentImageModel, 
+                            undefined, 
+                            customApiKey // PASS KEY
+                        ); 
                         updatedPanels[i] = { ...updatedPanels[i], imageUrl, isGenerating: false }; 
-                    } catch (error) { 
+                    } catch (error: any) { 
                         console.error("Panel Gen Error:", error);
                         updatedPanels[i] = { ...updatedPanels[i], isGenerating: false }; 
                         addLog(AgentRole.PANEL_ARTIST, `Panel ${i+1} Failed: ${(error as Error).message}`, 'error');
+                        
+                        if (error.message?.includes("429") || error.status === 429) {
+                             addLog(AgentRole.PANEL_ARTIST, `Quota Limit Hit. Pausing for 10s...`, 'warning');
+                             await delay(10000); 
+                        }
                     } 
                     updateProject({ panels: [...updatedPanels] }); 
+                    await delay(3000);
                 } 
             } 
             addLog(AgentRole.PANEL_ARTIST, "Panels ready.", 'success'); 
@@ -450,17 +485,28 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
   
   const handleFinishPanelArt = () => { updateProject({ workflowStage: WorkflowStage.PRINTING }); addLog(AgentRole.PANEL_ARTIST, "Art locked. Sending to Typesetter.", 'success'); onAgentChange(AgentRole.TYPESETTER); };
   const handleFinishPrinting = () => { updateProject({ workflowStage: WorkflowStage.POST_PRODUCTION }); addLog(AgentRole.TYPESETTER, "Book Layout finalized. Sending to Motion Director.", 'success'); onAgentChange(AgentRole.CINEMATOGRAPHER); };
-  const handleRegenerateSinglePanel = async (panel: ComicPanel, index: number) => { 
+  
+  // MODIFIED REGEN
+  const handleRegenerateSinglePanel = async (panel: ComicPanel, index: number, customApiKey?: string) => { 
       const panelsBefore = [...project.panels]; 
       panelsBefore[index] = { ...panelsBefore[index], isGenerating: true }; 
       updateProject({ panels: panelsBefore }); 
       setRegeneratingPanelId(panel.id); 
       try { 
-          await checkApiKeyRequirement(); 
+          if (!customApiKey) await checkApiKeyRequirement(); 
           const worldSetting = project.seriesBible?.worldSetting || project.marketAnalysis?.worldSetting || ""; 
           const styleGuide = project.artStyleGuide || `Style: ${project.style}`; 
           const currentImageModel = project.imageModel || 'gemini-2.5-flash-image'; 
-          const imageUrl = await GeminiService.generatePanelImage(panel, styleGuide, project.characters, worldSetting, project.modelTier || 'STANDARD', currentImageModel); 
+          const imageUrl = await GeminiService.generatePanelImage(
+              panel, 
+              styleGuide, 
+              project.characters, 
+              worldSetting, 
+              project.modelTier || 'STANDARD', 
+              currentImageModel, 
+              panel.backgroundAssetId ? project.assets.find(a => a.id === panel.backgroundAssetId)?.imageUrl : undefined,
+              customApiKey // PASS KEY
+          ); 
           const newPanels = [...project.panels]; 
           newPanels[index] = { ...newPanels[index], imageUrl, isGenerating: false }; 
           updateProject({ panels: newPanels }); 
@@ -472,18 +518,29 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
             addLog(AgentRole.PANEL_ARTIST, `Panel Regen Failed: ${e.message}`, 'error');
         } finally { setRegeneratingPanelId(null); } 
     };
-  const handleRegenerateSingleCharacter = async (char: Character, index: number, specificStyle?: string) => { 
+
+  // MODIFIED REGEN
+  const handleRegenerateSingleCharacter = async (char: Character, index: number, specificStyle?: string, customApiKey?: string) => { 
       const charsStart = [...project.characters]; 
       charsStart[index] = { ...charsStart[index], isGenerating: true, error: undefined }; 
       updateProject({ characters: charsStart }); 
       const styleToUse = specificStyle || project.style; 
       const currentImageModel = project.imageModel || 'gemini-2.5-flash-image'; 
       try { 
-          await checkApiKeyRequirement(); 
+          if (!customApiKey) await checkApiKeyRequirement(); 
           const worldSetting = project.seriesBible?.worldSetting || project.marketAnalysis?.worldSetting || ""; 
           let styleGuide = project.artStyleGuide; 
           if (specificStyle && (!styleGuide || !styleGuide.includes(specificStyle))) { styleGuide = `Style: ${specificStyle}. Setting: ${worldSetting}`; } else if (!styleGuide) { styleGuide = `Style: ${styleToUse}`; } 
-          const result = await GeminiService.generateCharacterDesign(char.name, styleGuide, char.description, worldSetting, project.modelTier || 'STANDARD', currentImageModel); 
+          const result = await GeminiService.generateCharacterDesign(
+              char.name, 
+              styleGuide!, 
+              char.description, 
+              worldSetting, 
+              project.modelTier || 'STANDARD', 
+              currentImageModel,
+              undefined,
+              customApiKey // PASS KEY
+          ); 
           let consistencyStatus: 'PASS' | 'FAIL' = 'PASS'; 
           let consistencyReport = ''; 
           try { const check = await GeminiService.analyzeCharacterConsistency(result.imageUrl, styleToUse, char.name, project.modelTier || 'STANDARD'); consistencyStatus = check.isConsistent ? 'PASS' : 'FAIL'; consistencyReport = check.critique; } catch (e) {} 

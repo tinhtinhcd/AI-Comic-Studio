@@ -64,7 +64,13 @@ const UserEditModal: React.FC<{ user: UserProfile, onClose: () => void, onSave: 
 // --- MAIN APP ---
 
 const AdminApp: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'CONTENT'>('DASHBOARD');
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'CONTENT'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('acs_admin_active_tab');
+            return (saved as 'DASHBOARD' | 'USERS' | 'CONTENT') || 'DASHBOARD';
+        }
+        return 'DASHBOARD';
+    });
     
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [projects, setProjects] = useState<ComicProject[]>([]);
@@ -75,6 +81,7 @@ const AdminApp: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
+        localStorage.setItem('acs_admin_active_tab', activeTab);
         loadData();
     }, [activeTab]);
 

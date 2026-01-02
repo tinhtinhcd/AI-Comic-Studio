@@ -71,8 +71,8 @@ const getOpenAIKey = (): string => {
     return '';
 };
 
-const getAI = () => {
-    const key = getDynamicApiKey();
+const getAI = (customKey?: string) => {
+    const key = customKey || getDynamicApiKey();
     if (!key) {
         console.error("CRITICAL: Missing Gemini API Key during getAI() call.");
         throw new Error("MISSING_API_KEY");
@@ -101,6 +101,23 @@ const cleanAndParseJSON = (text: string) => {
 const getUserPreference = (): UserAIPreferences => {
     const user = getCurrentUser();
     return user?.aiPreferences || DEFAULT_USER_PREFERENCES;
+};
+
+// --- RETRY UTILITY ---
+const retryWithBackoff = async <T>(fn: () => Promise<T>, retries = 3, baseDelay = 3000): Promise<T> => {
+    try {
+        return await fn();
+    } catch (e: any) {
+        // Check for 429 or Quota Exceeded
+        const isQuota = e.status === 429 || e.code === 429 || e.message?.includes('429') || e.message?.toLowerCase().includes('quota');
+        
+        if (retries > 0 && isQuota) {
+            console.warn(`[Gemini] Quota/Rate Limit hit. Retrying in ${baseDelay}ms... (${retries} retries left)`);
+            await new Promise(resolve => setTimeout(resolve, baseDelay));
+            return retryWithBackoff(fn, retries - 1, baseDelay * 2);
+        }
+        throw e;
+    }
 };
 
 // --- UNIFIED GENERATION SERVICE ---
@@ -248,8 +265,10 @@ export const generateScript = async (theme: string, style: string, language: str
     const result = cleanAndParseJSON(text); return { title: result.title, panels: result.panels.map((p: any) => ({ ...p, id: crypto.randomUUID(), dialogue: p.dialogue || '', charactersInvolved: p.charactersInvolved || [] })) };
 };
 
-export const generateCharacterDesign = async (name: string, styleGuide: string, description: string, worldSetting: string, tier: 'STANDARD' | 'PREMIUM', imageModel: string = 'gemini-2.5-flash-image', referenceImage?: string): Promise<{ description: string, imageUrl: string }> => {
-    const ai = getAI();
+export const generateCharacterDesign = async (name: string, styleGuide: string, description: string, worldSetting: string, tier: 'STANDARD' | 'PREMIUM', imageModel: string = 'gemini-2.5-flash-image', referenceImage?: string, customApiKey?: string): Promise<{ description: string, imageUrl: string }> => {
+    // USE CUSTOM KEY IF PROVIDED
+    const ai = getAI(customApiKey);
+    
     // 1. Refine description using text model
     const refinedDesc = await unifiedGenerateText({ taskType: 'CREATIVE', modelTier: tier, contents: PROMPTS.characterDesign(name, styleGuide, description, worldSetting) });
     
@@ -264,10 +283,15 @@ export const generateCharacterDesign = async (name: string, styleGuide: string, 
         parts[0].text += " Use the attached image as a strict visual reference for the character's facial features and hair."; 
     }
     
-    console.log(`[Gemini] Generating Character: ${name} with model ${imageModel}`);
+    console.log(`[Gemini] Generating Character: ${name} with model ${imageModel} (Custom Key: ${!!customApiKey})`);
     
     try {
-        const response = await ai.models.generateContent({ model: imageModel, contents: { parts: parts }, config: imageConfig });
+        // Apply Retry Logic for Image Generation
+        const response = await retryWithBackoff(() => ai.models.generateContent({ 
+            model: imageModel, 
+            contents: { parts: parts }, 
+            config: imageConfig 
+        }));
         
         let imageUrl = ''; 
         let failureReason = '';
@@ -294,8 +318,10 @@ export const generateCharacterDesign = async (name: string, styleGuide: string, 
     }
 };
 
-export const generatePanelImage = async (panel: ComicPanel, styleGuide: string, characters: Character[], worldSetting: string, tier: 'STANDARD' | 'PREMIUM', imageModel: string = 'gemini-2.5-flash-image', assetImage?: string): Promise<string> => {
-    const ai = getAI();
+export const generatePanelImage = async (panel: ComicPanel, styleGuide: string, characters: Character[], worldSetting: string, tier: 'STANDARD' | 'PREMIUM', imageModel: string = 'gemini-2.5-flash-image', assetImage?: string, customApiKey?: string): Promise<string> => {
+    // USE CUSTOM KEY IF PROVIDED
+    const ai = getAI(customApiKey);
+    
     const charDesc = characters.filter(c => panel.charactersInvolved.includes(c.name)).map(c => `${c.name}: ${c.description}`).join(". ");
     let imageConfig = {}; 
     if (imageModel === 'gemini-3-pro-image-preview') { imageConfig = { imageConfig: { aspectRatio: "16:9", imageSize: "1K" } }; }
@@ -320,10 +346,15 @@ export const generatePanelImage = async (panel: ComicPanel, styleGuide: string, 
         } 
     }
     
-    console.log(`[Gemini] Generating Panel with model ${imageModel}. Prompt length: ${promptText.length}`);
+    console.log(`[Gemini] Generating Panel with model ${imageModel}. Custom Key: ${!!customApiKey}`);
 
     try {
-        const response = await ai.models.generateContent({ model: imageModel, contents: { parts: parts }, config: imageConfig });
+        // Apply Retry Logic for Panel Generation
+        const response = await retryWithBackoff(() => ai.models.generateContent({ 
+            model: imageModel, 
+            contents: { parts: parts }, 
+            config: imageConfig 
+        }));
         
         let imageUrl = ''; 
         let failureReason = '';
@@ -355,12 +386,14 @@ export const generatePanelVideo = async (panel: ComicPanel, style: string): Prom
     const ai = getAI(); 
     const base64Data = panel.imageUrl.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
     
-    let operation = await ai.models.generateVideos({ 
+    // Video generation uses a different method and is more expensive, so we might want less aggressive retries or handle it differently
+    // But applying retry here as well for robustness
+    let operation = await retryWithBackoff(() => ai.models.generateVideos({ 
         model: 'veo-3.1-fast-generate-preview', 
         prompt: `Cinematic motion for a comic panel. ${style} style. ${panel.description}. Subtle movement, parallax effect, atmospheric.`, 
         image: { imageBytes: base64Data, mimeType: 'image/png' }, 
         config: { numberOfVideos: 1, aspectRatio: '16:9', resolution: '720p' } 
-    });
+    }), 2, 5000); // Fewer retries, longer delay
     
     while (!operation.done) { 
         await new Promise(resolve => setTimeout(resolve, 5000)); 

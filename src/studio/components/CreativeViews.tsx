@@ -2,7 +2,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AgentRole, ComicProject, Character, ResearchData, CharacterVariant, AgentTask, ComicPanel, Asset } from '../types';
 import { AGENTS } from '../constants';
-import { MessageCircle, Loader2, Send, FileText, TrendingUp, Upload, Download, BookOpen, Sparkles, Lightbulb, Users, Feather, CheckCircle, RefreshCw, Lock, Unlock, ScanFace, Globe, Palette, Layers, ListTodo, Plus, Check, Trash2, Bot, Play, Film, AlertTriangle, Search, Eraser, PenTool, X, Anchor, Image as ImageIcon, MapPin, Edit2 } from 'lucide-react';
+import { MessageCircle, Loader2, Send, FileText, TrendingUp, Upload, Download, BookOpen, Sparkles, Lightbulb, Users, Feather, CheckCircle, RefreshCw, Lock, Unlock, ScanFace, Globe, Palette, Layers, ListTodo, Plus, Check, Trash2, Bot, Play, Film, AlertTriangle, Search, Eraser, PenTool, X, Anchor, Image as ImageIcon, MapPin, Edit2, Key } from 'lucide-react';
+
+const COMMON_STYLES = [
+    "Japanese Manga (B&W)",
+    "Japanese Manga (Color)",
+    "Webtoon (Vertical)",
+    "American Comic (Modern)",
+    "American Comic (Vintage/Golden Age)",
+    "Anime (Cel-Shaded)",
+    "Disney/Pixar 3D",
+    "Ghibli Style",
+    "Noir / Frank Miller",
+    "Cyberpunk / Neon",
+    "Watercolor / Ink Wash",
+    "Pixel Art"
+];
 
 const safeRender = (value: any): React.ReactNode => {
     if (typeof value === 'string' || typeof value === 'number') return value;
@@ -205,12 +220,11 @@ export const WriterView: React.FC<any> = (props) => {
 };
 
 export const CharacterDesignerView: React.FC<any> = (props) => {
-    // ... existing CharacterDesignerView code ...
-    // Assuming minimal changes needed here as grid handles mobile well
-    // Re-exporting for file validity
     const { project, handleFinishCharacterDesign, handleRegenerateSingleCharacter, handleGenerateAllCharacters, handleUpdateCharacterDescription, handleUpdateCharacterVoice, toggleCharacterLock, handleCharacterUpload, handleCheckConsistency, handleSelectCharacterVariant, role, t, availableVoices, loading, updateProject } = props;
     const [styleSelections, setStyleSelections] = useState<Record<string, string>>({});
     const [globalStyle, setGlobalStyle] = useState(project.style || 'Japanese Manga (B&W)');
+    const [tempApiKey, setTempApiKey] = useState('');
+    
     const characters = project.characters || [];
     const isGlobalGenerating = characters.some((c: any) => c.isGenerating);
     const handleAnchorUpload = (e: React.ChangeEvent<HTMLInputElement>, charIndex: number) => { const file = (e.target as any).files?.[0]; if (!file) return; const reader = new FileReader(); reader.onloadend = () => { const newChars = [...characters]; newChars[charIndex] = { ...newChars[charIndex], referenceImage: reader.result as string }; updateProject({ characters: newChars }); }; reader.readAsDataURL(file); };
@@ -222,22 +236,51 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                     <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-purple-200 shadow-md" />
                     <div><h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2><p className="text-gray-500 dark:text-gray-400">Model Sheets & Visual Development</p></div>
                 </div>
-                <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex-1 md:flex-none">
-                        <button onClick={() => handleGenerateAllCharacters(globalStyle)} disabled={isGlobalGenerating || loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 text-xs md:text-sm">{isGlobalGenerating || loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>} Generate All</button>
+                
+                {/* TOOLBAR: Style, Key, Generate */}
+                <div className="flex flex-wrap gap-2 w-full md:w-auto items-end">
+                    
+                    {/* Style Selector */}
+                    <div className="flex flex-col gap-1 w-full md:w-48">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Palette className="w-3 h-3"/> Style</label>
+                        <select 
+                            value={globalStyle} 
+                            onChange={(e) => setGlobalStyle(e.target.value)}
+                            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 outline-none shadow-sm focus:ring-2 focus:ring-purple-500"
+                        >
+                            {COMMON_STYLES.map(s => <option key={s} value={s}>{s}</option>)}
+                            <option value={project.style}>Current: {project.style}</option>
+                        </select>
                     </div>
-                    <button onClick={handleFinishCharacterDesign} className="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none transition-all text-xs md:text-sm"><CheckCircle className="w-5 h-5"/> {t('designer.finalize')}</button>
+
+                    {/* API Key Input */}
+                    <div className="flex flex-col gap-1 w-full md:w-48">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Key className="w-3 h-3"/> Emergency Key</label>
+                        <input 
+                            type="password"
+                            placeholder="Paste Key (Bypass 429)" 
+                            value={tempApiKey}
+                            onChange={(e) => setTempApiKey(e.target.value)}
+                            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-xs font-mono text-gray-700 dark:text-gray-200 outline-none shadow-sm focus:ring-2 focus:ring-purple-500"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex-1 md:flex-none">
+                        <button onClick={() => handleGenerateAllCharacters(globalStyle, tempApiKey)} disabled={isGlobalGenerating || loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 text-xs md:text-sm whitespace-nowrap">{isGlobalGenerating || loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>} Generate All</button>
+                    </div>
+                    <button onClick={handleFinishCharacterDesign} className="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none transition-all text-xs md:text-sm whitespace-nowrap"><CheckCircle className="w-5 h-5"/> {t('designer.finalize')}</button>
                 </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">{characters.map((char: Character, idx: number) => (<div key={char.id} className={`bg-white dark:bg-gray-800 border ${char.consistencyStatus === 'FAIL' ? 'border-red-400' : 'border-gray-200 dark:border-gray-700'} rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all group flex flex-col h-full`}><div className="aspect-square bg-gray-50 dark:bg-gray-900 relative overflow-hidden flex items-center justify-center shrink-0">{char.referenceImage && (<div className="absolute top-2 left-2 z-20 bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold shadow-md flex items-center gap-1" title="Using Anchor Image"><Anchor className="w-3 h-3"/> Anchored</div>)}{char.isGenerating && (<div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-purple-600 bg-white/90 z-10"><Loader2 className="w-8 h-8 animate-spin"/></div>)}{char.imageUrl ? (<img src={char.imageUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />) : (<Users className="w-12 h-12 text-gray-300 dark:text-gray-600"/>)}<div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm"><label className="p-3 bg-white rounded-full text-gray-800 hover:text-blue-600 shadow-lg transform hover:scale-110 transition-all cursor-pointer" title="Upload Reference (Manual)"><Upload className="w-5 h-5"/><input type="file" className="hidden" accept="image/*" onChange={(e) => handleCharacterUpload(e, idx)} /></label><label className="p-3 bg-white rounded-full text-gray-800 hover:text-indigo-600 shadow-lg transform hover:scale-110 transition-all cursor-pointer" title="Upload Anchor Image (For AI Consistency)"><Anchor className="w-5 h-5"/><input type="file" className="hidden" accept="image/*" onChange={(e) => handleAnchorUpload(e, idx)} /></label><button onClick={() => toggleCharacterLock(char.id)} className={`p-3 rounded-full shadow-lg transform hover:scale-110 transition-all ${char.isLocked ? 'bg-emerald-500 text-white' : 'bg-white text-gray-400 hover:text-emerald-500'}`} title="Lock Design">{char.isLocked ? <Lock className="w-5 h-5"/> : <Unlock className="w-5 h-5"/>}</button></div></div>{char.variants && char.variants.length > 0 && (<div className="px-4 pt-4 pb-2 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700"><p className="text-[10px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-1"><Layers className="w-3 h-3"/> Variations</p><div className="flex gap-2 overflow-x-auto custom-scrollbar pb-2">{char.variants.map((variant) => (<button key={variant.id} onClick={() => handleSelectCharacterVariant(idx, variant)} className={`w-10 h-10 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${char.imageUrl === variant.imageUrl ? 'border-purple-500 ring-2 ring-purple-100 dark:ring-purple-900' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'}`}><img src={variant.imageUrl} className="w-full h-full object-cover" /></button>))}</div></div>)}<div className="p-5 flex-1 flex flex-col space-y-4"><div><h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{char.name}</h3><span className="text-xs text-purple-600 dark:text-purple-300 font-bold bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">{char.role}</span></div><div><textarea className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs text-gray-600 dark:text-gray-300 focus:border-purple-300 outline-none resize-none h-20" value={char.description} onChange={(e) => handleUpdateCharacterDescription(idx, (e.target as any).value)} /></div><div className="flex gap-2"><button onClick={() => handleRegenerateSingleCharacter(char, idx)} className="flex-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 p-2 rounded-lg hover:bg-purple-200 font-bold text-xs">Regenerate</button><button onClick={() => handleCheckConsistency(char, idx)} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 p-2 rounded-lg hover:bg-gray-50" title="Check Consistency"><ScanFace className="w-4 h-4"/></button></div></div></div>))}</div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">{characters.map((char: Character, idx: number) => (<div key={char.id} className={`bg-white dark:bg-gray-800 border ${char.consistencyStatus === 'FAIL' ? 'border-red-400' : 'border-gray-200 dark:border-gray-700'} rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all group flex flex-col h-full`}><div className="aspect-square bg-gray-50 dark:bg-gray-900 relative overflow-hidden flex items-center justify-center shrink-0">{char.referenceImage && (<div className="absolute top-2 left-2 z-20 bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold shadow-md flex items-center gap-1" title="Using Anchor Image"><Anchor className="w-3 h-3"/> Anchored</div>)}{char.isGenerating && (<div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-purple-600 bg-white/90 z-10"><Loader2 className="w-8 h-8 animate-spin"/></div>)}{char.imageUrl ? (<img src={char.imageUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />) : (<Users className="w-12 h-12 text-gray-300 dark:text-gray-600"/>)}<div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm"><label className="p-3 bg-white rounded-full text-gray-800 hover:text-blue-600 shadow-lg transform hover:scale-110 transition-all cursor-pointer" title="Upload Reference (Manual)"><Upload className="w-5 h-5"/><input type="file" className="hidden" accept="image/*" onChange={(e) => handleCharacterUpload(e, idx)} /></label><label className="p-3 bg-white rounded-full text-gray-800 hover:text-indigo-600 shadow-lg transform hover:scale-110 transition-all cursor-pointer" title="Upload Anchor Image (For AI Consistency)"><Anchor className="w-5 h-5"/><input type="file" className="hidden" accept="image/*" onChange={(e) => handleAnchorUpload(e, idx)} /></label><button onClick={() => toggleCharacterLock(char.id)} className={`p-3 rounded-full shadow-lg transform hover:scale-110 transition-all ${char.isLocked ? 'bg-emerald-500 text-white' : 'bg-white text-gray-400 hover:text-emerald-500'}`} title="Lock Design">{char.isLocked ? <Lock className="w-5 h-5"/> : <Unlock className="w-5 h-5"/>}</button></div></div>{char.variants && char.variants.length > 0 && (<div className="px-4 pt-4 pb-2 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700"><p className="text-[10px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-1"><Layers className="w-3 h-3"/> Variations</p><div className="flex gap-2 overflow-x-auto custom-scrollbar pb-2">{char.variants.map((variant) => (<button key={variant.id} onClick={() => handleSelectCharacterVariant(idx, variant)} className={`w-10 h-10 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${char.imageUrl === variant.imageUrl ? 'border-purple-500 ring-2 ring-purple-100 dark:ring-purple-900' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'}`}><img src={variant.imageUrl} className="w-full h-full object-cover" /></button>))}</div></div>)}<div className="p-5 flex-1 flex flex-col space-y-4"><div><h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{char.name}</h3><span className="text-xs text-purple-600 dark:text-purple-300 font-bold bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">{char.role}</span></div><div><textarea className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs text-gray-600 dark:text-gray-300 focus:border-purple-300 outline-none resize-none h-20" value={char.description} onChange={(e) => handleUpdateCharacterDescription(idx, (e.target as any).value)} /></div><div className="flex gap-2"><button onClick={() => handleRegenerateSingleCharacter(char, idx, globalStyle, tempApiKey)} className="flex-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 p-2 rounded-lg hover:bg-purple-200 font-bold text-xs">Regenerate</button><button onClick={() => handleCheckConsistency(char, idx)} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 p-2 rounded-lg hover:bg-gray-50" title="Check Consistency"><ScanFace className="w-4 h-4"/></button></div></div></div>))}</div>
         </div>
     );
 };
 
 export const PanelArtistView: React.FC<{
     project: ComicProject;
-    handleStartPanelGeneration: (style: string) => void;
-    handleRegenerateSinglePanel: (panel: ComicPanel, index: number) => void;
+    handleStartPanelGeneration: (style: string, key?: string) => void;
+    handleRegenerateSinglePanel: (panel: ComicPanel, index: number, key?: string) => void;
     handleFinishPanelArt: () => void;
     loading: boolean;
     role: AgentRole;
@@ -249,6 +292,7 @@ export const PanelArtistView: React.FC<{
     const [drawingPanel, setDrawingPanel] = useState<{panel: ComicPanel, index: number} | null>(null);
     const [showAssetLibrary, setShowAssetLibrary] = useState(false);
     const [newAsset, setNewAsset] = useState<{name: string, type: 'BACKGROUND' | 'PROP', image?: string}>({name: '', type: 'BACKGROUND'});
+    const [tempApiKey, setTempApiKey] = useState('');
     
     const panels = project.panels || [];
     const assets = project.assets || [];
@@ -258,7 +302,7 @@ export const PanelArtistView: React.FC<{
         if (!drawingPanel) return;
         const newPanels = [...panels];
         const modifiedPanel = { ...newPanels[drawingPanel.index], layoutSketch: base64 };
-        handleRegenerateSinglePanel(modifiedPanel, drawingPanel.index);
+        handleRegenerateSinglePanel(modifiedPanel, drawingPanel.index, tempApiKey);
     };
 
     const handleUploadAsset = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -305,18 +349,30 @@ export const PanelArtistView: React.FC<{
                         </div>
                     </div>
                     
-                    <div className="flex gap-2 w-full sm:w-auto">
+                    <div className="flex gap-2 w-full sm:w-auto items-end">
+                        {/* API Key Input */}
+                        <div className="flex flex-col gap-1 w-full sm:w-48">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Key className="w-3 h-3"/> Emergency Key</label>
+                            <input 
+                                type="password"
+                                placeholder="Paste Key (Bypass 429)" 
+                                value={tempApiKey}
+                                onChange={(e) => setTempApiKey(e.target.value)}
+                                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-xs font-mono text-gray-700 dark:text-gray-200 outline-none shadow-sm focus:ring-2 focus:ring-rose-500"
+                            />
+                        </div>
+
                         <button onClick={() => setShowAssetLibrary(!showAssetLibrary)} className={`flex-1 sm:flex-none justify-center px-4 py-2 rounded-xl font-bold flex items-center gap-2 border transition-all ${showAssetLibrary ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600'}`}>
                             <MapPin className="w-5 h-5"/> Assets
                         </button>
                         {hasStartedGeneration ? (
-                            <button onClick={handleFinishPanelArt} className="flex-1 sm:flex-none justify-center bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-rose-200 dark:shadow-none transition-all">
+                            <button onClick={handleFinishPanelArt} className="flex-1 sm:flex-none justify-center bg-rose-600 hover:bg-rose-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-rose-200 dark:shadow-none transition-all">
                                 <CheckCircle className="w-5 h-5"/> {t('ui.approve')}
                             </button>
                         ) : (
                             <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex-1 sm:flex-none justify-center">
                                 <button 
-                                    onClick={() => handleStartPanelGeneration(selectedStyle)} 
+                                    onClick={() => handleStartPanelGeneration(selectedStyle, tempApiKey)} 
                                     disabled={loading}
                                     className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all shadow-md disabled:opacity-50"
                                 >
@@ -348,7 +404,7 @@ export const PanelArtistView: React.FC<{
                                 
                                 <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                     <button 
-                                        onClick={() => handleRegenerateSinglePanel(panel, idx)} 
+                                        onClick={() => handleRegenerateSinglePanel(panel, idx, tempApiKey)} 
                                         className="p-3 rounded-full bg-white text-gray-800 shadow-md border border-gray-200 hover:text-rose-600 transition-transform hover:scale-110"
                                         title="Regenerate"
                                     >
