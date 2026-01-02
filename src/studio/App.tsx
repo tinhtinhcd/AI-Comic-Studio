@@ -78,6 +78,14 @@ const StudioContent: React.FC = () => {
     localStorage.setItem('ai_comic_lang', uiLanguage);
   }, [uiLanguage]);
 
+  // Auto-hide preview on small screens initially
+  // MOVED UP to ensure consistent hook order
+  useEffect(() => {
+      if (window.innerWidth < 1024) {
+          setShowPreview(false);
+      }
+  }, []);
+
   const handleGoToReader = () => {
       window.location.href = '/reader/';
   };
@@ -85,13 +93,6 @@ const StudioContent: React.FC = () => {
   if (!currentUser) {
       return <LoginScreen onLogin={handleLogin} onEnterReader={handleGoToReader} />;
   }
-
-  // Auto-hide preview on small screens initially
-  useEffect(() => {
-      if (window.innerWidth < 1024) {
-          setShowPreview(false);
-      }
-  }, []);
 
   return (
     <div className={`flex h-screen font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
