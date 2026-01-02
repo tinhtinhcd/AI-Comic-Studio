@@ -68,10 +68,13 @@ export const getActiveProjects = async (userId?: string): Promise<ComicProject[]
         if (res.ok) {
             return await res.json();
         } else {
-            console.warn(`Cloud fetch failed (${res.status}). Switching to Local DB.`);
+            // Silently fallback if 503 or 404 (Offline Mode)
+            if (res.status !== 503 && res.status !== 404) {
+                console.warn(`Cloud fetch failed (${res.status}). Switching to Local DB.`);
+            }
         }
     } catch (e) {
-        console.warn("Cloud unreachable. Switching to Local DB.");
+        // Network error - fallback to local
     }
 
     // 2. Fallback to Local IndexedDB
@@ -117,8 +120,6 @@ export const saveWorkInProgress = async (project: ComicProject): Promise<{ succe
         return { success: true };
     }
 
-    console.warn(`Cloud save failed: ${cloudMessage}. Saving locally.`);
-
     // 2. Fallback to Local
     try {
         // Check Local Slots
@@ -139,7 +140,7 @@ export const deleteActiveProject = async (id: string): Promise<void> => {
     // Try Cloud
     try {
         await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-    } catch (e) { console.warn("Cloud delete failed"); }
+    } catch (e) {}
 
     // Always Delete Local
     await dbAction(STORE_PROJECTS, 'readwrite', (store) => store.delete(id));
