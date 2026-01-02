@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { AgentRole, ComicProject, AgentTask, TaskPriority } from '../types';
 import { AGENTS } from '../constants';
-import { CheckSquare, Plus, Trash2, X, ListTodo, Check, Bot, Flag, Calendar, Clock, AlertCircle } from 'lucide-react';
+import { CheckSquare, Plus, Trash2, X, ListTodo, Check, Bot, Flag, Clock } from 'lucide-react';
 
 interface AgentTodoListProps {
     role: AgentRole;
@@ -18,30 +18,18 @@ const AgentTodoList: React.FC<AgentTodoListProps> = ({ role, project, updateProj
     const [newDeadline, setNewDeadline] = useState('');
     
     const allTasks = project.agentTasks || [];
-    
-    // Sort logic: 
-    // 1. Incomplete first
-    // 2. Priority (High > Medium > Low > undefined)
-    // 3. Deadline (Earliest first)
-    // 4. Creation Time (Newest first)
     const priorityScore = { HIGH: 3, MEDIUM: 2, LOW: 1 };
 
     const roleTasks = allTasks
         .filter(task => task.role === role)
         .sort((a, b) => {
-            if (a.isCompleted !== b.isCompleted) {
-                return a.isCompleted ? 1 : -1;
-            }
-            // If both incomplete or both complete, sort by priority
+            if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
             const scoreA = priorityScore[a.priority || 'LOW'] || 0;
             const scoreB = priorityScore[b.priority || 'LOW'] || 0;
             if (scoreA !== scoreB) return scoreB - scoreA;
-
-            // If same priority, sort by deadline (if exists)
             if (a.deadline && b.deadline) return a.deadline - b.deadline;
-            if (a.deadline) return -1; // tasks with deadline come first
+            if (a.deadline) return -1;
             if (b.deadline) return 1;
-
             return b.createdAt - a.createdAt;
         });
 
@@ -96,9 +84,9 @@ const AgentTodoList: React.FC<AgentTodoListProps> = ({ role, project, updateProj
     };
 
     return (
-        <div className="absolute right-6 top-20 w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col z-50 animate-in fade-in slide-in-from-right-4 ring-1 ring-gray-900/5 dark:ring-black/20">
+        <div className="fixed inset-x-4 top-20 md:absolute md:inset-auto md:right-6 md:top-20 md:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col z-50 animate-in fade-in slide-in-from-bottom-4 md:slide-in-from-right-4 ring-1 ring-gray-900/5 dark:ring-black/20 max-h-[calc(100vh-140px)] md:max-h-[600px]">
             {/* Header */}
-            <div className={`p-4 rounded-t-2xl flex items-center justify-between ${agent.color.replace('bg-', 'bg-').replace('600', '50')} dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700`}>
+            <div className={`p-4 rounded-t-2xl flex items-center justify-between ${agent.color.replace('bg-', 'bg-').replace('600', '50')} dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 shrink-0`}>
                 <div className="flex items-center gap-2">
                     <ListTodo className={`w-5 h-5 ${agent.color.replace('bg-', 'text-')}`} />
                     <div>
@@ -117,7 +105,7 @@ const AgentTodoList: React.FC<AgentTodoListProps> = ({ role, project, updateProj
             </div>
 
             {/* List */}
-            <div className="max-h-[400px] overflow-y-auto p-2 custom-scrollbar space-y-1 bg-gray-50/50 dark:bg-gray-900/30">
+            <div className="flex-1 overflow-y-auto p-2 custom-scrollbar space-y-1 bg-gray-50/50 dark:bg-gray-900/30 min-h-0">
                 {roleTasks.length === 0 && (
                     <div className="text-center py-10 text-gray-400 dark:text-gray-500 text-xs italic flex flex-col items-center gap-2">
                         <CheckSquare className="w-8 h-8 opacity-20"/>
@@ -176,7 +164,7 @@ const AgentTodoList: React.FC<AgentTodoListProps> = ({ role, project, updateProj
             </div>
 
             {/* Input */}
-            <div className="p-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-b-2xl space-y-2">
+            <div className="p-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-b-2xl space-y-2 shrink-0">
                 <input 
                     value={newTask}
                     onChange={(e) => setNewTask((e.target as any).value)}
@@ -206,7 +194,7 @@ const AgentTodoList: React.FC<AgentTodoListProps> = ({ role, project, updateProj
                             type="date"
                             value={newDeadline}
                             onChange={(e) => setNewDeadline(e.target.value)}
-                            className="w-full h-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 text-[10px] text-gray-600 dark:text-gray-300 outline-none focus:border-indigo-300"
+                            className="w-full h-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 text-[10px] text-gray-600 dark:text-gray-300 outline-none focus:border-indigo-300 min-w-0"
                         />
                     </div>
 

@@ -86,12 +86,19 @@ const StudioContent: React.FC = () => {
       return <LoginScreen onLogin={handleLogin} onEnterReader={handleGoToReader} />;
   }
 
+  // Auto-hide preview on small screens initially
+  useEffect(() => {
+      if (window.innerWidth < 1024) {
+          setShowPreview(false);
+      }
+  }, []);
+
   return (
     <div className={`flex h-screen font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       
       <button 
           onClick={toggleFullScreen}
-          className={`fixed top-4 z-50 p-2 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-full shadow-lg hover:scale-110 transition-all duration-300 opacity-50 hover:opacity-100 ${showPreview ? 'right-[26rem]' : 'right-14'}`}
+          className={`hidden lg:flex fixed top-4 z-50 p-2 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-full shadow-lg hover:scale-110 transition-all duration-300 opacity-50 hover:opacity-100 ${showPreview ? 'right-[26rem]' : 'right-14'}`}
           title="Toggle Full Screen"
       >
           {isFullScreen ? <Minimize2 className="w-4 h-4"/> : <Maximize2 className="w-4 h-4"/>}
@@ -99,7 +106,7 @@ const StudioContent: React.FC = () => {
 
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-gray-900/20 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
-           <div className={`absolute left-0 top-0 bottom-0 w-64 shadow-2xl transition-colors ${theme === 'dark' ? 'bg-gray-800 border-r border-gray-700' : 'bg-white'}`}>
+           <div className={`absolute left-0 top-0 bottom-0 w-72 shadow-2xl transition-colors ${theme === 'dark' ? 'bg-gray-800 border-r border-gray-700' : 'bg-white'}`}>
               <Sidebar 
                 currentRole={activeRole} 
                 onSelectRole={(role) => { setActiveRole(role); setMobileMenuOpen(false); }}
@@ -132,14 +139,14 @@ const StudioContent: React.FC = () => {
       <div className="flex-1 flex flex-col h-full overflow-hidden relative transition-all duration-300">
         <div className={`lg:hidden p-4 border-b flex items-center justify-between shadow-sm z-10 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
            <div className="flex items-center gap-3 overflow-hidden">
-               <button onClick={() => setMobileMenuOpen(true)} className="shrink-0">
+               <button onClick={() => setMobileMenuOpen(true)} className="shrink-0 p-1">
                  <Menu className={`w-6 h-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
                </button>
                <Logo className="w-6 h-6 shrink-0" />
                <span className="font-bold text-sm truncate">{project.title}</span>
            </div>
-           <button onClick={() => setShowPreview(!showPreview)} className={`ml-2 shrink-0 text-xs px-3 py-1 rounded font-medium border ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>
-              {showPreview ? 'Hide' : 'View'}
+           <button onClick={() => setShowPreview(!showPreview)} className={`ml-2 shrink-0 text-xs px-3 py-1.5 rounded-lg font-bold border transition-colors ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+              {showPreview ? 'Hide' : 'View'} Comic
            </button>
         </div>
 
@@ -156,8 +163,15 @@ const StudioContent: React.FC = () => {
         </div>
 
         {showPreview && (
-          <div className="hidden lg:block">
-            <FinalComicView project={project} />
+          <div className="fixed inset-0 z-40 lg:static lg:block">
+             <div className="absolute inset-0 bg-black/50 lg:hidden backdrop-blur-sm transition-opacity" onClick={() => setShowPreview(false)}></div>
+             <FinalComicView project={project} />
+             <button 
+                onClick={() => setShowPreview(false)}
+                className="absolute top-4 right-4 z-50 p-2 bg-white rounded-full shadow-lg lg:hidden text-black"
+             >
+                <X className="w-6 h-6"/>
+             </button>
           </div>
         )}
 

@@ -17,7 +17,7 @@ const FinalComicView: React.FC<FinalComicViewProps> = ({ project }) => {
   };
 
   return (
-    <div className="fixed right-0 top-0 bottom-0 w-80 lg:w-96 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-[0_0_40px_rgba(0,0,0,0.05)] dark:shadow-none overflow-hidden flex flex-col z-20 transition-colors">
+    <div className="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-[0_0_40px_rgba(0,0,0,0.05)] dark:shadow-none overflow-hidden flex flex-col z-20 transition-all duration-300">
         <style>{`
           @keyframes kenburns {
             0% { transform: scale(1.0) translate(0, 0); }
@@ -29,7 +29,7 @@ const FinalComicView: React.FC<FinalComicViewProps> = ({ project }) => {
           }
         `}</style>
 
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center z-10">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center z-10 shrink-0">
             <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>
                 Live Preview

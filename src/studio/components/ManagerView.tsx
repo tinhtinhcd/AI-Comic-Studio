@@ -49,7 +49,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     const isProjectActive = !!project.storyFormat;
 
     const renderTabs = () => (
-        <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-1 overflow-x-auto">
+        <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-1 overflow-x-auto custom-scrollbar">
             <button 
                 onClick={() => setActiveTab('LOBBY')}
                 className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'LOBBY' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
@@ -89,7 +89,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                        <div className="flex justify-between items-center mb-4">
                            <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2"><Briefcase className="w-5 h-5 text-indigo-600 dark:text-indigo-400"/> {t('ui.resume')}</h3>
                        </div>
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                            {[0, 1, 2].map(i => {
                                const slotProject = activeProjects[i];
                                return slotProject ? (
@@ -127,7 +127,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                            <button onClick={() => { updateProject({ storyFormat: 'SHORT_STORY' }); setActiveTab('PIPELINE'); }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-400 hover:shadow-xl transition-all text-left group relative overflow-hidden">
                                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><BookOpen className="w-24 h-24 text-indigo-600 dark:text-indigo-400"/></div>
                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl text-indigo-600 dark:text-indigo-400 w-fit mb-4 border border-indigo-100 dark:border-indigo-800"><BookOpen className="w-6 h-6"/></div>
@@ -154,7 +154,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     {/* Import Section */}
                     <div>
                         <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2"><FolderOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-400"/> {t('ui.quick_import')}</h3>
-                        <div className="flex gap-4">
+                        <div className="flex flex-col sm:flex-row gap-4">
                             <label className="flex-1 bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl p-6 cursor-pointer transition-all flex flex-col items-center justify-center gap-2 text-center group">
                                 <FileText className="w-8 h-8 text-gray-400 dark:text-gray-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400"/>
                                 <span className="font-bold text-sm text-gray-600 dark:text-gray-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">{t('ui.import_script_btn')}</span>
@@ -175,119 +175,121 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     if (activeTab === 'PIPELINE') {
         return (
             <div className="flex flex-col lg:flex-row gap-8 h-full pb-8">
-                <div className="w-full">
+                <div className="w-full h-full flex flex-col">
                     {renderTabs()}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
-                        {/* Pipeline Status */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm h-full">
-                            <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-4">
-                                <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> {t('manager.pipeline')}
-                            </h3>
-                            
-                            <div className="mb-6">
-                                <label className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider mb-2 block flex items-center gap-2">
-                                    <Lightbulb className="w-4 h-4"/> {t('manager.theme')}
-                                </label>
-                                <textarea
-                                    value={project.theme || inputText}
-                                    onChange={(e) => { setInputText((e.target as HTMLTextAreaElement).value); updateProject({ theme: (e.target as HTMLTextAreaElement).value }); }}
-                                    placeholder={t('manager.themeplaceholder')}
-                                    className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-sm text-gray-900 dark:text-gray-100 min-h-[100px] outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all placeholder-gray-400"
-                                />
-                            </div>
-
-                            <div className="space-y-3">
-                                <button 
-                                    onClick={handleStartResearch} 
-                                    disabled={loading || (!project.theme && !project.originalScript) || !project.storyFormat} 
-                                    className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
-                                        ${project.workflowStage === WorkflowStage.IDLE 
-                                            ? 'bg-gradient-to-r from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 shadow-md shadow-indigo-100 dark:shadow-none' 
-                                            : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
-                                        disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
-                                    `}
-                                >
-                                    <div className="flex items-center gap-3"><TrendingUp className="w-4 h-4"/><span className="font-bold">{t('action.start_research')}</span></div>
-                                </button>
+                    <div className="flex-1 overflow-y-auto pr-1">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+                            {/* Pipeline Status */}
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
+                                <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-4">
+                                    <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> {t('manager.pipeline')}
+                                </h3>
                                 
-                                <button 
-                                    onClick={handleApproveResearchAndScript} 
-                                    disabled={loading || !project.marketAnalysis || !project.storyConcept} 
-                                    className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
-                                        ${project.workflowStage === WorkflowStage.RESEARCHING 
-                                            ? 'bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 shadow-md shadow-emerald-100 dark:shadow-none' 
-                                            : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
-                                        disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
-                                    `}
-                                >
-                                    <div className="flex items-center gap-3"><BookOpen className="w-4 h-4"/><span className="font-bold">{project.originalScript ? t('action.adapt_script') : t('action.approve_script')}</span></div>
-                                </button>
+                                <div className="mb-6">
+                                    <label className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider mb-2 block flex items-center gap-2">
+                                        <Lightbulb className="w-4 h-4"/> {t('manager.theme')}
+                                    </label>
+                                    <textarea
+                                        value={project.theme || inputText}
+                                        onChange={(e) => { setInputText((e.target as HTMLTextAreaElement).value); updateProject({ theme: (e.target as HTMLTextAreaElement).value }); }}
+                                        placeholder={t('manager.themeplaceholder')}
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-sm text-gray-900 dark:text-gray-100 min-h-[100px] outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all placeholder-gray-400"
+                                    />
+                                </div>
 
-                                <button 
-                                    onClick={handleApproveScriptAndVisualize} 
-                                    disabled={loading || project.panels.length === 0 || project.characters.length === 0} 
-                                    className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
-                                        ${project.workflowStage === WorkflowStage.CENSORING_SCRIPT 
-                                            ? 'bg-gradient-to-r from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 shadow-md shadow-rose-100 dark:shadow-none' 
-                                            : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
-                                        disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
-                                    `}
-                                >
-                                    <div className="flex items-center gap-3"><Palette className="w-4 h-4"/><span className="font-bold">{t('action.approve_art')}</span></div>
-                                </button>
-                                
-                                <button 
-                                    onClick={handleFinalizeProduction} 
-                                    disabled={loading || !project.panels.some(p => p.imageUrl) || project.workflowStage === WorkflowStage.PRINTING} 
-                                    className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
-                                        ${project.workflowStage === WorkflowStage.PRINTING 
-                                            ? 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 border-gray-300 dark:border-gray-500 text-gray-800 dark:text-gray-200 shadow-md shadow-gray-200 dark:shadow-none' 
-                                            : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
-                                        disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
-                                    `}
-                                >
-                                    <div className="flex items-center gap-3"><Printer className="w-4 h-4"/><span className="font-bold">{t('action.start_printing')}</span></div>
-                                </button>
-
-                                <button 
-                                    disabled={project.workflowStage !== WorkflowStage.POST_PRODUCTION} 
-                                    className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
-                                        ${project.workflowStage === WorkflowStage.POST_PRODUCTION 
-                                            ? 'bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 shadow-md shadow-amber-100 dark:shadow-none' 
-                                            : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
-                                        disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
-                                    `}
-                                >
-                                    <div className="flex items-center gap-3"><Archive className="w-4 h-4"/><span className="font-bold">{isLongFormat ? t('action.finalize_chapter') : t('action.finalize_prod')}</span></div>
-                                </button>
-
-                                {project.workflowStage !== WorkflowStage.IDLE && (
+                                <div className="space-y-3">
                                     <button 
-                                        onClick={handleRevertStage} 
-                                        className="w-full mt-4 py-3 px-5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800 transition-all"
+                                        onClick={handleStartResearch} 
+                                        disabled={loading || (!project.theme && !project.originalScript) || !project.storyFormat} 
+                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
+                                            ${project.workflowStage === WorkflowStage.IDLE 
+                                                ? 'bg-gradient-to-r from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 shadow-md shadow-indigo-100 dark:shadow-none' 
+                                                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
+                                            disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
+                                        `}
                                     >
-                                        <RotateCcw className="w-3 h-3"/> Revert Previous Step
+                                        <div className="flex items-center gap-3"><TrendingUp className="w-4 h-4"/><span className="font-bold">{t('action.start_research')}</span></div>
                                     </button>
-                                )}
-                            </div>
-                        </div>
+                                    
+                                    <button 
+                                        onClick={handleApproveResearchAndScript} 
+                                        disabled={loading || !project.marketAnalysis || !project.storyConcept} 
+                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
+                                            ${project.workflowStage === WorkflowStage.RESEARCHING 
+                                                ? 'bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 shadow-md shadow-emerald-100 dark:shadow-none' 
+                                                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
+                                            disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
+                                        `}
+                                    >
+                                        <div className="flex items-center gap-3"><BookOpen className="w-4 h-4"/><span className="font-bold">{project.originalScript ? t('action.adapt_script') : t('action.approve_script')}</span></div>
+                                    </button>
 
-                        {/* Logs */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col overflow-hidden">
-                            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                                <h3 className="font-bold text-gray-800 dark:text-gray-100">{t('manager.logs')}</h3>
+                                    <button 
+                                        onClick={handleApproveScriptAndVisualize} 
+                                        disabled={loading || project.panels.length === 0 || project.characters.length === 0} 
+                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
+                                            ${project.workflowStage === WorkflowStage.CENSORING_SCRIPT 
+                                                ? 'bg-gradient-to-r from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 shadow-md shadow-rose-100 dark:shadow-none' 
+                                                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
+                                            disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
+                                        `}
+                                    >
+                                        <div className="flex items-center gap-3"><Palette className="w-4 h-4"/><span className="font-bold">{t('action.approve_art')}</span></div>
+                                    </button>
+                                    
+                                    <button 
+                                        onClick={handleFinalizeProduction} 
+                                        disabled={loading || !project.panels.some(p => p.imageUrl) || project.workflowStage === WorkflowStage.PRINTING} 
+                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
+                                            ${project.workflowStage === WorkflowStage.PRINTING 
+                                                ? 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 border-gray-300 dark:border-gray-500 text-gray-800 dark:text-gray-200 shadow-md shadow-gray-200 dark:shadow-none' 
+                                                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
+                                            disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
+                                        `}
+                                    >
+                                        <div className="flex items-center gap-3"><Printer className="w-4 h-4"/><span className="font-bold">{t('action.start_printing')}</span></div>
+                                    </button>
+
+                                    <button 
+                                        disabled={project.workflowStage !== WorkflowStage.POST_PRODUCTION} 
+                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
+                                            ${project.workflowStage === WorkflowStage.POST_PRODUCTION 
+                                                ? 'bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 shadow-md shadow-amber-100 dark:shadow-none' 
+                                                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
+                                            disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
+                                        `}
+                                    >
+                                        <div className="flex items-center gap-3"><Archive className="w-4 h-4"/><span className="font-bold">{isLongFormat ? t('action.finalize_chapter') : t('action.finalize_prod')}</span></div>
+                                    </button>
+
+                                    {project.workflowStage !== WorkflowStage.IDLE && (
+                                        <button 
+                                            onClick={handleRevertStage} 
+                                            className="w-full mt-4 py-3 px-5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800 transition-all"
+                                        >
+                                            <RotateCcw className="w-3 h-3"/> Revert Previous Step
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white dark:bg-gray-800 font-mono text-xs">
-                                {project.logs?.length === 0 && <div className="text-gray-400 dark:text-gray-500 text-center italic mt-10">{t('ui.waiting')}</div>}
-                                {project.logs?.map((log) => (
-                                    <div key={log.id} className="flex gap-2">
-                                        <span className="text-gray-400 dark:text-gray-500 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}]</span>
-                                        <div className="flex-1">
-                                            <span className="text-blue-600 dark:text-blue-400 font-bold">{t(AGENTS[log.agentId].name)}: </span>
-                                            <span className="text-gray-700 dark:text-gray-300">{log.message}</span>
+
+                            {/* Logs */}
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col overflow-hidden max-h-96 lg:max-h-none">
+                                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-100">{t('manager.logs')}</h3>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white dark:bg-gray-800 font-mono text-xs">
+                                    {project.logs?.length === 0 && <div className="text-gray-400 dark:text-gray-500 text-center italic mt-10">{t('ui.waiting')}</div>}
+                                    {project.logs?.map((log) => (
+                                        <div key={log.id} className="flex gap-2">
+                                            <span className="text-gray-400 dark:text-gray-500 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}]</span>
+                                            <div className="flex-1">
+                                                <span className="text-blue-600 dark:text-blue-400 font-bold">{t(AGENTS[log.agentId].name)}: </span>
+                                                <span className="text-gray-700 dark:text-gray-300">{log.message}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -308,8 +310,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
         return (
             <div className="flex flex-col h-full pb-8">
                 {renderTabs()}
-                <div className="flex-1 flex gap-6 overflow-hidden">
-                    <div className="w-1/4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden">
+                    <div className="w-full lg:w-1/4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden flex flex-col max-h-48 lg:max-h-none">
                         <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                             <h3 className="font-bold text-gray-700 dark:text-gray-200 text-xs uppercase tracking-wider">Danh Sách Chương</h3>
                         </div>
@@ -336,7 +338,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     </div>
 
                     <div className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start">
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-wrap justify-between items-start gap-4">
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Chapter {selectedChapterId}</h2>
                                 <div className="flex items-center gap-2 mt-2">
@@ -411,22 +413,24 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     }
 
     if (activeTab === 'SETTINGS') {
+       // ... existing settings code ...
        return (
             <div className="flex flex-col h-full pb-8">
                 {renderTabs()}
                 <div className="w-full flex flex-col h-full overflow-hidden">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex-1 overflow-y-auto">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex-1 overflow-y-auto custom-scrollbar">
+                        {/* Content same as before */}
                         <div className="space-y-8 max-w-2xl">
-                            
+                            {/* ... Settings Content ... */}
                             <div className="p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
                                 <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                                     <BrainCircuit className="w-5 h-5 text-purple-600"/> AI Engine Configuration
                                 </h3>
-                                
+                                {/* ... Engine Selection Code ... */}
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">{t('manager.text_engine')}</label>
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-col sm:flex-row gap-2">
                                             <button 
                                                 onClick={() => updateTextEngine('GEMINI')}
                                                 className={`flex-1 py-3 px-4 rounded-xl border text-sm font-bold transition-all flex flex-col items-center gap-1 ${project.textEngine === 'GEMINI' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'}`}
@@ -449,9 +453,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                                 <span className="text-[10px] font-normal opacity-70">Creative</span>
                                             </button>
                                         </div>
-                                        <p className="text-xs text-gray-400 mt-2 italic">
-                                            Tip: Manage API Keys in your "My Profile" page.
-                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -467,9 +468,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                         </span>
                                     ))}
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                                     {supportedLanguages.filter(l => !project.targetLanguages?.includes(l)).map(lang => (
-                                        <button key={lang} onClick={() => handleAddLanguage(lang)} className="px-2 py-1 text-xs border rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-300">{lang}</button>
+                                        <button key={lang} onClick={() => handleAddLanguage(lang)} className="px-2 py-1 text-xs border rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-300 whitespace-nowrap">{lang}</button>
                                     ))}
                                 </div>
                             </div>
