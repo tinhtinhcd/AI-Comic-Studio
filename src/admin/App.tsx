@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, BarChart3, ShieldAlert, Settings, LogOut, XCircle, Search, Wallet, Edit2, Check, X, FileText, Trash2 } from 'lucide-react';
 import { UserProfile, ComicProject } from '../types';
-import { Logo } from '../components/Logo';
+import { Logo } from './components/Logo';
 
 // --- COMPONENTS ---
 

@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ComicProject, Chapter, Comment } from './types';
-import * as StorageService from '../services/storageService';
+import * as StorageService from './services/storageService';
 import { 
     BookOpen, ChevronLeft, Heart, Share2, Search, X, Star, Layers, 
     Home, Compass, Library, User, Bell, Settings, MessageCircle, 
     MoreHorizontal, ArrowRight, PlayCircle, Clock, ThumbsUp 
 } from 'lucide-react';
-import { Logo } from '../components/Logo';
+import { Logo } from './components/Logo';
 
 // --- MOCK DATA GENERATORS (To fill gaps in backend data) ---
 const MOCK_COMMENTS: Comment[] = [
@@ -297,7 +297,7 @@ const ReaderApp: React.FC = () => {
                             {[1, 2, 3].map(ep => (
                                 <div key={ep} onClick={handleReadChapter} className="flex gap-4 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 cursor-pointer transition-colors group">
                                     <div className="w-24 h-20 rounded-lg bg-gray-200 dark:bg-gray-800 overflow-hidden relative shrink-0">
-                                        {selectedProject.panels[0]?.imageUrl && <img src={selectedProject.panels[0].imageUrl} className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform"/>}
+                                        {selectedProject.panels[0]?.imageUrl && <img src={selectedProject.panels[0].imageUrl} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform"/>}
                                         {ep === 1 && <div className="absolute inset-0 flex items-center justify-center bg-black/20"><span className="text-[10px] font-bold text-white uppercase tracking-widest">Read</span></div>}
                                     </div>
                                     <div className="flex-1 py-1">
