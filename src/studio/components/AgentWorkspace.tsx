@@ -5,7 +5,7 @@ import { AgentRole, ComicProject, ComicPanel, Character, WorkflowStage, SystemLo
 import { AGENTS, TRANSLATIONS, INITIAL_PROJECT_STATE } from '../constants';
 import * as GeminiService from '../services/geminiService';
 import * as StorageService from '../services/storageService';
-import { Send, RefreshCw, CheckCircle, Loader2, Sparkles, UserPlus, BookOpen, Users, Megaphone, Video, Palette, Save, Globe, TrendingUp, ShieldAlert, Archive, Briefcase, ChevronRight, Printer, ListTodo, Lock, Layers, Split, User, Layout } from 'lucide-react';
+import { Send, RefreshCw, CheckCircle, Loader2, Sparkles, UserPlus, BookOpen, Users, Megaphone, Video, Palette, Save, Globe, TrendingUp, ShieldAlert, Archive, Briefcase, ChevronRight, Printer, ListTodo, Lock, Layers, Split, User, Layout, Key } from 'lucide-react';
 import { ManagerView } from './ManagerView';
 import { ResearchView, WriterView, CharacterDesignerView, PanelArtistView } from './CreativeViews';
 import { VoiceView, MotionView, TypesetterView, ContinuityView, CensorView, TranslatorView, PublisherView } from './ProductionViews';
@@ -218,7 +218,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                         ? 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' 
                         : 'text-indigo-700 bg-indigo-50 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800';
                 } else {
-                     statusColor = 'text-gray-400 bg-gray-50 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 cursor-not-allowed';
+                     statusColor = 'text-gray-400 bg-gray-50 border-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700 cursor-not-allowed';
                 }
 
                 return (
@@ -569,7 +569,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                             onClick={() => setManagerViewMode('PROFILE')}
                             className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${managerViewMode === 'PROFILE' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}
                         >
-                            <User className="w-4 h-4"/> My Profile
+                            <Key className="w-4 h-4"/> Profile & Keys
                         </button>
                     </div>
                 </div>
