@@ -25,6 +25,7 @@ export interface Agent {
 }
 
 export type AIProvider = 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
+export type ImageProvider = 'GEMINI' | 'MIDJOURNEY' | 'LEONARDO' | 'FLUX'; // NEW TYPES
 
 export interface UserAIPreferences {
     creativeEngine: AIProvider; 
@@ -37,6 +38,8 @@ export interface UserKeys {
     gemini?: string;
     deepseek?: string;
     openai?: string;
+    midjourney?: string; // NEW
+    leonardo?: string;   // NEW
 }
 
 export interface UserProfile {
@@ -50,7 +53,7 @@ export interface UserProfile {
     joinDate: number;
     aiPreferences?: UserAIPreferences;
     apiKeys?: UserKeys; 
-    credits?: number; // NEW: Free Trial Credits
+    credits?: number; 
     stats?: {
         projectsCount: number;
         chaptersCount: number;
@@ -141,6 +144,8 @@ export interface SystemLog {
   type: 'info' | 'success' | 'error' | 'warning';
 }
 
+export type TaskPriority = 'HIGH' | 'MEDIUM' | 'LOW';
+
 export interface AgentTask {
     id: string;
     role: AgentRole;
@@ -149,6 +154,8 @@ export interface AgentTask {
     createdAt: number;
     type: 'USER' | 'SYSTEM';
     targetChapter?: number;
+    priority?: TaskPriority;
+    deadline?: number; 
 }
 
 export interface ResearchData {
@@ -200,7 +207,11 @@ export interface ComicProject {
   publicationType: PublicationType;
   modelTier?: 'STANDARD' | 'PREMIUM';
   textEngine?: 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
-  imageModel?: 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview';
+  
+  // Updated Image Config
+  imageProvider?: ImageProvider; // Provider Selection
+  imageModel?: string; // Specific model ID
+  
   originalScript?: string;
   masterLanguage: string;
   targetLanguages: string[];

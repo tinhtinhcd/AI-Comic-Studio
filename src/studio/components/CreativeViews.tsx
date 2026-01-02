@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { AgentRole, ComicProject, Character, ResearchData, CharacterVariant, AgentTask, ComicPanel, Asset } from '../types';
+import { AgentRole, ComicProject, Character, ResearchData, CharacterVariant, AgentTask, ComicPanel, Asset, ImageProvider } from '../types';
 import { AGENTS } from '../constants';
-import { MessageCircle, Loader2, Send, FileText, TrendingUp, Upload, Download, BookOpen, Sparkles, Lightbulb, Users, Feather, CheckCircle, RefreshCw, Lock, Unlock, ScanFace, Globe, Palette, Layers, ListTodo, Plus, Check, Trash2, Bot, Play, Film, AlertTriangle, Search, Eraser, PenTool, X, Anchor, Image as ImageIcon, MapPin, Edit2, Key } from 'lucide-react';
+import { MessageCircle, Loader2, Send, FileText, TrendingUp, Upload, Download, BookOpen, Sparkles, Lightbulb, Users, Feather, CheckCircle, RefreshCw, Lock, Unlock, ScanFace, Globe, Palette, Layers, ListTodo, Plus, Check, Trash2, Bot, Play, Film, AlertTriangle, Search, Eraser, PenTool, X, Anchor, Image as ImageIcon, MapPin, Edit2, Key, Zap, DollarSign } from 'lucide-react';
 
 const COMMON_STYLES = [
     "Japanese Manga (B&W)",
@@ -18,6 +18,14 @@ const COMMON_STYLES = [
     "Watercolor / Ink Wash",
     "Pixel Art"
 ];
+
+// UPDATED FOR 2026 PROJECTIONS - COMIC FOCUS
+const COST_ESTIMATES: Record<string, { cost: string, label: string, color: string }> = {
+    'GEMINI': { cost: '~$0.004', label: 'Recommended', color: 'text-blue-600' },
+    'MIDJOURNEY': { cost: '~$0.060', label: 'Premium Art', color: 'text-purple-600' },
+    'LEONARDO': { cost: '~$0.015', label: 'Comic Specialist', color: 'text-pink-600' },
+    'FLUX': { cost: '~$0.001', label: 'Drafting (Cheap)', color: 'text-emerald-600' },
+};
 
 const safeRender = (value: any): React.ReactNode => {
     if (typeof value === 'string' || typeof value === 'number') return value;
@@ -279,8 +287,8 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
 
 export const PanelArtistView: React.FC<{
     project: ComicProject;
-    handleStartPanelGeneration: (style: string, key?: string) => void;
-    handleRegenerateSinglePanel: (panel: ComicPanel, index: number, key?: string) => void;
+    handleStartPanelGeneration: (style: string, key?: string, provider?: ImageProvider) => void;
+    handleRegenerateSinglePanel: (panel: ComicPanel, index: number, key?: string, provider?: ImageProvider) => void;
     handleFinishPanelArt: () => void;
     loading: boolean;
     role: AgentRole;
@@ -293,6 +301,7 @@ export const PanelArtistView: React.FC<{
     const [showAssetLibrary, setShowAssetLibrary] = useState(false);
     const [newAsset, setNewAsset] = useState<{name: string, type: 'BACKGROUND' | 'PROP', image?: string}>({name: '', type: 'BACKGROUND'});
     const [tempApiKey, setTempApiKey] = useState('');
+    const [selectedProvider, setSelectedProvider] = useState<ImageProvider>('GEMINI');
     
     const panels = project.panels || [];
     const assets = project.assets || [];
@@ -302,7 +311,7 @@ export const PanelArtistView: React.FC<{
         if (!drawingPanel) return;
         const newPanels = [...panels];
         const modifiedPanel = { ...newPanels[drawingPanel.index], layoutSketch: base64 };
-        handleRegenerateSinglePanel(modifiedPanel, drawingPanel.index, tempApiKey);
+        handleRegenerateSinglePanel(modifiedPanel, drawingPanel.index, tempApiKey, selectedProvider);
     };
 
     const handleUploadAsset = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -328,6 +337,8 @@ export const PanelArtistView: React.FC<{
         setNewAsset({name: '', type: 'BACKGROUND'});
     };
 
+    const costInfo = COST_ESTIMATES[selectedProvider];
+
     return (
         <div className="flex h-[calc(100vh-100px)] relative">
              {drawingPanel && (
@@ -349,13 +360,33 @@ export const PanelArtistView: React.FC<{
                         </div>
                     </div>
                     
-                    <div className="flex gap-2 w-full sm:w-auto items-end">
+                    <div className="flex gap-2 w-full sm:w-auto items-end flex-wrap">
+                        {/* Provider Selector */}
+                        <div className="flex flex-col gap-1 w-full sm:w-40">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Zap className="w-3 h-3"/> Engine (2026)</label>
+                            <select 
+                                value={selectedProvider}
+                                onChange={(e) => setSelectedProvider(e.target.value as ImageProvider)}
+                                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 outline-none shadow-sm focus:ring-2 focus:ring-rose-500"
+                            >
+                                <option value="GEMINI">Gemini (Balanced)</option>
+                                <option value="FLUX">Flux (Draft / Cheap)</option>
+                                <option value="MIDJOURNEY">Midjourney (Final)</option>
+                                <option value="LEONARDO">Leonardo (Ref)</option>
+                            </select>
+                            {costInfo && (
+                                <span className={`text-[10px] font-bold ${costInfo.color} flex items-center gap-1`}>
+                                    <DollarSign className="w-3 h-3"/> Est: {costInfo.cost}/img
+                                </span>
+                            )}
+                        </div>
+
                         {/* API Key Input */}
-                        <div className="flex flex-col gap-1 w-full sm:w-48">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Key className="w-3 h-3"/> Emergency Key</label>
+                        <div className="flex flex-col gap-1 w-full sm:w-40">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Key className="w-3 h-3"/> API Key</label>
                             <input 
                                 type="password"
-                                placeholder="Paste Key (Bypass 429)" 
+                                placeholder={selectedProvider === 'GEMINI' ? "Bypass Limit" : "Required"}
                                 value={tempApiKey}
                                 onChange={(e) => setTempApiKey(e.target.value)}
                                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-xs font-mono text-gray-700 dark:text-gray-200 outline-none shadow-sm focus:ring-2 focus:ring-rose-500"
@@ -372,12 +403,12 @@ export const PanelArtistView: React.FC<{
                         ) : (
                             <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex-1 sm:flex-none justify-center">
                                 <button 
-                                    onClick={() => handleStartPanelGeneration(selectedStyle, tempApiKey)} 
+                                    onClick={() => handleStartPanelGeneration(selectedStyle, tempApiKey, selectedProvider)} 
                                     disabled={loading}
                                     className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all shadow-md disabled:opacity-50"
                                 >
                                     {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>}
-                                    Generate Panels
+                                    Generate
                                 </button>
                             </div>
                         )}
@@ -404,7 +435,7 @@ export const PanelArtistView: React.FC<{
                                 
                                 <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                     <button 
-                                        onClick={() => handleRegenerateSinglePanel(panel, idx, tempApiKey)} 
+                                        onClick={() => handleRegenerateSinglePanel(panel, idx, tempApiKey, selectedProvider)} 
                                         className="p-3 rounded-full bg-white text-gray-800 shadow-md border border-gray-200 hover:text-rose-600 transition-transform hover:scale-110"
                                         title="Regenerate"
                                     >

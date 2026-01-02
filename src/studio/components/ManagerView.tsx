@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ComicProject, WorkflowStage, AgentRole } from '../types';
 import { AGENTS } from '../constants';
-import { Settings, CheckCircle, Archive, Activity, LayoutTemplate, BookOpen, Library, Smartphone, FolderOpen, TrendingUp, Palette, Printer, Trash2, ArrowRight, RotateCcw, Map, Edit, Eye, Lock, Lightbulb, Home, Briefcase, BrainCircuit, FileText, Globe, X, Plus, Languages, Sliders, Hash, Key, Calendar } from 'lucide-react';
+import { Settings, CheckCircle, Archive, Activity, LayoutTemplate, BookOpen, Library, Smartphone, FolderOpen, TrendingUp, Palette, Printer, Trash2, ArrowRight, RotateCcw, Map, Edit, Eye, Lock, Lightbulb, Home, Briefcase, BrainCircuit, FileText, Globe, X, Plus, Languages, Sliders, Hash, Key, Calendar, BarChart4, DollarSign, Info } from 'lucide-react';
 
 interface ManagerViewProps {
     project: ComicProject;
@@ -37,6 +37,15 @@ interface StoredKey {
     isActive: boolean;
 }
 
+// 2026 MARKET DATA
+const AI_MARKET_DATA = [
+    { name: "Flux.1 [Schnell]", provider: "Black Forest", cost: "$0.001", type: "Cheapest", comicScore: "8.5/10", note: "Tốc độ cực nhanh. Tốt nhất cho Layout & Phác thảo." },
+    { name: "DeepSeek Janus-Pro", provider: "DeepSeek", cost: "$0.0005", type: "Ultra Low", comicScore: "7.5/10", note: "Rẻ nhất thị trường. Hiểu lệnh logic tốt, nhưng art style hơi cứng." },
+    { name: "Gemini 3.0 Flash", provider: "Google", cost: "$0.004", type: "Balanced", comicScore: "9.0/10", note: "Cân bằng nhất. Hiểu kịch bản dài (Multimodal). Tích hợp sẵn." },
+    { name: "Midjourney v7", provider: "Midjourney", cost: "$0.060", type: "Premium", comicScore: "9.5/10", note: "Đẹp nhất (Artistic). Đắt gấp 60 lần Flux. Khó control nhân vật." },
+    { name: "Leonardo Phoenix", provider: "Leonardo.ai", cost: "$0.015", type: "Specialist", comicScore: "9.2/10", note: "Tool mạnh nhất cho Comic (ControlNet, Character Ref)." },
+];
+
 export const ManagerView: React.FC<ManagerViewProps> = ({ 
     project, activeProjects, updateProject, handleLoadWIP, handleDeleteWIP, 
     handleStartResearch, handleApproveResearchAndScript, handleApproveScriptAndVisualize, handleFinalizeProduction,
@@ -49,6 +58,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
         project.storyFormat ? 'PIPELINE' : 'LOBBY'
     );
     const [selectedChapterId, setSelectedChapterId] = useState<number>(project.currentChapter || 1);
+    const [showMarketModal, setShowMarketModal] = useState(false);
     
     // API KEY MANAGEMENT STATE
     const [apiKeyInput, setApiKeyInput] = useState('');
@@ -64,7 +74,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             const raw = localStorage.getItem('ai_comic_keystore_v2');
             if (raw) {
                 const parsed: any[] = JSON.parse(raw);
-                // Migration: If provider is missing, assume GEMINI
                 const migrated: StoredKey[] = parsed.map(k => ({
                     ...k,
                     provider: k.provider || 'GEMINI'
@@ -78,8 +87,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
     const handleAddKey = () => {
         if (!apiKeyInput.trim()) return;
-        
-        // Deactivate other keys of the same provider
         const newKeys = storedKeys.map(k => ({
             ...k, 
             isActive: k.provider === selectedProvider ? false : k.isActive
@@ -112,14 +119,11 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     const handleDeleteKey = (id: string) => {
         if(!(window as any).confirm("Delete this API Key?")) return;
         let updated = storedKeys.filter(k => k.id !== id);
-        
-        // If we deleted an active key, try to activate another one of the same provider
         const deletedKey = storedKeys.find(k => k.id === id);
         if (deletedKey?.isActive) {
             const nextKey = updated.find(k => k.provider === deletedKey.provider);
             if (nextKey) nextKey.isActive = true;
         }
-        
         localStorage.setItem('ai_comic_keystore_v2', JSON.stringify(updated));
         setStoredKeys(updated);
     };
@@ -158,6 +162,76 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             >
                 <Sliders className="w-4 h-4"/> Project Config
             </button>
+        </div>
+    );
+
+    // --- MARKET INTELLIGENCE MODAL ---
+    const MarketIntelligenceModal = () => (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gradient-to-r from-indigo-900 to-slate-900 text-white">
+                    <div>
+                        <h3 className="text-xl font-bold flex items-center gap-2"><BarChart4 className="w-6 h-6 text-emerald-400"/> AI Visual Model Comparison (Q1 2026)</h3>
+                        <p className="text-xs text-indigo-200 opacity-80 mt-1">Focus: Static Comic Production (Truyện Tranh)</p>
+                    </div>
+                    <button onClick={() => setShowMarketModal(false)} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors"><X className="w-5 h-5"/></button>
+                </div>
+                
+                <div className="flex-1 overflow-auto p-6">
+                    <table className="w-full text-sm text-left border-collapse">
+                        <thead>
+                            <tr className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-xs font-bold">
+                                <th className="p-4 rounded-tl-lg">Model AI</th>
+                                <th className="p-4">Est. Cost / Image</th>
+                                <th className="p-4">Comic Suitability</th>
+                                <th className="p-4 rounded-tr-lg">Pros & Cons</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                            {AI_MARKET_DATA.map((model, idx) => (
+                                <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+                                    <td className="p-4">
+                                        <div className="font-bold text-gray-900 dark:text-white">{model.name}</div>
+                                        <div className="text-xs text-gray-500">{model.provider}</div>
+                                        {model.type === 'Cheapest' && <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded-full font-bold">Best Value</span>}
+                                        {model.type === 'Premium' && <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] rounded-full font-bold">Highest Quality</span>}
+                                    </td>
+                                    <td className="p-4 font-mono font-bold text-gray-700 dark:text-gray-300">
+                                        {model.cost}
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-2 font-bold text-indigo-600 dark:text-indigo-400">
+                                            {model.comicScore}
+                                        </div>
+                                        <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full mt-1 overflow-hidden">
+                                            <div className="bg-indigo-500 h-full rounded-full" style={{ width: parseFloat(model.comicScore) * 10 + '%' }}></div>
+                                        </div>
+                                    </td>
+                                    <td className="p-4 text-xs text-gray-600 dark:text-gray-400 leading-relaxed max-w-xs">
+                                        {model.note}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    <div className="mt-6 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800">
+                        <h4 className="font-bold text-amber-800 dark:text-amber-300 text-sm flex items-center gap-2 mb-2">
+                            <Lightbulb className="w-4 h-4"/> Director's Recommendation (Chiến lược 2026)
+                        </h4>
+                        <ul className="list-disc list-inside text-xs text-gray-700 dark:text-gray-300 space-y-1">
+                            <li><strong>Phác thảo (Drafting):</strong> Dùng <span className="font-bold text-emerald-600">DeepSeek Janus</span> hoặc <span className="font-bold text-emerald-600">Flux Schnell</span> để tiết kiệm chi phí tối đa (~$0.001).</li>
+                            <li><strong>Nét chính (Line Art):</strong> Dùng <span className="font-bold text-indigo-600">Flux Dev</span> hoặc <span className="font-bold text-indigo-600">Leonardo</span> để giữ nét nhân vật (Consistency) tốt nhất thông qua LoRA/ControlNet.</li>
+                            <li><strong>Màu & Hậu cảnh (Background):</strong> Dùng <span className="font-bold text-blue-600">Gemini 3.0</span> vì khả năng hiểu prompt ánh sáng phức tạp.</li>
+                            <li><strong>Lồng tiếng:</strong> Ngân sách tiết kiệm được từ ảnh nên dồn vào <span className="font-bold text-pink-600">ElevenLabs</span> hoặc <span className="font-bold text-pink-600">Gemini Live Audio</span> để truyện có hồn.</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-end">
+                    <button onClick={() => setShowMarketModal(false)} className="px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-lg text-xs hover:opacity-90">Close Report</button>
+                </div>
+            </div>
         </div>
     );
 
@@ -290,79 +364,42 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                 <div className="space-y-3">
                                     <button 
                                         onClick={handleStartResearch} 
-                                        disabled={loading || (!project.theme && !project.originalScript) || !project.storyFormat} 
-                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
-                                            ${project.workflowStage === WorkflowStage.IDLE 
-                                                ? 'bg-gradient-to-r from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 shadow-md shadow-indigo-100 dark:shadow-none' 
-                                                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
-                                            disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
-                                        `}
+                                        disabled={loading || (!project.theme && !project.originalScript) || !project.storyFormat || (project.workflowStage !== WorkflowStage.IDLE && project.workflowStage !== WorkflowStage.RESEARCHING)} 
+                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all ${project.workflowStage === WorkflowStage.IDLE ? 'bg-gradient-to-r from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 shadow-md shadow-indigo-100 dark:shadow-none' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}
                                     >
                                         <div className="flex items-center gap-3"><TrendingUp className="w-4 h-4"/><span className="font-bold">{t('action.start_research')}</span></div>
                                     </button>
-                                    
                                     <button 
                                         onClick={handleApproveResearchAndScript} 
-                                        disabled={loading || !project.marketAnalysis || !project.storyConcept} 
-                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
-                                            ${project.workflowStage === WorkflowStage.RESEARCHING 
-                                                ? 'bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 shadow-md shadow-emerald-100 dark:shadow-none' 
-                                                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
-                                            disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
-                                        `}
+                                        disabled={loading || !project.marketAnalysis || !project.storyConcept || (project.workflowStage !== WorkflowStage.RESEARCHING && project.workflowStage !== WorkflowStage.SCRIPTING)} 
+                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all ${project.workflowStage === WorkflowStage.RESEARCHING ? 'bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 shadow-md shadow-emerald-100 dark:shadow-none' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}
                                     >
                                         <div className="flex items-center gap-3"><BookOpen className="w-4 h-4"/><span className="font-bold">{project.originalScript ? t('action.adapt_script') : t('action.approve_script')}</span></div>
                                     </button>
-
                                     <button 
                                         onClick={handleApproveScriptAndVisualize} 
-                                        disabled={loading || project.panels.length === 0 || project.characters.length === 0} 
-                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
-                                            ${project.workflowStage === WorkflowStage.CENSORING_SCRIPT 
-                                                ? 'bg-gradient-to-r from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 shadow-md shadow-rose-100 dark:shadow-none' 
-                                                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
-                                            disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
-                                        `}
+                                        disabled={loading || project.panels.length === 0 || project.characters.length === 0 || (project.workflowStage !== WorkflowStage.CENSORING_SCRIPT && project.workflowStage !== WorkflowStage.DESIGNING_CHARACTERS)} 
+                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all ${project.workflowStage === WorkflowStage.CENSORING_SCRIPT ? 'bg-gradient-to-r from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 shadow-md shadow-rose-100 dark:shadow-none' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}
                                     >
                                         <div className="flex items-center gap-3"><Palette className="w-4 h-4"/><span className="font-bold">{t('action.approve_art')}</span></div>
                                     </button>
-                                    
                                     <button 
                                         onClick={handleFinalizeProduction} 
-                                        disabled={loading || !project.panels.some(p => p.imageUrl) || project.workflowStage === WorkflowStage.PRINTING} 
-                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
-                                            ${project.workflowStage === WorkflowStage.PRINTING 
-                                                ? 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 border-gray-300 dark:border-gray-500 text-gray-800 dark:text-gray-200 shadow-md shadow-gray-200 dark:shadow-none' 
-                                                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
-                                            disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
-                                        `}
+                                        disabled={loading || !project.panels.some(p => p.imageUrl) || project.workflowStage === WorkflowStage.PRINTING || (project.workflowStage !== WorkflowStage.PRINTING && project.workflowStage !== WorkflowStage.POST_PRODUCTION)} 
+                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all ${project.workflowStage === WorkflowStage.PRINTING ? 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 border-gray-300 dark:border-gray-500 text-gray-800 dark:text-gray-200 shadow-md shadow-gray-200 dark:shadow-none' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}
                                     >
                                         <div className="flex items-center gap-3"><Printer className="w-4 h-4"/><span className="font-bold">{t('action.start_printing')}</span></div>
                                     </button>
-
-                                    <button 
-                                        disabled={project.workflowStage !== WorkflowStage.POST_PRODUCTION} 
-                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all 
-                                            ${project.workflowStage === WorkflowStage.POST_PRODUCTION 
-                                                ? 'bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 shadow-md shadow-amber-100 dark:shadow-none' 
-                                                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}
-                                            disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale
-                                        `}
-                                    >
+                                    <button disabled={project.workflowStage !== WorkflowStage.POST_PRODUCTION} className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all ${project.workflowStage === WorkflowStage.POST_PRODUCTION ? 'bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 shadow-md shadow-amber-100 dark:shadow-none' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}>
                                         <div className="flex items-center gap-3"><Archive className="w-4 h-4"/><span className="font-bold">{isLongFormat ? t('action.finalize_chapter') : t('action.finalize_prod')}</span></div>
                                     </button>
-
                                     {project.workflowStage !== WorkflowStage.IDLE && (
-                                        <button 
-                                            onClick={handleRevertStage} 
-                                            className="w-full mt-4 py-3 px-5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800 transition-all"
-                                        >
+                                        <button onClick={handleRevertStage} className="w-full mt-4 py-3 px-5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800 transition-all">
                                             <RotateCcw className="w-3 h-3"/> Revert Previous Step
                                         </button>
                                     )}
                                 </div>
                             </div>
-
                             {/* Logs */}
                             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col overflow-hidden max-h-96 lg:max-h-none">
                                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
@@ -391,7 +428,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     if (activeTab === 'CHAPTERS') {
         const totalChapters = project.totalChapters ? parseInt(project.totalChapters.match(/\d+/)?.[0] || '1') : 1;
         const chaptersList = Array.from({length: totalChapters}, (_, i) => i + 1);
-        
         const selectedOutline = project.marketAnalysis?.chapterOutlines?.find(o => o.chapterNumber === selectedChapterId);
         const archivedChapter = project.completedChapters?.find(c => c.chapterNumber === selectedChapterId);
         const isCurrentActive = project.currentChapter === selectedChapterId;
@@ -409,7 +445,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             {chaptersList.map(chNum => {
                                 const isDone = project.completedChapters?.some(c => c.chapterNumber === chNum);
                                 const isWorking = project.currentChapter === chNum;
-                                
                                 return (
                                     <button 
                                         key={chNum}
@@ -426,34 +461,21 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             })}
                         </div>
                     </div>
-
                     <div className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden flex flex-col">
                         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-wrap justify-between items-start gap-4">
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Chapter {selectedChapterId}</h2>
                                 <div className="flex items-center gap-2 mt-2">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
-                                        status === 'DONE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                        status === 'ACTIVE' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                        status === 'PLANNED' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                        'bg-gray-100 text-gray-500 border-gray-200'
-                                    }`}>
-                                        {status === 'DONE' ? 'Hoàn Thành' : status === 'ACTIVE' ? 'Đang Viết' : status === 'PLANNED' ? 'Đã Có Đề Cương' : 'Chưa Có Dữ Liệu'}
-                                    </span>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${status === 'DONE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : status === 'ACTIVE' ? 'bg-blue-50 text-blue-700 border-blue-200' : status === 'PLANNED' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>{status === 'DONE' ? 'Hoàn Thành' : status === 'ACTIVE' ? 'Đang Viết' : status === 'PLANNED' ? 'Đã Có Đề Cương' : 'Chưa Có Dữ Liệu'}</span>
                                 </div>
                             </div>
-                            
                             {status !== 'ACTIVE' && (
-                                <button 
-                                    onClick={() => handleJumpToChapter(selectedChapterId)}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all shadow-md"
-                                >
+                                <button onClick={() => handleJumpToChapter(selectedChapterId)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all shadow-md">
                                     {status === 'DONE' ? <Eye className="w-4 h-4"/> : <Edit className="w-4 h-4"/>}
                                     {status === 'DONE' ? 'Xem lại / Sửa' : 'Bắt đầu viết'}
                                 </button>
                             )}
                         </div>
-
                         <div className="flex-1 overflow-y-auto p-8">
                             {status === 'DONE' && archivedChapter ? (
                                 <div className="space-y-6">
@@ -467,33 +489,18 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                             {archivedChapter.panels.map((p, i) => (
                                                 <div key={i} className="aspect-square bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 relative group">
                                                     {p.imageUrl ? <img src={p.imageUrl} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full text-xs text-gray-400">No Image</div>}
-                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity p-2 text-center">
-                                                        {p.dialogue.substring(0, 50)}...
-                                                    </div>
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity p-2 text-center">{p.dialogue.substring(0, 50)}...</div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                 </div>
                             ) : status === 'ACTIVE' ? (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
-                                    <Edit className="w-16 h-16 opacity-20"/>
-                                    <p>Chương này đang được mở trong không gian làm việc.</p>
-                                    <button onClick={() => setActiveTab('PIPELINE')} className="text-indigo-600 font-bold hover:underline">Quay lại bàn làm việc</button>
-                                </div>
+                                <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4"><Edit className="w-16 h-16 opacity-20"/><p>Chương này đang được mở trong không gian làm việc.</p><button onClick={() => setActiveTab('PIPELINE')} className="text-indigo-600 font-bold hover:underline">Quay lại bàn làm việc</button></div>
                             ) : selectedOutline ? (
-                                <div className="max-w-2xl mx-auto space-y-6">
-                                    <div className="bg-amber-50 dark:bg-amber-900/20 p-6 rounded-2xl border border-amber-100 dark:border-amber-800">
-                                        <h4 className="font-bold text-amber-800 dark:text-amber-300 mb-4 text-sm uppercase tracking-wider flex items-center gap-2"><Lightbulb className="w-4 h-4"/> Tóm tắt Đề Cương</h4>
-                                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-serif">"{selectedOutline.summary}"</p>
-                                    </div>
-                                </div>
+                                <div className="max-w-2xl mx-auto space-y-6"><div className="bg-amber-50 dark:bg-amber-900/20 p-6 rounded-2xl border border-amber-100 dark:border-amber-800"><h4 className="font-bold text-amber-800 dark:text-amber-300 mb-4 text-sm uppercase tracking-wider flex items-center gap-2"><Lightbulb className="w-4 h-4"/> Tóm tắt Đề Cương</h4><p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-serif">"{selectedOutline.summary}"</p></div></div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
-                                    <Lock className="w-16 h-16 opacity-20"/>
-                                    <p>Chưa có dữ liệu cho chương này.</p>
-                                    <p className="text-xs">Hãy thảo luận với Ban Biên Tập để lên đề cương.</p>
-                                </div>
+                                <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4"><Lock className="w-16 h-16 opacity-20"/><p>Chưa có dữ liệu cho chương này.</p><p className="text-xs">Hãy thảo luận với Ban Biên Tập để lên đề cương.</p></div>
                             )}
                         </div>
                     </div>
@@ -506,6 +513,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
        return (
             <div className="flex flex-col h-full pb-8">
                 {renderTabs()}
+                
+                {showMarketModal && <MarketIntelligenceModal />}
+
                 <div className="w-full flex flex-col h-full overflow-hidden">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex-1 overflow-y-auto custom-scrollbar">
                         <div className="space-y-8 max-w-3xl">
@@ -604,11 +614,18 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             </div>
 
                             {/* SECTION 3: API KEY CONFIG (UPDATED) */}
-                            <div className="bg-blue-50 dark:bg-blue-900/10 p-5 rounded-xl border border-blue-100 dark:border-blue-900">
+                            <div className="bg-blue-50 dark:bg-blue-900/10 p-5 rounded-xl border border-blue-100 dark:border-blue-900 relative">
+                                <button 
+                                    onClick={() => setShowMarketModal(true)}
+                                    className="absolute top-4 right-4 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm transition-all"
+                                >
+                                    <Info className="w-3 h-3"/> Market Prices (2026)
+                                </button>
+
                                 <label className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider mb-2 block flex items-center gap-2">
                                     <Key className="w-4 h-4"/> External API Key Management (Local Storage)
                                 </label>
-                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-4 max-w-lg">
                                     Add your personal API keys here for direct access. Keys are stored locally on your device.
                                 </p>
                                 

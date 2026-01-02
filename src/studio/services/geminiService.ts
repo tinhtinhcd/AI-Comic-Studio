@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { ComicPanel, Character, ResearchData, StoryFormat, StoryConcept, Message, ComicProject, UserAIPreferences } from "../types";
+import { ComicPanel, Character, ResearchData, StoryFormat, StoryConcept, Message, ComicProject, UserAIPreferences, ImageProvider } from "../types";
 import { PROMPTS } from "./prompts";
 import { getCurrentUser } from "./authService";
 import { DEFAULT_USER_PREFERENCES } from "../constants";
@@ -318,67 +318,113 @@ export const generateCharacterDesign = async (name: string, styleGuide: string, 
     }
 };
 
-export const generatePanelImage = async (panel: ComicPanel, styleGuide: string, characters: Character[], worldSetting: string, tier: 'STANDARD' | 'PREMIUM', imageModel: string = 'gemini-2.5-flash-image', assetImage?: string, customApiKey?: string): Promise<string> => {
-    // USE CUSTOM KEY IF PROVIDED
-    const ai = getAI(customApiKey);
+// --- MULTI-PROVIDER PANEL GENERATOR ---
+
+export const generatePanelImage = async (
+    panel: ComicPanel, 
+    styleGuide: string, 
+    characters: Character[], 
+    worldSetting: string, 
+    tier: 'STANDARD' | 'PREMIUM', 
+    imageModel: string = 'gemini-2.5-flash-image', 
+    assetImage?: string, 
+    customApiKey?: string,
+    provider: ImageProvider = 'GEMINI' // Default to Gemini
+): Promise<string> => {
     
     const charDesc = characters.filter(c => panel.charactersInvolved.includes(c.name)).map(c => `${c.name}: ${c.description}`).join(". ");
-    let imageConfig = {}; 
-    if (imageModel === 'gemini-3-pro-image-preview') { imageConfig = { imageConfig: { aspectRatio: "16:9", imageSize: "1K" } }; }
-    
     const promptText = PROMPTS.panelImagePrompt(styleGuide, panel.description, charDesc, worldSetting);
-    const parts: any[] = [{ text: promptText }];
-    
-    if (panel.layoutSketch) { 
-        const cleanBase64 = panel.layoutSketch.replace(/^data:image\/(png|jpg|jpeg);base64,/, ""); 
-        parts.push({ inlineData: { mimeType: "image/png", data: cleanBase64 } }); 
-        parts[0].text += " STRICTLY follow the composition, redline corrections, and layout of the attached sketch."; 
-    } else if (assetImage) { 
-        const cleanBase64 = assetImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, ""); 
-        parts.push({ inlineData: { mimeType: "image/png", data: cleanBase64 } }); 
-        parts[0].text += " Use the attached image as the BACKGROUND SETTING. Keep the architecture and lighting but place the characters inside it."; 
-    } else { 
-        const mainChar = characters.find(c => panel.charactersInvolved.includes(c.name) && c.referenceImage); 
-        if (mainChar && mainChar.referenceImage) { 
-            const cleanBase64 = mainChar.referenceImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, ""); 
-            parts.push({ inlineData: { mimeType: "image/png", data: cleanBase64 } }); 
-            parts[0].text += ` Use the attached image as a reference for character ${mainChar.name}.`; 
-        } 
-    }
-    
-    console.log(`[Gemini] Generating Panel with model ${imageModel}. Custom Key: ${!!customApiKey}`);
 
-    try {
-        // Apply Retry Logic for Panel Generation
+    // Identify Master Character Reference (The "Anchor")
+    const mainChar = characters.find(c => panel.charactersInvolved.includes(c.name) && c.imageUrl);
+    const referenceImageUrl = mainChar?.imageUrl; // Base64 in this app
+
+    console.log(`[Art Studio] Generating Panel via ${provider}. Prompt: ${promptText.substring(0, 50)}...`);
+
+    // --- STRATEGY 1: GEMINI (Native Multimodal) ---
+    if (provider === 'GEMINI') {
+        const ai = getAI(customApiKey);
+        let imageConfig = {}; 
+        if (imageModel === 'gemini-3-pro-image-preview') { imageConfig = { imageConfig: { aspectRatio: "16:9", imageSize: "1K" } }; }
+        
+        const parts: any[] = [{ text: promptText }];
+        
+        // Priority 1: Sketch
+        if (panel.layoutSketch) { 
+            const cleanBase64 = panel.layoutSketch.replace(/^data:image\/(png|jpg|jpeg);base64,/, ""); 
+            parts.push({ inlineData: { mimeType: "image/png", data: cleanBase64 } }); 
+            parts[0].text += " STRICTLY follow the composition, redline corrections, and layout of the attached sketch."; 
+        } 
+        // Priority 2: Background Asset
+        else if (assetImage) { 
+            const cleanBase64 = assetImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, ""); 
+            parts.push({ inlineData: { mimeType: "image/png", data: cleanBase64 } }); 
+            parts[0].text += " Use the attached image as the BACKGROUND SETTING. Keep the architecture and lighting but place the characters inside it."; 
+        } 
+        // Priority 3: Character Reference (Anchor)
+        else if (referenceImageUrl) { 
+            const cleanBase64 = referenceImageUrl.replace(/^data:image\/(png|jpg|jpeg);base64,/, ""); 
+            parts.push({ inlineData: { mimeType: "image/png", data: cleanBase64 } }); 
+            parts[0].text += ` Use the attached image as a reference for character ${mainChar?.name}.`; 
+        }
+        
         const response = await retryWithBackoff(() => ai.models.generateContent({ 
             model: imageModel, 
             contents: { parts: parts }, 
             config: imageConfig 
         }));
-        
-        let imageUrl = ''; 
-        let failureReason = '';
 
         if (response.candidates && response.candidates[0].content.parts) { 
             for (const part of response.candidates[0].content.parts) { 
                 if (part.inlineData) { 
-                    imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`; 
-                } else if (part.text) {
-                    failureReason += part.text;
-                }
+                    return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`; 
+                } 
             } 
         }
+        throw new Error("Gemini produced no image.");
+    }
 
-        if (!imageUrl) {
-            console.error("[Gemini] Panel Generation Failed. Full Response:", JSON.stringify(response, null, 2));
-            throw new Error(failureReason || "AI failed to generate visual. Prompt may be too complex or unsafe.");
+    // --- STRATEGY 2: MIDJOURNEY (Placeholder / Mock) ---
+    // Note: Actual MJ API usually requires a Discord bridge or 3rd party wrapper like GoAPI/ImagineAPI
+    if (provider === 'MIDJOURNEY') {
+        // Construct Prompt with --cref (Character Reference)
+        // Since we don't have a real URL hosting service in this pure frontend demo, 
+        // we simulate the logic. In a real app, you'd upload the base64 ref image to S3/Cloudinary first.
+        
+        const mockPublicUrl = "https://example.com/char_ref.png"; // Placeholder
+        let finalPrompt = `${promptText} --ar 16:9 --v 6.0`;
+        
+        if (referenceImageUrl) {
+            // MJ syntax: [URL] prompt --cref [URL] --cw 100
+            finalPrompt = `${promptText} --cref ${mockPublicUrl} --cw 100 --ar 16:9`;
         }
 
-        return imageUrl;
-    } catch (e) {
-        console.error("[Gemini] API Call Error (Panel):", e);
-        throw e;
+        console.warn(`[Midjourney Bridge] Sending Prompt: ${finalPrompt}`);
+        // Simulate async delay
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Return a placeholder or the Gemini fallback for this demo
+        // In prod: await fetch('https://api.midjourney-wrapper.com/imagine', ...)
+        throw new Error("Midjourney integration requires a backend bridge (not configured in this demo). Please switch to Gemini.");
     }
+
+    // --- STRATEGY 3: LEONARDO.AI (Placeholder / Mock) ---
+    if (provider === 'LEONARDO') {
+        // Leonardo uses "Image Guidance" parameters
+        console.warn(`[Leonardo Bridge] Sending Prompt: ${promptText} with Guidance Strength 0.35`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        throw new Error("Leonardo.ai integration requires a valid API Key and backend proxy. Please switch to Gemini.");
+    }
+
+    // --- STRATEGY 4: FLUX (via Grok/Fal.ai) ---
+    if (provider === 'FLUX') {
+        // Flux via Fal.ai or Replicate
+        console.warn(`[Flux Bridge] Sending Prompt: ${promptText}`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        throw new Error("Flux integration requires a Replicate/Fal.ai key. Please switch to Gemini.");
+    }
+
+    return '';
 };
 
 export const generatePanelVideo = async (panel: ComicPanel, style: string): Promise<string> => {

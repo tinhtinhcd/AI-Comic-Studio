@@ -1,7 +1,7 @@
 
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
-import { AgentRole, ComicProject, ComicPanel, Character, WorkflowStage, SystemLog, ResearchData, StoryFormat, StoryConcept, Message, ChapterArchive, AgentTask, CharacterVariant, UserProfile } from '../types';
+import { AgentRole, ComicProject, ComicPanel, Character, WorkflowStage, SystemLog, ResearchData, StoryFormat, StoryConcept, Message, ChapterArchive, AgentTask, CharacterVariant, UserProfile, ImageProvider } from '../types';
 import { AGENTS, TRANSLATIONS, INITIAL_PROJECT_STATE } from '../constants';
 import * as GeminiService from '../services/geminiService';
 import * as StorageService from '../services/storageService';
@@ -380,7 +380,6 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
           let styleGuide = project.artStyleGuide; 
           try { 
               if (!styleGuide || !styleGuide.includes(selectedStyle)) { 
-                  // Pass custom key to text generation if needed, but for now we assume text gen is less restricted or uses default key
                   styleGuide = await GeminiService.generateArtStyleGuide(selectedStyle, worldSetting, project.masterLanguage, project.modelTier); 
                   updateProject({ artStyleGuide: styleGuide }); 
                   addLog(AgentRole.CHARACTER_DESIGNER, "New Style Guide enforced.", 'success'); 
@@ -402,7 +401,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                         project.modelTier || 'STANDARD', 
                         currentImageModel,
                         undefined,
-                        customApiKey // PASS CUSTOM KEY
+                        customApiKey 
                     ); 
                     workingChars[i] = { ...workingChars[i], imageUrl: result.imageUrl, description: result.description, isGenerating: false, error: undefined, variants: [...(workingChars[i].variants || []), { id: crypto.randomUUID(), imageUrl: result.imageUrl, style: selectedStyle, timestamp: Date.now() }] }; 
                 } catch (e: any) { 
@@ -430,18 +429,22 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
   
   const handleFinishCharacterDesign = async () => { updateProject({ workflowStage: WorkflowStage.VISUALIZING_PANELS }); addLog(AgentRole.CHARACTER_DESIGNER, "Character Designs finalized. Moving to Storyboard.", 'success'); onAgentChange(AgentRole.PANEL_ARTIST); };
   
-  // MODIFIED: Accepts customStyle and customApiKey
-  const handleStartPanelGeneration = async (selectedStyle: string, customApiKey?: string) => { 
+  // MODIFIED: Accepts customStyle, customApiKey AND provider
+  const handleStartPanelGeneration = async (selectedStyle: string, customApiKey?: string, provider: ImageProvider = 'GEMINI') => { 
       setLoading(true); 
       try { 
-          if (!customApiKey) await checkApiKeyRequirement(); 
+          if (!customApiKey && provider === 'GEMINI') await checkApiKeyRequirement(); 
           const currentImageModel = project.imageModel || 'gemini-2.5-flash-image'; 
-          addLog(AgentRole.PANEL_ARTIST, `Drawing ${project.panels.length} panels in style: ${selectedStyle}. Key Bypass: ${!!customApiKey}`, 'info'); 
-          updateProject({ style: selectedStyle }); 
+          
+          addLog(AgentRole.PANEL_ARTIST, `Drawing ${project.panels.length} panels. Style: ${selectedStyle}. Provider: ${provider}. Key: ${!!customApiKey}`, 'info'); 
+          
+          updateProject({ style: selectedStyle, imageProvider: provider }); 
+          
           const worldSetting = project.seriesBible?.worldSetting || project.marketAnalysis?.worldSetting || ""; 
           let styleGuide = project.artStyleGuide; 
           if (!styleGuide || !styleGuide.includes(selectedStyle)) { 
               try { 
+                  // Text call always uses Gemini for now
                   styleGuide = await GeminiService.generateArtStyleGuide(selectedStyle, worldSetting, project.masterLanguage, project.modelTier); 
                   updateProject({ artStyleGuide: styleGuide }); 
                 } catch (e) { styleGuide = `Style: ${selectedStyle}`; } 
@@ -460,7 +463,8 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                             project.modelTier || 'STANDARD', 
                             currentImageModel, 
                             undefined, 
-                            customApiKey // PASS KEY
+                            customApiKey,
+                            provider // PASS PROVIDER
                         ); 
                         updatedPanels[i] = { ...updatedPanels[i], imageUrl, isGenerating: false }; 
                     } catch (error: any) { 
@@ -469,7 +473,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                         addLog(AgentRole.PANEL_ARTIST, `Panel ${i+1} Failed: ${(error as Error).message}`, 'error');
                         
                         if (error.message?.includes("429") || error.status === 429) {
-                             addLog(AgentRole.PANEL_ARTIST, `Quota Limit Hit. Pausing for 10s...`, 'warning');
+                             addLog(AgentRole.PANEL_ARTIST, `Quota Limit Hit. Pausing...`, 'warning');
                              await delay(10000); 
                         }
                     } 
@@ -487,13 +491,13 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
   const handleFinishPrinting = () => { updateProject({ workflowStage: WorkflowStage.POST_PRODUCTION }); addLog(AgentRole.TYPESETTER, "Book Layout finalized. Sending to Motion Director.", 'success'); onAgentChange(AgentRole.CINEMATOGRAPHER); };
   
   // MODIFIED REGEN
-  const handleRegenerateSinglePanel = async (panel: ComicPanel, index: number, customApiKey?: string) => { 
+  const handleRegenerateSinglePanel = async (panel: ComicPanel, index: number, customApiKey?: string, provider: ImageProvider = 'GEMINI') => { 
       const panelsBefore = [...project.panels]; 
       panelsBefore[index] = { ...panelsBefore[index], isGenerating: true }; 
       updateProject({ panels: panelsBefore }); 
       setRegeneratingPanelId(panel.id); 
       try { 
-          if (!customApiKey) await checkApiKeyRequirement(); 
+          if (!customApiKey && provider === 'GEMINI') await checkApiKeyRequirement(); 
           const worldSetting = project.seriesBible?.worldSetting || project.marketAnalysis?.worldSetting || ""; 
           const styleGuide = project.artStyleGuide || `Style: ${project.style}`; 
           const currentImageModel = project.imageModel || 'gemini-2.5-flash-image'; 
@@ -505,7 +509,8 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
               project.modelTier || 'STANDARD', 
               currentImageModel, 
               panel.backgroundAssetId ? project.assets.find(a => a.id === panel.backgroundAssetId)?.imageUrl : undefined,
-              customApiKey // PASS KEY
+              customApiKey,
+              provider // PASS PROVIDER
           ); 
           const newPanels = [...project.panels]; 
           newPanels[index] = { ...newPanels[index], imageUrl, isGenerating: false }; 
@@ -521,6 +526,8 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
 
   // MODIFIED REGEN
   const handleRegenerateSingleCharacter = async (char: Character, index: number, specificStyle?: string, customApiKey?: string) => { 
+      // Character Design currently only uses Gemini for base generation as standard.
+      // Can be extended to use other providers if needed, but for now defaults to Gemini for consistency.
       const charsStart = [...project.characters]; 
       charsStart[index] = { ...charsStart[index], isGenerating: true, error: undefined }; 
       updateProject({ characters: charsStart }); 

@@ -25,6 +25,7 @@ export interface Agent {
 }
 
 export type AIProvider = 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
+export type ImageProvider = 'GEMINI' | 'MIDJOURNEY' | 'LEONARDO' | 'FLUX';
 
 export interface UserAIPreferences {
     creativeEngine: AIProvider; 
@@ -204,6 +205,7 @@ export interface ComicProject {
   publicationType: PublicationType;
   modelTier?: 'STANDARD' | 'PREMIUM';
   textEngine?: 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
+  imageProvider?: ImageProvider;
   imageModel?: 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview';
   originalScript?: string;
   masterLanguage: string;
