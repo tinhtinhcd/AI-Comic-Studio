@@ -69,6 +69,18 @@ export const WORKFLOW_CONFIG: Record<WorkflowStage, StageConfig> = {
     }
 };
 
+const WORKFLOW_ORDER: WorkflowStage[] = [
+    WorkflowStage.IDLE,
+    WorkflowStage.RESEARCHING,
+    WorkflowStage.SCRIPTING,
+    WorkflowStage.CENSORING_SCRIPT,
+    WorkflowStage.DESIGNING_CHARACTERS,
+    WorkflowStage.VISUALIZING_PANELS,
+    WorkflowStage.PRINTING,
+    WorkflowStage.POST_PRODUCTION,
+    WorkflowStage.COMPLETED
+];
+
 export const WorkflowStateMachine = {
     /**
      * Determines if the project can legally transition to the target stage.
@@ -79,9 +91,8 @@ export const WorkflowStateMachine = {
         
         // 1. Allow reverting to any previous stage (or same stage) anytime
         // We find the index of current and target to compare
-        const stages = Object.values(WorkflowStage);
-        const currentIdx = stages.indexOf(project.workflowStage);
-        const targetIdx = stages.indexOf(targetStage);
+        const currentIdx = WORKFLOW_ORDER.indexOf(project.workflowStage);
+        const targetIdx = WORKFLOW_ORDER.indexOf(targetStage);
 
         if (targetIdx <= currentIdx) {
             return { allowed: true };

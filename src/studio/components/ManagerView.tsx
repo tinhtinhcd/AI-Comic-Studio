@@ -14,7 +14,9 @@ interface ManagerViewProps {
     handleDeleteWIP: (e: React.MouseEvent, id: string) => void;
     handleStartResearch: () => void;
     handleApproveResearchAndScript: () => void;
+    handleStartCensoring: () => void;
     handleApproveScriptAndVisualize: () => void;
+    handleStartPrinting: () => void;
     handleFinalizeProduction: () => void;
     handleRevertStage: () => void;
     handleImportManuscript: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -49,7 +51,7 @@ const AI_MARKET_DATA = [
 
 export const ManagerView: React.FC<ManagerViewProps> = ({ 
     project, activeProjects, updateProject, handleLoadWIP, handleDeleteWIP, 
-    handleStartResearch, handleApproveResearchAndScript, handleApproveScriptAndVisualize, handleFinalizeProduction,
+    handleStartResearch, handleApproveResearchAndScript, handleStartCensoring, handleApproveScriptAndVisualize, handleStartPrinting, handleFinalizeProduction,
     handleRevertStage, handleJumpToChapter,
     handleImportManuscript, handleExportProjectZip, handleImportProjectZip, handleAddLanguage,
     setInputText, inputText, loading, t, isLongFormat, supportedLanguages
@@ -139,6 +141,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     // Calculate disabled states based on State Machine logic
     const canStartResearch = canMoveTo(WorkflowStage.RESEARCHING);
     const canScript = canMoveTo(WorkflowStage.SCRIPTING);
+    const canCensor = canMoveTo(WorkflowStage.CENSORING_SCRIPT);
     const canVisualize = canMoveTo(WorkflowStage.DESIGNING_CHARACTERS);
     const canPrint = canMoveTo(WorkflowStage.PRINTING);
     const canPostProd = canMoveTo(WorkflowStage.POST_PRODUCTION);
@@ -393,6 +396,13 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                         <div className="flex items-center gap-3"><BookOpen className="w-4 h-4"/><span className="font-bold">{project.originalScript ? t('action.adapt_script') : t('action.approve_script')}</span></div>
                                     </button>
                                     <button 
+                                        onClick={handleStartCensoring} 
+                                        disabled={!canCensor} 
+                                        className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all ${project.workflowStage === WorkflowStage.SCRIPTING ? 'bg-gradient-to-r from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 shadow-md shadow-rose-100 dark:shadow-none' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}
+                                    >
+                                        <div className="flex items-center gap-3"><Shield className="w-4 h-4"/><span className="font-bold">{t('action.run_censor')}</span></div>
+                                    </button>
+                                    <button 
                                         onClick={handleApproveScriptAndVisualize} 
                                         disabled={!canVisualize} 
                                         className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all ${project.workflowStage === WorkflowStage.CENSORING_SCRIPT ? 'bg-gradient-to-r from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 shadow-md shadow-rose-100 dark:shadow-none' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}
@@ -400,7 +410,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                         <div className="flex items-center gap-3"><Palette className="w-4 h-4"/><span className="font-bold">{t('action.approve_art')}</span></div>
                                     </button>
                                     <button 
-                                        onClick={() => updateProject({ workflowStage: WorkflowStage.PRINTING })}
+                                        onClick={handleStartPrinting}
                                         disabled={!canPrint} 
                                         className={`w-full py-4 px-5 rounded-xl flex items-center justify-between text-sm font-medium border transition-all ${project.workflowStage === WorkflowStage.VISUALIZING_PANELS ? 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 border-gray-300 dark:border-gray-500 text-gray-800 dark:text-gray-200 shadow-md shadow-gray-200 dark:shadow-none' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}
                                     >

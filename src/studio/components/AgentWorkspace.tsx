@@ -32,6 +32,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const WORKFLOW_STEPS_CONFIG = [
   { id: WorkflowStage.RESEARCHING, labelKey: 'step.strategy', agent: AgentRole.MARKET_RESEARCHER, icon: TrendingUp },
   { id: WorkflowStage.SCRIPTING, labelKey: 'step.script', agent: AgentRole.SCRIPTWRITER, icon: BookOpen },
+  { id: WorkflowStage.CENSORING_SCRIPT, labelKey: 'step.censor', agent: AgentRole.CENSOR, icon: ShieldAlert },
   { id: WorkflowStage.DESIGNING_CHARACTERS, labelKey: 'step.casting', agent: AgentRole.CHARACTER_DESIGNER, icon: Users },
   { id: WorkflowStage.VISUALIZING_PANELS, labelKey: 'step.storyboard', agent: AgentRole.PANEL_ARTIST, icon: Palette },
   { id: WorkflowStage.PRINTING, labelKey: 'step.printing', agent: AgentRole.TYPESETTER, icon: Printer },
@@ -50,6 +51,11 @@ const WORKFLOW_ORDER = [
     WorkflowStage.POST_PRODUCTION,
     WorkflowStage.COMPLETED
 ];
+
+const getAgentForStage = (stage: WorkflowStage): AgentRole => {
+    const step = WORKFLOW_STEPS_CONFIG.find(s => s.id === stage);
+    return step?.agent || AgentRole.PROJECT_MANAGER;
+};
 
 const createSystemTask = (role: AgentRole, desc: string, chapter?: number): AgentTask => ({
     id: crypto.randomUUID(),
@@ -145,9 +151,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
       if (result.allowed) {
           updateProject({ workflowStage: target });
           if (callback) callback();
-      } else {
-          (window as any).alert(result.reason || "Transition not allowed.");
+          return true;
       }
+      (window as any).alert(result.reason || "Transition not allowed.");
+      return false;
   };
 
   const getCurrentStageIndex = () => WORKFLOW_ORDER.indexOf(project.workflowStage);
@@ -163,11 +170,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
           <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 flex-1 mr-4">
             {WORKFLOW_STEPS_CONFIG.map((step, idx) => {
                 const stepStageIdx = getStepStageIndex(step.id);
-                const effectiveCurrentIdx = (project.workflowStage === WorkflowStage.CENSORING_SCRIPT) 
-                    ? getStepStageIndex(WorkflowStage.SCRIPTING) 
-                    : currentStageIdx;
-
-                const isUnlocked = effectiveCurrentIdx >= stepStageIdx;
+                const isUnlocked = currentStageIdx >= stepStageIdx;
                 const isCurrentView = role === step.agent;
                 
                 let statusColor = '';
@@ -191,7 +194,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                         {!isUnlocked ? <Lock className="w-3 h-3"/> : <step.icon className={`w-4 h-4 ${isCurrentView ? 'animate-pulse' : ''}`} />}
                         <span className="">{t(step.labelKey)}</span>
                     </button>
-                    {idx < WORKFLOW_STEPS_CONFIG.length - 1 && (<div className={`h-0.5 w-full mx-2 rounded-full transition-all ${effectiveCurrentIdx > stepStageIdx ? 'bg-emerald-400' : 'bg-gray-200 dark:bg-gray-700'}`} />)}
+                    {idx < WORKFLOW_STEPS_CONFIG.length - 1 && (<div className={`h-0.5 w-full mx-2 rounded-full transition-all ${currentStageIdx > stepStageIdx ? 'bg-emerald-400' : 'bg-gray-200 dark:bg-gray-700'}`} />)}
                 </div>
                 );
             })}
@@ -220,8 +223,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
   };
 
   const handleStartResearch = async () => {
-      onAgentChange(AgentRole.MARKET_RESEARCHER);
-      attemptTransition(WorkflowStage.RESEARCHING);
+      const allowed = attemptTransition(WorkflowStage.RESEARCHING, () => {
+          onAgentChange(AgentRole.MARKET_RESEARCHER);
+      });
+      if (!allowed) return;
       
       if (!project.agentTasks || !project.agentTasks.some(t => t.role === AgentRole.MARKET_RESEARCHER)) {
           const researchTasks = [
@@ -276,14 +281,105 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
   };
   
   const handleApproveResearchAndScript = async () => { 
-      onAgentChange(AgentRole.SCRIPTWRITER); 
-      attemptTransition(WorkflowStage.SCRIPTING);
+      attemptTransition(WorkflowStage.SCRIPTING, () => {
+          onAgentChange(AgentRole.SCRIPTWRITER);
+      });
+  };
+
+  const handleGenerateScript = async () => {
+      if (!project.marketAnalysis) {
+          (window as any).alert("Please complete the research step before generating a script.");
+          return;
+      }
+      if (!project.theme && !project.originalScript) {
+          (window as any).alert("Please add a theme or import a manuscript before generating a script.");
+          return;
+      }
+      setLoading(true);
+      try {
+          const style = project.marketAnalysis?.visualStyle || project.style || "Cinematic";
+          const worldSetting = project.seriesBible?.worldSetting || project.marketAnalysis?.worldSetting || "Standard";
+          let storyConcept = project.storyConcept;
+          let characters = project.characters || [];
+
+          if (!storyConcept) {
+              addLog(AgentRole.SCRIPTWRITER, "Generating story concept...", 'info');
+              storyConcept = await GeminiService.generateStoryConceptsWithSearch(project.theme || "Comic Story", style, project.masterLanguage, project.modelTier || 'STANDARD');
+              updateProject({ storyConcept, style });
+          }
+
+          if (project.workflowStage !== WorkflowStage.SCRIPTING) {
+              const updatedProject = { ...project, storyConcept };
+              const canEnterScripting = WorkflowStateMachine.canTransitionTo(updatedProject, WorkflowStage.SCRIPTING);
+              if (!canEnterScripting.allowed) {
+                  (window as any).alert(canEnterScripting.reason || "Cannot enter scripting stage yet.");
+                  return;
+              }
+              updateProject({ workflowStage: WorkflowStage.SCRIPTING });
+          }
+
+          if (characters.length === 0) {
+              addLog(AgentRole.SCRIPTWRITER, "Casting characters...", 'info');
+              const sourceText = project.originalScript || "";
+              characters = await GeminiService.generateComplexCharacters(storyConcept, project.masterLanguage, worldSetting, project.modelTier || 'STANDARD', sourceText);
+              updateProject({ characters });
+          }
+
+          if (isLongFormat && !project.seriesBible) {
+              addLog(AgentRole.SCRIPTWRITER, "Building series bible...", 'info');
+              const bible = await GeminiService.generateSeriesBible(project.theme || "Comic Story", style, project.masterLanguage, project.modelTier || 'STANDARD');
+              updateProject({ seriesBible: bible });
+          }
+
+          const targetChapter = project.currentChapter || 1;
+          let chapterSummary = "";
+          if (project.marketAnalysis?.chapterOutlines) {
+              const outline = project.marketAnalysis.chapterOutlines.find(c => c.chapterNumber === targetChapter);
+              if (outline) chapterSummary = outline.summary;
+          }
+
+          addLog(AgentRole.SCRIPTWRITER, `Drafting Chapter ${targetChapter}...`, 'info');
+          const result = await GeminiService.generateScript(
+              project.theme || "Comic Story",
+              style,
+              project.masterLanguage,
+              project.storyFormat,
+              project.seriesBible,
+              project.modelTier || 'STANDARD',
+              storyConcept,
+              characters,
+              chapterSummary,
+              targetChapter,
+              project.originalScript,
+              worldSetting,
+              project.targetPanelCount
+          );
+
+          updateProject({
+              title: result.title || project.title,
+              panels: result.panels,
+              style,
+              workflowStage: WorkflowStage.CENSORING_SCRIPT
+          });
+          addLog(AgentRole.SCRIPTWRITER, `Script draft complete (${result.panels.length} panels).`, 'success');
+          onAgentChange(AgentRole.CENSOR);
+      } catch (e: any) {
+          addLog(AgentRole.SCRIPTWRITER, `Script generation failed: ${e.message}`, 'error');
+      } finally {
+          setLoading(false);
+      }
   };
 
   const handleApproveScriptAndVisualize = async () => { 
       attemptTransition(WorkflowStage.DESIGNING_CHARACTERS, () => {
           onAgentChange(AgentRole.CHARACTER_DESIGNER);
           addLog(AgentRole.PROJECT_MANAGER, "Script Approved. Starting Character Design.", 'success');
+      });
+  };
+
+  const handleStartCensoring = () => {
+      attemptTransition(WorkflowStage.CENSORING_SCRIPT, () => {
+          onAgentChange(AgentRole.CENSOR);
       });
   };
 
@@ -298,6 +394,13 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
       attemptTransition(WorkflowStage.PRINTING, () => {
           onAgentChange(AgentRole.TYPESETTER);
           addLog(AgentRole.PANEL_ARTIST, "Art Complete. Moving to Layout.", 'success');
+      });
+  };
+
+  const handleStartPrinting = () => {
+      attemptTransition(WorkflowStage.PRINTING, () => {
+          onAgentChange(AgentRole.TYPESETTER);
+          addLog(AgentRole.PROJECT_MANAGER, "Starting layout and printing.", 'success');
       });
   };
 
@@ -501,7 +604,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
   const handleGeneratePanelVideo = async (panel: ComicPanel, index: number) => { if ((window as any).aistudio) { const hasKey = await (window as any).aistudio.hasSelectedApiKey(); if (!hasKey) { await (window as any).aistudio.openSelectKey(); } } const newPanels = [...project.panels]; newPanels[index] = { ...newPanels[index], isGenerating: true }; updateProject({ panels: newPanels }); try { addLog(AgentRole.CINEMATOGRAPHER, `Generating video for panel ${index+1}...`, 'info'); const videoUrl = await GeminiService.generatePanelVideo(panel, project.style); const updatedPanels = [...project.panels]; updatedPanels[index] = { ...updatedPanels[index], videoUrl: videoUrl, isGenerating: false, shouldAnimate: true }; updateProject({ panels: updatedPanels }); addLog(AgentRole.CINEMATOGRAPHER, `Video generated.`, 'success'); } catch (e: any) { console.error("Video generation error:", e); const errorMsg = e.message || JSON.stringify(e); if (errorMsg.includes("Requested entity was not found") || e.status === 404 || (e.error && e.error.code === 404)) { addLog(AgentRole.CINEMATOGRAPHER, "Access denied. Please select a valid Paid API Key for Veo.", 'warning'); if ((window as any).aistudio) { await (window as any).aistudio.openSelectKey(); } } else { addLog(AgentRole.CINEMATOGRAPHER, `Generation failed: ${errorMsg}`, 'error'); } const updatedPanels = [...project.panels]; updatedPanels[index] = { ...updatedPanels[index], isGenerating: false }; updateProject({ panels: updatedPanels }); } };
   const handleRunContinuityCheck = async () => { setLoading(true); addLog(AgentRole.CONTINUITY_EDITOR, "Analyzing script logic...", 'info'); try { const report = await GeminiService.checkContinuity(project.panels, project.characters, project.seriesBible, project.modelTier); updateProject({ continuityReport: report }); addLog(AgentRole.CONTINUITY_EDITOR, "Continuity check complete.", 'success'); } catch (e) { addLog(AgentRole.CONTINUITY_EDITOR, "Analysis failed.", 'error'); } finally { setLoading(false); } };
   const handleRunCensorCheck = async () => { setLoading(true); addLog(AgentRole.CENSOR, "Running compliance scan...", 'info'); try { const fullText = project.panels.map(p => p.description + " " + p.dialogue).join("\n"); const result = await GeminiService.censorContent(fullText, 'SCRIPT'); updateProject({ censorReport: result.report, isCensored: !result.passed }); addLog(AgentRole.CENSOR, result.passed ? "Content passed safety checks." : "Safety issues detected.", result.passed ? 'success' : 'warning'); } catch(e) { addLog(AgentRole.CENSOR, "Compliance check failed.", 'error'); } finally { setLoading(false); } };
-  const handleRevertStage = () => { if (!(window as any).confirm("Are you sure you want to revert to the previous stage?")) return; const currentIdx = getCurrentStageIndex(); if (currentIdx > 0) { const prevStage = WORKFLOW_ORDER[currentIdx - 1]; updateProject({ workflowStage: prevStage }); addLog(AgentRole.PROJECT_MANAGER, `Reverted stage to ${prevStage}`, 'warning'); const prevAgent = WORKFLOW_STEPS_CONFIG.find(s => s.id === prevStage)?.agent || AgentRole.PROJECT_MANAGER; onAgentChange(prevAgent); } };
+  const handleRevertStage = () => { if (!(window as any).confirm("Are you sure you want to revert to the previous stage?")) return; const currentIdx = getCurrentStageIndex(); if (currentIdx > 0) { const prevStage = WORKFLOW_ORDER[currentIdx - 1]; updateProject({ workflowStage: prevStage }); addLog(AgentRole.PROJECT_MANAGER, `Reverted stage to ${prevStage}`, 'warning'); onAgentChange(getAgentForStage(prevStage)); } };
   const handleJumpToChapter = (chapterNum: number) => { const isCurrentActive = project.currentChapter === chapterNum; if (isCurrentActive) { onAgentChange(AgentRole.SCRIPTWRITER); return; } if (project.panels.length > 0) { const confirmSwitch = (window as any).confirm(`Switching to Chapter ${chapterNum} will archive current Chapter ${project.currentChapter}. Continue?`); if (!confirmSwitch) return; const chapterData: ChapterArchive = { chapterNumber: project.currentChapter || 1, title: `Chapter ${project.currentChapter || 1}`, panels: [...project.panels], summary: "Auto-archived on switch", timestamp: Date.now() }; const cleanArchives = (project.completedChapters || []).filter(c => c.chapterNumber !== chapterData.chapterNumber); const targetArchived = project.completedChapters?.find(c => c.chapterNumber === chapterNum); updateProject({ completedChapters: [...cleanArchives, chapterData], currentChapter: chapterNum, panels: targetArchived ? targetArchived.panels : [], workflowStage: WorkflowStage.SCRIPTING }); } else { const targetArchived = project.completedChapters?.find(c => c.chapterNumber === chapterNum); updateProject({ currentChapter: chapterNum, panels: targetArchived ? targetArchived.panels : [], workflowStage: WorkflowStage.SCRIPTING }); } addLog(AgentRole.PROJECT_MANAGER, `Switched workspace to Chapter ${chapterNum}`, 'info'); onAgentChange(AgentRole.SCRIPTWRITER); };
 
   if (role === AgentRole.PROJECT_MANAGER) {
@@ -541,7 +644,8 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                             <ManagerView 
                                 project={project} activeProjects={activeProjects} updateProject={updateProject} 
                                 handleLoadWIP={handleLoadWIP} handleDeleteWIP={handleDeleteWIP} handleStartResearch={handleStartResearch} 
-                                handleApproveResearchAndScript={handleApproveResearchAndScript} handleApproveScriptAndVisualize={handleApproveScriptAndVisualize} 
+                                handleApproveResearchAndScript={handleApproveResearchAndScript} handleStartCensoring={handleStartCensoring} handleApproveScriptAndVisualize={handleApproveScriptAndVisualize} 
+                                handleStartPrinting={handleStartPrinting}
                                 handleFinalizeProduction={handleFinalizeProduction} handleImportManuscript={handleImportManuscript} 
                                 handleExportProjectZip={handleExportProjectZip} handleImportProjectZip={handleImportProjectZip} 
                                 handleRevertStage={handleRevertStage}
@@ -565,7 +669,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
 
   // Route to specific role views
   if (role === AgentRole.MARKET_RESEARCHER) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><ResearchView project={project} handleResearchChatSend={handleResearchChatSend} researchChatInput={researchChatInput} setResearchChatInput={setResearchChatInput} handleFinalizeStrategyFromChat={handleFinalizeStrategyFromChat} handleUpdateMarketAnalysis={handleUpdateMarketAnalysis} updateProject={updateProject} loading={loading} t={t} chatEndRef={chatEndRef} role={role}/></AgentViewWrapper>;
-  if (role === AgentRole.SCRIPTWRITER) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><WriterView project={project} handleImportScript={handleImportScript} handleExportScript={handleExportScript} handleApproveResearchAndScript={handleApproveResearchAndScript} handleForceExtractCast={handleForceExtractCast} updateProject={updateProject} loading={loading} t={t} scriptStep={scriptStep} writerLogsEndRef={writerLogsEndRef} role={role} isLongFormat={isLongFormat}/></AgentViewWrapper>;
+  if (role === AgentRole.SCRIPTWRITER) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><WriterView project={project} handleImportScript={handleImportScript} handleExportScript={handleExportScript} handleGenerateScript={handleGenerateScript} handleForceExtractCast={handleForceExtractCast} updateProject={updateProject} loading={loading} t={t} scriptStep={scriptStep} writerLogsEndRef={writerLogsEndRef} role={role} isLongFormat={isLongFormat}/></AgentViewWrapper>;
   if (role === AgentRole.VOICE_ACTOR) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><VoiceView project={project} handleUpdateCharacterVoice={handleUpdateCharacterVoice} handleVerifyVoice={handleVerifyVoice} applyVoiceSuggestion={applyVoiceSuggestion} voiceAnalysis={voiceAnalysis} analyzingVoiceId={analyzingVoiceId} role={role} t={t} availableVoices={AVAILABLE_VOICES}/></AgentViewWrapper>;
   if (role === AgentRole.ARCHIVIST) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><div className="max-w-7xl mx-auto w-full px-8 pb-8"><div className="flex items-center justify-between mb-8"><div className="flex items-center gap-6"><img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-gray-600 shadow-md" /><div><h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('role.archivist')}</h2><p className="text-gray-500 dark:text-gray-400">Secure textual storage.</p></div></div></div><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{library.map((p) => (<div key={p.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-gray-600 transition-all group flex flex-col h-64 relative shadow-sm hover:shadow-md"><h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 line-clamp-1">{p.title}</h3><div className="flex gap-2 mt-auto"><button onClick={() => handleLoadProject(p)} className="flex-1 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"><Briefcase className="w-4 h-4"/> {t('ui.upload')}</button><button onClick={() => handleDeleteFromLibrary(p.id!)} className="px-3 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-500 rounded-lg transition-colors border border-red-200 dark:border-red-900"><RefreshCw className="w-4 h-4"/></button></div></div>))}</div></div></AgentViewWrapper>;
   if (role === AgentRole.CHARACTER_DESIGNER) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><CharacterDesignerView project={project} handleFinishCharacterDesign={handleFinishCharacterDesign} handleRegenerateSingleCharacter={handleRegenerateSingleCharacter} handleGenerateAllCharacters={handleGenerateAllCharacters} handleUpdateCharacterDescription={handleUpdateCharacterDescription} handleUpdateCharacterVoice={handleUpdateCharacterVoice} toggleCharacterLock={toggleCharacterLock} handleCharacterUpload={handleCharacterUpload} handleCheckConsistency={handleCheckConsistency} handleSelectCharacterVariant={handleSelectCharacterVariant} role={role} t={t} availableVoices={AVAILABLE_VOICES} loading={loading} updateProject={updateProject}/></AgentViewWrapper>;

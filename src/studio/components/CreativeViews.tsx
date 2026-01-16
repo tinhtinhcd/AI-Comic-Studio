@@ -191,7 +191,7 @@ export const ResearchView: React.FC<any> = (props) => {
 };
 
 export const WriterView: React.FC<any> = (props) => {
-     const { project, handleImportScript, handleExportScript, handleApproveResearchAndScript, handleForceExtractCast, updateProject, loading, t, scriptStep, writerLogsEndRef, role } = props;
+     const { project, handleImportScript, handleExportScript, handleGenerateScript, handleForceExtractCast, updateProject, loading, t, scriptStep, writerLogsEndRef, role } = props;
     const panels = project.panels || [];
     const characters = project.characters || [];
     return (
@@ -226,7 +226,7 @@ export const WriterView: React.FC<any> = (props) => {
                               <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
                                   <Feather className="w-16 h-16 opacity-20"/>
                                   <p>{t('writer.empty')}</p>
-                                  <button onClick={handleApproveResearchAndScript} disabled={loading} className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 dark:shadow-none flex items-center gap-2">
+                                  <button onClick={handleGenerateScript} disabled={loading} className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 dark:shadow-none flex items-center gap-2">
                                       {loading ? <Loader2 className="w-5 h-5 animate-spin"/> : <Sparkles className="w-5 h-5"/>}{t('writer.generate')}
                                   </button>
                               </div>
