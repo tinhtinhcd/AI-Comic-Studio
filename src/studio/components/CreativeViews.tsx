@@ -7,6 +7,7 @@ import { MessageCircle, Loader2, Send, FileText, TrendingUp, Upload, Download, B
 // UPDATED FOR 2026 PROJECTIONS - COMIC FOCUS
 const COST_ESTIMATES: Record<string, { cost: string, label: string, color: string }> = {
     'GEMINI': { cost: '~$0.004', label: 'Recommended', color: 'text-blue-600' },
+    'POLLINATIONS': { cost: 'Free', label: 'Community', color: 'text-emerald-600' },
     'MIDJOURNEY': { cost: '~$0.060', label: 'Premium Art', color: 'text-purple-600' },
     'LEONARDO': { cost: '~$0.015', label: 'Comic Specialist', color: 'text-pink-600' },
     'FLUX': { cost: '~$0.001', label: 'Drafting (Cheap)', color: 'text-emerald-600' },
@@ -287,6 +288,7 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
     const handleAnchorUpload = (e: React.ChangeEvent<HTMLInputElement>, charIndex: number) => { const file = (e.target as any).files?.[0]; if (!file) return; const reader = new FileReader(); reader.onloadend = () => { const newChars = [...characters]; newChars[charIndex] = { ...newChars[charIndex], referenceImage: reader.result as string }; updateProject({ characters: newChars }); }; reader.readAsDataURL(file); };
 
     const costInfo = COST_ESTIMATES[selectedProvider];
+    const isKeyOptional = selectedProvider === 'GEMINI' || selectedProvider === 'POLLINATIONS';
 
     return (
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16 sm:pb-24">
@@ -308,6 +310,7 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 outline-none shadow-sm focus:ring-2 focus:ring-purple-500"
                         >
                             <option value="GEMINI">Gemini</option>
+                            <option value="POLLINATIONS">Pollinations (Free)</option>
                             <option value="FLUX">Flux</option>
                             <option value="MIDJOURNEY">Midjourney</option>
                             <option value="LEONARDO">Leonardo</option>
@@ -333,7 +336,7 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                         <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Key className="w-3 h-3"/> API Key</label>
                         <input 
                             type="password"
-                            placeholder={selectedProvider === 'GEMINI' ? "Optional" : "Required"}
+                            placeholder={isKeyOptional ? "Optional" : "Required"}
                             value={tempApiKey}
                             onChange={(e) => setTempApiKey(e.target.value)}
                             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-xs font-mono text-gray-700 dark:text-gray-200 outline-none shadow-sm focus:ring-2 focus:ring-purple-500"
@@ -454,6 +457,7 @@ export const PanelArtistView: React.FC<{
     };
 
     const costInfo = COST_ESTIMATES[selectedProvider];
+    const isKeyOptional = selectedProvider === 'GEMINI' || selectedProvider === 'POLLINATIONS';
 
     return (
         <div className="flex min-h-[calc(100dvh-120px)] relative">
@@ -486,6 +490,7 @@ export const PanelArtistView: React.FC<{
                                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 outline-none shadow-sm focus:ring-2 focus:ring-rose-500"
                             >
                                 <option value="GEMINI">Gemini (Balanced)</option>
+                                <option value="POLLINATIONS">Pollinations (Free)</option>
                                 <option value="FLUX">Flux (Draft / Cheap)</option>
                                 <option value="MIDJOURNEY">Midjourney (Final)</option>
                                 <option value="LEONARDO">Leonardo (Ref)</option>
@@ -502,7 +507,7 @@ export const PanelArtistView: React.FC<{
                             <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Key className="w-3 h-3"/> API Key</label>
                             <input 
                                 type="password"
-                                placeholder={selectedProvider === 'GEMINI' ? "Bypass Limit" : "Required"}
+                                placeholder={isKeyOptional ? "Optional" : "Required"}
                                 value={tempApiKey}
                                 onChange={(e) => setTempApiKey(e.target.value)}
                                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-xs font-mono text-gray-700 dark:text-gray-200 outline-none shadow-sm focus:ring-2 focus:ring-rose-500"

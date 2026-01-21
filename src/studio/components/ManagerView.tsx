@@ -808,6 +808,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                             className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200"
                                         >
                                             <option value="GEMINI">Gemini</option>
+                                            <option value="POLLINATIONS">Pollinations (Free)</option>
                                             <option value="FLUX">Flux</option>
                                             <option value="LEONARDO">Leonardo</option>
                                             <option value="MIDJOURNEY">Midjourney</option>

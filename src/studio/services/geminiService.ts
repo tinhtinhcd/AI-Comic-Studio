@@ -15,6 +15,8 @@ interface StoredKey {
 }
 
 const STORAGE_KEY_AI_PREFS = 'ai_comic_user_prefs_v1';
+const POLLINATIONS_BASE_URL = 'https://image.pollinations.ai/prompt/';
+const POLLINATIONS_DEFAULT_MODEL = 'flux';
 
 const getLocalKey = (provider: 'GEMINI' | 'DEEPSEEK' | 'OPENAI'): string | undefined => {
     try {
@@ -31,6 +33,27 @@ const getLocalKey = (provider: 'GEMINI' | 'DEEPSEEK' | 'OPENAI'): string | undef
         console.error("Error reading API key store", e);
     }
     return undefined;
+};
+
+const hashSeed = (value: string): number => {
+    let hash = 0;
+    for (let i = 0; i < value.length; i += 1) {
+        hash = (hash << 5) - hash + value.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash) || 1;
+};
+
+const buildPollinationsUrl = (prompt: string, options: { width: number; height: number; seed: number; model?: string }) => {
+    const encodedPrompt = encodeURIComponent(prompt);
+    const params = new URLSearchParams({
+        width: String(options.width),
+        height: String(options.height),
+        model: options.model || POLLINATIONS_DEFAULT_MODEL,
+        seed: String(options.seed),
+        nologo: 'true'
+    });
+    return `${POLLINATIONS_BASE_URL}${encodedPrompt}?${params.toString()}`;
 };
 
 const getStoredUserPrefs = (): UserAIPreferences | null => {
@@ -382,6 +405,13 @@ export const generateCharacterDesign = async (
         }
     }
 
+    if (provider === 'POLLINATIONS') {
+        const prompt = PROMPTS.characterImagePrompt(name, refinedDesc, styleGuide);
+        const seed = hashSeed(`${name}-${refinedDesc}`);
+        const imageUrl = buildPollinationsUrl(prompt, { width: 512, height: 512, seed });
+        return { description: refinedDesc, imageUrl };
+    }
+
     // --- OTHER PROVIDERS (Mocked/Placeholder) ---
     if (provider === 'MIDJOURNEY' || provider === 'LEONARDO' || provider === 'FLUX') {
         // Placeholder until backend bridge is ready
@@ -463,6 +493,11 @@ export const generatePanelImage = async (
             } 
         }
         throw new Error("Gemini produced no image.");
+    }
+
+    if (provider === 'POLLINATIONS') {
+        const seed = hashSeed(`${panel.id}-${panel.description}`);
+        return buildPollinationsUrl(promptText, { width: 1024, height: 576, seed });
     }
 
     // --- OTHER PROVIDERS (Mocked/Placeholder) ---

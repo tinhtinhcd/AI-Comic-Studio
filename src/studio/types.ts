@@ -25,7 +25,7 @@ export interface Agent {
 }
 
 export type AIProvider = 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
-export type ImageProvider = 'GEMINI' | 'MIDJOURNEY' | 'LEONARDO' | 'FLUX';
+export type ImageProvider = 'GEMINI' | 'MIDJOURNEY' | 'LEONARDO' | 'FLUX' | 'POLLINATIONS';
 
 export interface UserAIPreferences {
     creativeEngine: AIProvider; 
