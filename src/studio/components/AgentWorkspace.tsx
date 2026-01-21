@@ -212,6 +212,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
 
   const renderProgressBar = () => {
     const currentStageIdx = getCurrentStageIndex();
+    const effectiveCurrentIdx = currentStageIdx;
     const activeTasksCount = (project.agentTasks || []).filter(task => task.role === role && !task.isCompleted).length;
 
     return (
@@ -220,7 +221,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
           <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 flex-1 mr-4">
             {WORKFLOW_STEPS_CONFIG.map((step, idx) => {
                 const stepStageIdx = getStepStageIndex(step.id);
-                const isUnlocked = currentStageIdx >= stepStageIdx;
+                const isUnlocked = effectiveCurrentIdx >= stepStageIdx;
                 const isCurrentView = role === step.agent;
                 
                 let statusColor = '';
@@ -244,7 +245,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                         {!isUnlocked ? <Lock className="w-3 h-3"/> : <step.icon className={`w-4 h-4 ${isCurrentView ? 'animate-pulse' : ''}`} />}
                         <span className="">{t(step.labelKey)}</span>
                     </button>
-                    {idx < WORKFLOW_STEPS_CONFIG.length - 1 && (<div className={`h-0.5 w-full mx-2 rounded-full transition-all ${currentStageIdx > stepStageIdx ? 'bg-emerald-400' : 'bg-gray-200 dark:bg-gray-700'}`} />)}
+                    {idx < WORKFLOW_STEPS_CONFIG.length - 1 && (<div className={`h-0.5 w-full mx-2 rounded-full transition-all ${effectiveCurrentIdx > stepStageIdx ? 'bg-emerald-400' : 'bg-gray-200 dark:bg-gray-700'}`} />)}
                 </div>
                 );
             })}
