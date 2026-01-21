@@ -31,7 +31,7 @@ export interface UserAIPreferences {
     creativeEngine: AIProvider; 
     logicEngine: AIProvider;    
     translationEngine: AIProvider; 
-    visualEngine: 'GEMINI';     
+    visualEngine: ImageProvider;     
 }
 
 export interface UserKeys {

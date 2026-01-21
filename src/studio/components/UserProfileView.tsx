@@ -415,10 +415,10 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                             </td>
                                         </tr>
 
-                                        {/* VISUAL ROW (LOCKED) */}
-                                        <tr className="group bg-gray-50/50 dark:bg-gray-900/30">
+                                        {/* VISUAL ROW */}
+                                        <tr className="group hover:bg-gray-50 dark:hover:bg-gray-700/30">
                                             <td className="py-4 px-4">
-                                                <div className="flex items-center gap-3 opacity-70">
+                                                <div className="flex items-center gap-3">
                                                     <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg text-rose-600"><Paintbrush className="w-4 h-4"/></div>
                                                     <div>
                                                         <p className="font-bold text-gray-800 dark:text-gray-200">Visual Art & Vision</p>
@@ -427,12 +427,20 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
-                                                <span className="px-3 py-1 rounded-full text-xs font-bold border bg-gray-100 text-gray-500 border-gray-200 flex items-center justify-center gap-1 w-fit">
-                                                    <Zap className="w-3 h-3"/> Gemini 3 (Locked)
-                                                </span>
+                                                <select 
+                                                    value={aiPrefs.visualEngine || 'GEMINI'}
+                                                    onChange={(e) => updateAIPreferences({ ...aiPrefs, visualEngine: (e.target.value as any) })}
+                                                    className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs font-bold w-full"
+                                                >
+                                                    <option value="GEMINI">Gemini 3 (Multimodal)</option>
+                                                    <option value="POLLINATIONS">Pollinations (Free)</option>
+                                                    <option value="FLUX">Flux</option>
+                                                    <option value="MIDJOURNEY">Midjourney</option>
+                                                    <option value="LEONARDO">Leonardo</option>
+                                                </select>
                                             </td>
-                                            <td className="py-4 px-4 text-xs text-gray-400 italic">
-                                                Native Multimodal required for Video/Art pipelines.
+                                            <td className="py-4 px-4 text-xs text-gray-500 italic">
+                                                Gemini supports multimodal/video; others are image‑only.
                                             </td>
                                         </tr>
                                     </tbody>

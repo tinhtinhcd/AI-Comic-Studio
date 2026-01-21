@@ -152,6 +152,10 @@ const getUserPreference = (): UserAIPreferences => {
     return user?.aiPreferences || getStoredUserPrefs() || DEFAULT_USER_PREFERENCES;
 };
 
+const getVisualProviderPreference = (): ImageProvider => {
+    return getUserPreference().visualEngine || 'GEMINI';
+};
+
 // --- RETRY UTILITY ---
 const retryWithBackoff = async <T>(fn: () => Promise<T>, retries = 3, baseDelay = 2000): Promise<T> => {
     try {
@@ -352,7 +356,7 @@ export const generateCharacterDesign = async (
     imageModel: string = 'gemini-2.5-flash-image', 
     referenceImage?: string, 
     customApiKey?: string,
-    provider: ImageProvider = 'GEMINI'
+    provider?: ImageProvider
 ): Promise<{ description: string, imageUrl: string }> => {
     
     console.log(`[Art Service] Generating Character: ${name}. Provider: ${provider}`);
@@ -366,8 +370,9 @@ export const generateCharacterDesign = async (
     }
     
     return runImageTask(async () => {
+    const effectiveProvider = provider || getVisualProviderPreference();
     // --- GEMINI HANDLER ---
-    if (!provider || provider === 'GEMINI') {
+    if (effectiveProvider === 'GEMINI') {
         const ai = getAI(customApiKey);
         let imageConfig = {}; 
         if (imageModel === 'gemini-3-pro-image-preview') { imageConfig = { imageConfig: { aspectRatio: "1:1", imageSize: "1K" } }; }
@@ -413,7 +418,7 @@ export const generateCharacterDesign = async (
         }
     }
 
-    if (provider === 'POLLINATIONS') {
+    if (effectiveProvider === 'POLLINATIONS') {
         const prompt = PROMPTS.characterImagePrompt(name, refinedDesc, styleGuide);
         const seed = hashSeed(`${name}-${refinedDesc}`);
         const imageUrl = buildPollinationsUrl(prompt, { width: 512, height: 512, seed });
@@ -421,20 +426,20 @@ export const generateCharacterDesign = async (
     }
 
     // --- OTHER PROVIDERS (Mocked/Placeholder) ---
-    if (provider === 'MIDJOURNEY' || provider === 'LEONARDO' || provider === 'FLUX') {
+    if (effectiveProvider === 'MIDJOURNEY' || effectiveProvider === 'LEONARDO' || effectiveProvider === 'FLUX') {
         // Placeholder until backend bridge is ready
         // throw new Error(`${provider} integration requires backend bridge.`);
-        console.warn(`[${provider}] Mocking image generation for demo.`);
+        console.warn(`[${effectiveProvider}] Mocking image generation for demo.`);
         // Return a mock image for testing UI flow if provider is not Gemini
         // In real app, this calls your backend endpoint
         await new Promise(r => setTimeout(r, 2000));
         return { 
             description: refinedDesc, 
-            imageUrl: `https://via.placeholder.com/512x512.png?text=${provider}+Generation+Mock`
+            imageUrl: `https://via.placeholder.com/512x512.png?text=${effectiveProvider}+Generation+Mock`
         };
     }
 
-    throw new Error(`Unknown provider: ${provider}`);
+    throw new Error(`Unknown provider: ${effectiveProvider}`);
     });
 };
 
@@ -449,7 +454,7 @@ export const generatePanelImage = async (
     imageModel: string = 'gemini-2.5-flash-image', 
     assetImage?: string, 
     customApiKey?: string,
-    provider: ImageProvider = 'GEMINI' // Default to Gemini
+    provider?: ImageProvider // Default to preference
 ): Promise<string> => {
     
     const charDesc = characters.filter(c => panel.charactersInvolved.includes(c.name)).map(c => `${c.name}: ${c.description}`).join(". ");
@@ -459,11 +464,12 @@ export const generatePanelImage = async (
     const mainChar = characters.find(c => panel.charactersInvolved.includes(c.name) && c.imageUrl);
     const referenceImageUrl = mainChar?.imageUrl; 
 
-    console.log(`[Art Studio] Generating Panel via ${provider}.`);
+    const effectiveProvider = provider || getVisualProviderPreference();
+    console.log(`[Art Studio] Generating Panel via ${effectiveProvider}.`);
 
     return runImageTask(async () => {
     // --- STRATEGY 1: GEMINI (Native Multimodal) ---
-    if (!provider || provider === 'GEMINI') {
+    if (effectiveProvider === 'GEMINI') {
         const ai = getAI(customApiKey);
         let imageConfig = {}; 
         if (imageModel === 'gemini-3-pro-image-preview') { imageConfig = { imageConfig: { aspectRatio: "16:9", imageSize: "1K" } }; }
@@ -505,18 +511,18 @@ export const generatePanelImage = async (
         throw new Error("Gemini produced no image.");
     }
 
-    if (provider === 'POLLINATIONS') {
+    if (effectiveProvider === 'POLLINATIONS') {
         const seed = hashSeed(`${panel.id}-${panel.description}`);
         return buildPollinationsUrl(promptText, { width: 1024, height: 576, seed });
     }
 
     // --- OTHER PROVIDERS (Mocked/Placeholder) ---
-    if (provider === 'MIDJOURNEY' || provider === 'LEONARDO' || provider === 'FLUX') {
+    if (effectiveProvider === 'MIDJOURNEY' || effectiveProvider === 'LEONARDO' || effectiveProvider === 'FLUX') {
          await new Promise(r => setTimeout(r, 2000));
-         return `https://via.placeholder.com/800x450.png?text=${provider}+Panel+Mock`;
+         return `https://via.placeholder.com/800x450.png?text=${effectiveProvider}+Panel+Mock`;
     }
 
-    throw new Error(`Unknown provider: ${provider}`);
+    throw new Error(`Unknown provider: ${effectiveProvider}`);
     });
 };
 

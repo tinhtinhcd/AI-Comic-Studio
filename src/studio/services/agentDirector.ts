@@ -210,7 +210,7 @@ const generateCharacters: ToolHandler = async (context) => {
       imageModel,
       char.referenceImage,
       undefined,
-      project.imageProvider || 'GEMINI'
+      project.imageProvider
     );
     updatedChars.push({ ...char, imageUrl: result.imageUrl, description: result.description });
   }
@@ -234,7 +234,7 @@ const generatePanels: ToolHandler = async (context) => {
 
   const worldSetting = project.seriesBible?.worldSetting || project.marketAnalysis?.worldSetting || 'Standard';
   const imageModel = project.imageModel || 'gemini-2.5-flash-image';
-  const provider = project.imageProvider || 'GEMINI';
+  const provider = project.imageProvider;
 
   const updatedPanels = [...project.panels];
   for (let i = 0; i < updatedPanels.length; i++) {
