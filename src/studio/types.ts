@@ -25,13 +25,13 @@ export interface Agent {
 }
 
 export type AIProvider = 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
-export type ImageProvider = 'GEMINI' | 'MIDJOURNEY' | 'LEONARDO' | 'FLUX';
+export type ImageProvider = 'GEMINI' | 'MIDJOURNEY' | 'LEONARDO' | 'FLUX' | 'POLLINATIONS';
 
 export interface UserAIPreferences {
     creativeEngine: AIProvider; 
     logicEngine: AIProvider;    
     translationEngine: AIProvider; 
-    visualEngine: 'GEMINI';     
+    visualEngine: ImageProvider;     
 }
 
 export interface UserKeys {

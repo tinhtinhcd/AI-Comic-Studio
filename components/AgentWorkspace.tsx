@@ -197,9 +197,9 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
     const activeTasksCount = (project.agentTasks || []).filter(task => task.role === role && !task.isCompleted).length;
 
     return (
-      <div className="w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-4 mb-6 sticky top-0 z-40 transition-colors">
-        <div className="flex items-center justify-between max-w-6xl mx-auto px-4">
-          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 flex-1 mr-4">
+      <div className="w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-3 sm:p-4 mb-4 sm:mb-6 sticky top-0 z-40 transition-colors">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 max-w-6xl mx-auto px-3 sm:px-4">
+          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 flex-1 w-full sm:mr-4">
             {WORKFLOW_STEPS_CONFIG.map((step, idx) => {
                 const stepStageIdx = getStepStageIndex(step.id);
                 const effectiveCurrentIdx = (project.workflowStage === WorkflowStage.CENSORING_SCRIPT) 
@@ -221,11 +221,11 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                 }
 
                 return (
-                <div key={step.id} className="flex items-center flex-1 last:flex-none group min-w-[120px]">
+                <div key={step.id} className="flex items-center flex-1 last:flex-none group min-w-[96px] sm:min-w-[120px]">
                     <button 
                         onClick={() => isUnlocked && onAgentChange(step.agent)} 
                         disabled={!isUnlocked}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-bold transition-all whitespace-nowrap w-full justify-center ${statusColor}`}
+                        className={`flex items-center gap-2 px-2.5 sm:px-3 py-2 rounded-lg border text-[10px] sm:text-xs font-bold transition-all whitespace-nowrap w-full justify-center ${statusColor}`}
                     >
                         {!isUnlocked ? <Lock className="w-3 h-3"/> : <step.icon className={`w-4 h-4 ${isCurrentView ? 'animate-pulse' : ''}`} />}
                         <span className="">{t(step.labelKey)}</span>
@@ -236,10 +236,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
             })}
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
               <button 
                   onClick={() => setShowTodoList(!showTodoList)} 
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all shadow-sm border ${showTodoList ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/50 dark:text-amber-400 dark:border-amber-700' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-bold text-xs transition-all shadow-sm border flex-1 sm:flex-none justify-center ${showTodoList ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/50 dark:text-amber-400 dark:border-amber-700' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'}`}
                   title="Todo List"
               >
                   <ListTodo className="w-4 h-4" />
@@ -248,7 +248,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                   )}
               </button>
               
-              <button onClick={handleSaveWIP} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all shadow-sm ${saveStatus === 'SAVING' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400' : saveStatus === 'SAVED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-gray-900 text-white hover:bg-indigo-600 dark:bg-gray-700 dark:hover:bg-indigo-500'}`}>
+              <button onClick={handleSaveWIP} className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-bold text-xs transition-all shadow-sm flex-1 sm:flex-none justify-center ${saveStatus === 'SAVING' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400' : saveStatus === 'SAVED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-gray-900 text-white hover:bg-indigo-600 dark:bg-gray-700 dark:hover:bg-indigo-500'}`}>
                  {saveStatus === 'SAVING' ? <Loader2 className="w-3 h-3 animate-spin"/> : saveStatus === 'SAVED' ? <CheckCircle className="w-3 h-3"/> : <Save className="w-3 h-3"/>}
                  {saveStatus === 'SAVING' ? t('ui.saving') : saveStatus === 'SAVED' ? t('ui.saved') : t('ui.save')}
               </button>
@@ -312,7 +312,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
               const aiResponseText = await GeminiService.sendResearchChatMessage([], `${prefix}"${project.theme}"`, { theme: project.theme, storyFormat: project.storyFormat, totalChapters: project.totalChapters, language: chatLanguage, originalScript: project.originalScript }, project.modelTier || 'STANDARD');
               const userMsg: Message = { role: 'user', content: `${prefix}"${project.theme}"`, timestamp: Date.now() };
               updateProject({ researchChatHistory: [userMsg, { role: 'agent', senderId: AgentRole.MARKET_RESEARCHER, content: aiResponseText, timestamp: Date.now() + 1 }] });
-          } catch (e) { } finally { setLoading(false); }
+          } catch (e: any) {
+              const message = e?.message || "Unknown error";
+              addLog(AgentRole.MARKET_RESEARCHER, `Research chat failed: ${message}`, 'error');
+          } finally { setLoading(false); }
       }
   };
 
@@ -343,12 +346,59 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
               setShowTodoList(true); 
           }
           updateProject({ researchChatHistory: [...newHistory, { role: 'agent', senderId: AgentRole.MARKET_RESEARCHER, content: cleanResponseText, timestamp: Date.now() + 1 }] });
-      } catch (e) { addLog(AgentRole.MARKET_RESEARCHER, "Chat failed.", 'error'); } finally { setLoading(false); }
+      } catch (e: any) {
+          const message = e?.message || "Unknown error";
+          addLog(AgentRole.MARKET_RESEARCHER, `Chat failed: ${message}`, 'error');
+      } finally { setLoading(false); }
   };
 
   // Re-export other handlers (strategy, concept, cast, script etc) - keeping internal logic same as previous steps
   const handleUpdateMarketAnalysis = (data: ResearchData) => { updateProject({ marketAnalysis: data }); };
-  const handleFinalizeStrategyFromChat = async () => { setLoading(true); try { const analysis = await GeminiService.extractStrategyFromChat(project.researchChatHistory, project.masterLanguage, project.modelTier || 'STANDARD'); const effectiveTheme = project.theme.includes("Tone:") ? project.theme : `${project.theme}. Tone: ${narrativeTone}.`; let estimatedChapters = 1; if (analysis.estimatedChapters) { const match = analysis.estimatedChapters.match(/(\d+)/); if (match) estimatedChapters = parseInt(match[1]); } else { estimatedChapters = isLongFormat ? 50 : 1; } const newSystemTasks = generateSystemTasks(estimatedChapters, 1, isLongFormat); const artStyleGuide = await GeminiService.generateArtStyleGuide(analysis.visualStyle, analysis.worldSetting, project.masterLanguage, project.modelTier); const updatedProject: ComicProject = { ...project, marketAnalysis: analysis, title: analysis.suggestedTitle, style: analysis.visualStyle, artStyleGuide: artStyleGuide, theme: effectiveTheme + " " + analysis.narrativeStructure, workflowStage: WorkflowStage.SCRIPTING, id: project.id || crypto.randomUUID(), totalChapters: analysis.estimatedChapters, agentTasks: [...(project.agentTasks || []), ...newSystemTasks] }; updateProject(updatedProject); addLog(AgentRole.MARKET_RESEARCHER, `Strategy Finalized. Generated Roadmap for ${estimatedChapters} chapters.`, 'success'); StorageService.saveWorkInProgress(updatedProject); if (isLongFormat) { await handleBreakdownChapterTasks(1, updatedProject); } setTimeout(() => onAgentChange(AgentRole.SCRIPTWRITER), 1000); } catch (e) { addLog(AgentRole.MARKET_RESEARCHER, "Failed to extract strategy.", 'error'); } finally { setLoading(false); } };
+  const handleFinalizeStrategyFromChat = async () => {
+      if (!project.researchChatHistory || project.researchChatHistory.length === 0) {
+          addLog(AgentRole.MARKET_RESEARCHER, "Finalize failed: no research chat history.", 'warning');
+          return;
+      }
+
+      setLoading(true);
+      try {
+          const analysis = await GeminiService.extractStrategyFromChat(project.researchChatHistory, project.masterLanguage, project.modelTier || 'STANDARD');
+          const effectiveTheme = project.theme.includes("Tone:") ? project.theme : `${project.theme}. Tone: ${narrativeTone}.`;
+          let estimatedChapters = 1;
+          if (analysis.estimatedChapters) {
+              const match = analysis.estimatedChapters.match(/(\d+)/);
+              if (match) estimatedChapters = parseInt(match[1]);
+          } else {
+              estimatedChapters = isLongFormat ? 50 : 1;
+          }
+          const newSystemTasks = generateSystemTasks(estimatedChapters, 1, isLongFormat);
+          const artStyleGuide = await GeminiService.generateArtStyleGuide(analysis.visualStyle, analysis.worldSetting, project.masterLanguage, project.modelTier);
+          const updatedProject: ComicProject = {
+              ...project,
+              marketAnalysis: analysis,
+              title: analysis.suggestedTitle,
+              style: analysis.visualStyle,
+              artStyleGuide: artStyleGuide,
+              theme: effectiveTheme + " " + analysis.narrativeStructure,
+              workflowStage: WorkflowStage.SCRIPTING,
+              id: project.id || crypto.randomUUID(),
+              totalChapters: analysis.estimatedChapters,
+              agentTasks: [...(project.agentTasks || []), ...newSystemTasks]
+          };
+          updateProject(updatedProject);
+          addLog(AgentRole.MARKET_RESEARCHER, `Strategy Finalized. Generated Roadmap for ${estimatedChapters} chapters.`, 'success');
+          StorageService.saveWorkInProgress(updatedProject);
+          if (isLongFormat) {
+              await handleBreakdownChapterTasks(1, updatedProject);
+          }
+          setTimeout(() => onAgentChange(AgentRole.SCRIPTWRITER), 1000);
+      } catch (e: any) {
+          const message = e?.message || "Unknown error";
+          addLog(AgentRole.MARKET_RESEARCHER, `Finalize failed: ${message}`, 'error');
+      } finally {
+          setLoading(false);
+      }
+  };
   const handleBreakdownChapterTasks = async (chapterNum: number, currentProjectState: ComicProject) => { addLog(AgentRole.MARKET_RESEARCHER, `Breaking down tasks for Chapter ${chapterNum}...`, 'info'); const newTasks: AgentTask[] = [ createSystemTask(AgentRole.SCRIPTWRITER, `[Ch ${chapterNum}] Outline High-level Beat Sheet`, chapterNum), createSystemTask(AgentRole.SCRIPTWRITER, `[Ch ${chapterNum}] Draft Scene 1-3 (Opening)`, chapterNum), createSystemTask(AgentRole.SCRIPTWRITER, `[Ch ${chapterNum}] Draft Scene 4-6 (Development)`, chapterNum), createSystemTask(AgentRole.SCRIPTWRITER, `[Ch ${chapterNum}] Draft Scene 7-End (Climax/Ending)`, chapterNum), createSystemTask(AgentRole.SCRIPTWRITER, `[Ch ${chapterNum}] Polish Dialogue & Pacing`, chapterNum), createSystemTask(AgentRole.PROJECT_MANAGER, `[Ch ${chapterNum}] Review & Approve Final Script`, chapterNum) ]; updateProject({ agentTasks: [...(currentProjectState.agentTasks || []), ...newTasks] }); };
   const handleGenerateConcept = async () => { setLoading(true); updateProject({ workflowStage: WorkflowStage.SCRIPTING }); setScriptStep('CONCEPT'); try { const concept = await GeminiService.generateStoryConceptsWithSearch(project.theme, project.style, project.masterLanguage, project.modelTier || 'STANDARD'); updateProject({ storyConcept: concept }); setScriptStep('CASTING'); addLog(AgentRole.SCRIPTWRITER, `Concept Found: ${concept.uniqueTwist}`, 'success'); } catch (e: any) { addLog(AgentRole.SCRIPTWRITER, `Research failed: ${e.message}`, 'error'); throw e; } };
   const handleGenerateCast = async () => { if ((project.characters || []).length > 0) { addLog(AgentRole.SCRIPTWRITER, `Using ${project.characters.length} characters identified by Editorial Dept.`, 'info'); setScriptStep('WRITING'); const charsWithVoice = project.characters.map(c => ({ ...c, voice: c.voice || AVAILABLE_VOICES[Math.floor(Math.random() * AVAILABLE_VOICES.length)] })); updateProject({ characters: charsWithVoice }); return; } if (!project.storyConcept) return; setScriptStep('CASTING'); try { const setting = project.marketAnalysis?.worldSetting || "Standard"; const sourceText = project.originalScript || project.seriesBible?.characterArcs || ""; const complexChars = await GeminiService.generateComplexCharacters(project.storyConcept, project.masterLanguage, setting, project.modelTier || 'STANDARD', sourceText); const charsWithVoice = complexChars.map(c => ({ ...c, voice: AVAILABLE_VOICES[Math.floor(Math.random() * AVAILABLE_VOICES.length)] })); updateProject({ characters: charsWithVoice }); setScriptStep('WRITING'); addLog(AgentRole.SCRIPTWRITER, `Cast assembled. Found ${charsWithVoice.length} characters.`, 'success'); } catch (e: any) { addLog(AgentRole.SCRIPTWRITER, `Casting failed: ${e.message}`, 'error'); throw e; } };

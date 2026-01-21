@@ -11,24 +11,24 @@ import JSZip from 'jszip';
 export const TypesetterView: React.FC<any> = ({ project, handleFinishPrinting, role, t }) => {
     const panels = project.panels || [];
     return (
-        <div className="max-w-7xl mx-auto w-full px-6 pb-24">
-             <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-6">
-                    <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-gray-500 shadow-md" />
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16 sm:pb-24">
+             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+                <div className="flex items-center gap-4 sm:gap-6">
+                    <img src={AGENTS[role as AgentRole].avatar} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-gray-500 shadow-md" />
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Lettering & Page Layout</p>
+                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2>
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Lettering & Page Layout</p>
                     </div>
                 </div>
-                <button onClick={handleFinishPrinting} className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-gray-300 dark:shadow-none transition-all">
+                <button onClick={handleFinishPrinting} className="w-full sm:w-auto bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-gray-300 dark:shadow-none transition-all">
                     <Printer className="w-5 h-5"/> {t('ui.confirm')}
                 </button>
             </div>
             
-            <div className="bg-gray-100 dark:bg-gray-800 p-8 rounded-xl overflow-x-auto border border-gray-200 dark:border-gray-700">
-                 <div className="flex gap-8 min-w-max">
+            <div className="bg-gray-100 dark:bg-gray-800 p-4 sm:p-6 rounded-xl overflow-x-auto border border-gray-200 dark:border-gray-700">
+                 <div className="flex gap-6 sm:gap-8 min-w-max">
                      {Array.from({ length: Math.ceil(panels.length / 4) }).map((_, pageIdx) => (
-                         <div key={pageIdx} className="w-[400px] h-[600px] bg-white shadow-2xl flex flex-col relative shrink-0 border border-gray-200">
+                         <div key={pageIdx} className="w-[280px] sm:w-[340px] md:w-[400px] h-[420px] sm:h-[510px] md:h-[600px] bg-white shadow-2xl flex flex-col relative shrink-0 border border-gray-200">
                              <div className="absolute -top-6 left-0 font-bold text-gray-500 dark:text-gray-400 text-xs">Page {pageIdx + 1}</div>
                              <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-4">
                                  {panels.slice(pageIdx * 4, (pageIdx + 1) * 4).map((panel: any) => (
@@ -58,12 +58,12 @@ export const TypesetterView: React.FC<any> = ({ project, handleFinishPrinting, r
 export const VoiceView: React.FC<any> = ({ project, handleUpdateCharacterVoice, handleVerifyVoice, applyVoiceSuggestion, voiceAnalysis, analyzingVoiceId, role, t, availableVoices }) => {
     const characters = project.characters || [];
     return (
-        <div className="max-w-7xl mx-auto w-full px-6 pb-8">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-6">
-                    <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-pink-200 shadow-md" />
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-6 sm:pb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+                <div className="flex items-center gap-4 sm:gap-6">
+                    <img src={AGENTS[role as AgentRole].avatar} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-pink-200 shadow-md" />
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2>
+                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2>
                     </div>
                 </div>
             </div>
@@ -139,13 +139,13 @@ export const MotionView: React.FC<any> = ({ project, handleGeneratePanelVideo, l
     const toggleSelection = (id: string) => { const newSet = new Set(selectedPanelIds); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); setSelectedPanelIds(newSet); };
     
     return (
-        <div className="max-w-7xl mx-auto w-full px-6 pb-24">
-             <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-6">
-                    <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-orange-200 shadow-md" />
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16 sm:pb-24">
+             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+                <div className="flex items-center gap-4 sm:gap-6">
+                    <img src={AGENTS[role as AgentRole].avatar} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-orange-200 shadow-md" />
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Video Generation (Veo)</p>
+                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2>
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Video Generation (Veo)</p>
                     </div>
                 </div>
             </div>
@@ -165,28 +165,28 @@ export const MotionView: React.FC<any> = ({ project, handleGeneratePanelVideo, l
 };
 
 export const ContinuityView: React.FC<any> = ({ project, handleRunContinuityCheck, loading, role, t }) => (
-    <div className="max-w-7xl mx-auto w-full px-6 pb-24">
-         <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-6">
-                <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-teal-500 shadow-md" />
-                <div><h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2></div>
+    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16 sm:pb-24">
+         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+            <div className="flex items-center gap-4 sm:gap-6">
+                <img src={AGENTS[role as AgentRole].avatar} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-teal-500 shadow-md" />
+                <div><h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2></div>
             </div>
-            <button onClick={handleRunContinuityCheck} disabled={loading} className="bg-teal-600 text-white px-6 py-3 rounded-xl font-bold">Check Continuity</button>
+            <button onClick={handleRunContinuityCheck} disabled={loading} className="w-full sm:w-auto bg-teal-600 text-white px-6 py-3 rounded-xl font-bold">Check Continuity</button>
         </div>
-        <div className="bg-white dark:bg-gray-800 border p-6 rounded-2xl">{project.continuityReport || "No report."}</div>
+        <div className="bg-white dark:bg-gray-800 border p-4 sm:p-6 rounded-2xl">{project.continuityReport || "No report."}</div>
     </div>
 );
 
 export const CensorView: React.FC<any> = ({ project, handleRunCensorCheck, loading, role, t }) => (
-    <div className="max-w-7xl mx-auto w-full px-6 pb-24">
-         <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-6">
-                <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-red-500 shadow-md" />
-                <div><h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2></div>
+    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16 sm:pb-24">
+         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+            <div className="flex items-center gap-4 sm:gap-6">
+                <img src={AGENTS[role as AgentRole].avatar} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-red-500 shadow-md" />
+                <div><h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2></div>
             </div>
-            <button onClick={handleRunCensorCheck} disabled={loading} className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold">Run Scan</button>
+            <button onClick={handleRunCensorCheck} disabled={loading} className="w-full sm:w-auto bg-red-600 text-white px-6 py-3 rounded-xl font-bold">Run Scan</button>
         </div>
-        <div className="bg-white dark:bg-gray-800 border p-6 rounded-2xl">{project.censorReport || "No report."}</div>
+        <div className="bg-white dark:bg-gray-800 border p-4 sm:p-6 rounded-2xl">{project.censorReport || "No report."}</div>
     </div>
 );
 
@@ -201,20 +201,20 @@ export const TranslatorView: React.FC<any> = ({ project, updateProject, handleAd
     };
 
     return (
-        <div className="max-w-7xl mx-auto w-full px-6 pb-24">
-             <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-6">
-                    <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-cyan-500 shadow-md" />
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16 sm:pb-24">
+             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+                <div className="flex items-center gap-4 sm:gap-6">
+                    <img src={AGENTS[role as AgentRole].avatar} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-cyan-500 shadow-md" />
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Localization & Translation</p>
+                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2>
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Localization & Translation</p>
                     </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 sm:p-6 shadow-sm">
                         <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                             <Globe className="w-5 h-5 text-cyan-600"/> Target Languages
                         </h3>
@@ -246,10 +246,10 @@ export const TranslatorView: React.FC<any> = ({ project, updateProject, handleAd
                 </div>
 
                 <div className="lg:col-span-2 space-y-6">
-                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
-                         <div className="flex justify-between items-center mb-6">
+                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 sm:p-6 shadow-sm">
+                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
                              <h3 className="font-bold text-gray-800 dark:text-gray-100">Script Translation</h3>
-                             <div className="flex gap-2">
+                             <div className="flex flex-wrap gap-2">
                                  {project.targetLanguages.map(lang => (
                                      <button 
                                         key={lang}
@@ -374,14 +374,14 @@ export const PublisherView: React.FC<{
     };
 
     return (
-        <div className="max-w-7xl mx-auto w-full px-6 pb-24">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16 sm:pb-24">
             {showReader && (
                 <div className="fixed inset-0 z-50 bg-black flex flex-col">
-                    <div className="p-4 flex justify-between items-center text-white bg-gray-900 border-b border-gray-800">
+                    <div className="p-3 sm:p-4 flex justify-between items-center text-white bg-gray-900 border-b border-gray-800">
                         <h3 className="font-bold">{project.title} - Reader</h3>
                         <button onClick={() => setShowReader(false)}><X className="w-6 h-6"/></button>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center gap-4">
+                    <div className="flex-1 overflow-y-auto p-3 sm:p-4 flex flex-col items-center gap-4">
                         {project.panels.map((panel, idx) => (
                              panel.imageUrl ? (
                                  <img key={idx} src={panel.imageUrl} className="max-w-full max-h-screen object-contain shadow-2xl" />
@@ -391,19 +391,19 @@ export const PublisherView: React.FC<{
                 </div>
             )}
 
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-6">
-                    <img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-amber-500 shadow-md" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+                <div className="flex items-center gap-4 sm:gap-6">
+                    <img src={AGENTS[role].avatar} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-amber-500 shadow-md" />
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role].name)}</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Distribution & Marketing</p>
+                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role].name)}</h2>
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Distribution & Marketing</p>
                     </div>
                 </div>
-                <div className="flex gap-2">
-                     <button onClick={() => setShowReader(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg">
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                     <button onClick={() => setShowReader(true)} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg">
                         <BookOpen className="w-5 h-5"/> Reader Mode
                     </button>
-                    <button onClick={handleExportCBZ} className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg">
+                    <button onClick={handleExportCBZ} className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg">
                         <FolderDown className="w-5 h-5"/> Download .CBZ
                     </button>
                 </div>

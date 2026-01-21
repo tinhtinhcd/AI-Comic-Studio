@@ -159,8 +159,9 @@ const censorScript: ToolHandler = async (context) => {
   const project = context.getProject();
   const fullText = project.panels.map(p => `${p.description} ${p.dialogue}`).join('\n');
   const result = await GeminiService.censorContent(fullText, 'SCRIPT');
+  const report = result.report?.trim() || (result.passed ? 'Passed compliance scan.' : 'Failed compliance scan.');
   context.updateProject({
-    censorReport: result.report,
+    censorReport: report,
     isCensored: !result.passed,
     workflowStage: result.passed ? WorkflowStage.DESIGNING_CHARACTERS : WorkflowStage.CENSORING_SCRIPT
   });
@@ -209,7 +210,7 @@ const generateCharacters: ToolHandler = async (context) => {
       imageModel,
       char.referenceImage,
       undefined,
-      project.imageProvider || 'GEMINI'
+      project.imageProvider
     );
     updatedChars.push({ ...char, imageUrl: result.imageUrl, description: result.description });
   }
@@ -233,7 +234,7 @@ const generatePanels: ToolHandler = async (context) => {
 
   const worldSetting = project.seriesBible?.worldSetting || project.marketAnalysis?.worldSetting || 'Standard';
   const imageModel = project.imageModel || 'gemini-2.5-flash-image';
-  const provider = project.imageProvider || 'GEMINI';
+  const provider = project.imageProvider;
 
   const updatedPanels = [...project.panels];
   for (let i = 0; i < updatedPanels.length; i++) {
@@ -280,9 +281,15 @@ export const runAgentGoal = (goal: AgentGoal, context: AgentRunContext) => {
   const cancel = () => {
     cancelled = true;
     run = updateRun(run, { status: 'CANCELED' }, context);
+    context.addLog(AgentRole.PROJECT_MANAGER, 'Auto-run canceled.', 'warning');
   };
 
   const execute = async () => {
+    context.addLog(
+      AgentRole.PROJECT_MANAGER,
+      `Auto-run started for Chapter ${goal.chapterNumber}.`,
+      'info'
+    );
     for (const step of run.steps) {
       if (cancelled) return;
 
@@ -291,6 +298,11 @@ export const runAgentGoal = (goal: AgentGoal, context: AgentRunContext) => {
       if (!gate.allowed && project.workflowStage !== step.stage) {
         run = updateStep(run, step.id, { status: 'ERROR', error: gate.reason, finishedAt: Date.now() }, context);
         run = updateRun(run, { status: 'FAILED', error: gate.reason }, context);
+        context.addLog(
+          STAGE_ROLE_MAP[step.stage] || AgentRole.PROJECT_MANAGER,
+          `Auto-run blocked before "${step.name}": ${gate.reason}`,
+          'error'
+        );
         return;
       }
 
@@ -317,11 +329,17 @@ export const runAgentGoal = (goal: AgentGoal, context: AgentRunContext) => {
         );
         run = updateStep(run, step.id, { status: 'ERROR', error: e.message || 'Tool error', finishedAt: Date.now() }, context);
         run = updateRun(run, { status: 'FAILED', error: e.message || 'Tool error' }, context);
+        context.addLog(
+          STAGE_ROLE_MAP[step.stage] || AgentRole.PROJECT_MANAGER,
+          `Auto-run failed at "${step.name}": ${e.message || 'Tool error'}`,
+          'error'
+        );
         return;
       }
     }
 
     run = updateRun(run, { status: 'COMPLETED' }, context);
+    context.addLog(AgentRole.PROJECT_MANAGER, 'Auto-run completed.', 'success');
   };
 
   void execute();

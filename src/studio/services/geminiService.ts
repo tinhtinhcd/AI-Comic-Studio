@@ -14,6 +14,73 @@ interface StoredKey {
     isActive: boolean;
 }
 
+const STORAGE_KEY_AI_PREFS = 'ai_comic_user_prefs_v1';
+const POLLINATIONS_BASE_URL = 'https://image.pollinations.ai/prompt/';
+const POLLINATIONS_DEFAULT_MODEL = 'flux';
+
+type ImageQueueSnapshot = {
+    pending: number;
+    running: number;
+    total: number;
+};
+
+let imageQueue: Promise<void> = Promise.resolve();
+let imageQueuePending = 0;
+let imageQueueRunning = 0;
+const imageQueueListeners = new Set<(snapshot: ImageQueueSnapshot) => void>();
+
+const getImageQueueSnapshot = (): ImageQueueSnapshot => ({
+    pending: imageQueuePending,
+    running: imageQueueRunning,
+    total: imageQueuePending + imageQueueRunning
+});
+
+const notifyImageQueue = () => {
+    const snapshot = getImageQueueSnapshot();
+    imageQueueListeners.forEach(listener => listener(snapshot));
+};
+
+export const subscribeImageQueue = (listener: (snapshot: ImageQueueSnapshot) => void) => {
+    imageQueueListeners.add(listener);
+    listener(getImageQueueSnapshot());
+    return () => imageQueueListeners.delete(listener);
+};
+
+export const getCurrentImageQueue = () => getImageQueueSnapshot();
+
+const runImageTask = async <T>(task: () => Promise<T>): Promise<T> => {
+    imageQueuePending += 1;
+    notifyImageQueue();
+
+    const run = imageQueue.then(
+        async () => {
+            imageQueuePending -= 1;
+            imageQueueRunning = 1;
+            notifyImageQueue();
+            try {
+                return await task();
+            } finally {
+                imageQueueRunning = 0;
+                notifyImageQueue();
+            }
+        },
+        async () => {
+            imageQueuePending -= 1;
+            imageQueueRunning = 1;
+            notifyImageQueue();
+            try {
+                return await task();
+            } finally {
+                imageQueueRunning = 0;
+                notifyImageQueue();
+            }
+        }
+    );
+
+    imageQueue = run.then(() => undefined, () => undefined);
+    return run;
+};
+
 const getLocalKey = (provider: 'GEMINI' | 'DEEPSEEK' | 'OPENAI'): string | undefined => {
     try {
         const rawStore = localStorage.getItem('ai_comic_keystore_v2');
@@ -29,6 +96,37 @@ const getLocalKey = (provider: 'GEMINI' | 'DEEPSEEK' | 'OPENAI'): string | undef
         console.error("Error reading API key store", e);
     }
     return undefined;
+};
+
+const hashSeed = (value: string): number => {
+    let hash = 0;
+    for (let i = 0; i < value.length; i += 1) {
+        hash = (hash << 5) - hash + value.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash) || 1;
+};
+
+const buildPollinationsUrl = (prompt: string, options: { width: number; height: number; seed: number; model?: string }) => {
+    const encodedPrompt = encodeURIComponent(prompt);
+    const params = new URLSearchParams({
+        width: String(options.width),
+        height: String(options.height),
+        model: options.model || POLLINATIONS_DEFAULT_MODEL,
+        seed: String(options.seed),
+        nologo: 'true'
+    });
+    return `${POLLINATIONS_BASE_URL}${encodedPrompt}?${params.toString()}`;
+};
+
+const getStoredUserPrefs = (): UserAIPreferences | null => {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY_AI_PREFS);
+        return raw ? (JSON.parse(raw) as UserAIPreferences) : null;
+    } catch (e) {
+        console.warn("Failed to read stored AI preferences.");
+        return null;
+    }
 };
 
 export const getDynamicApiKey = (): string => {
@@ -107,7 +205,11 @@ const cleanAndParseJSON = (text: string) => {
 
 const getUserPreference = (): UserAIPreferences => {
     const user = getCurrentUser();
-    return user?.aiPreferences || DEFAULT_USER_PREFERENCES;
+    return user?.aiPreferences || getStoredUserPrefs() || DEFAULT_USER_PREFERENCES;
+};
+
+const getVisualProviderPreference = (): ImageProvider => {
+    return getUserPreference().visualEngine || 'GEMINI';
 };
 
 // --- RETRY UTILITY ---
@@ -159,85 +261,87 @@ const unifiedGenerateText = async (options: GenTextOptions): Promise<string> => 
     // --- OPENAI HANDLER ---
     if (engine === 'OPENAI') {
         const apiKey = getOpenAIKey();
-        if (apiKey) {
-            let messages: any[] = [];
-            if (systemInstruction) messages.push({ role: "system", content: systemInstruction });
+        if (!apiKey) {
+            throw new Error("MISSING_OPENAI_KEY: Please add your OpenAI API key in Profile & Keys.");
+        }
+        let messages: any[] = [];
+        if (systemInstruction) messages.push({ role: "system", content: systemInstruction });
 
-            if (typeof contents === 'string') {
-                messages.push({ role: "user", content: contents });
-            } else if (Array.isArray(contents)) {
-                contents.forEach((msg: any) => {
-                    let role = msg.role === 'model' ? 'assistant' : 'user';
-                    let content = typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : JSON.stringify(msg);
-                    messages.push({ role, content });
+        if (typeof contents === 'string') {
+            messages.push({ role: "user", content: contents });
+        } else if (Array.isArray(contents)) {
+            contents.forEach((msg: any) => {
+                let role = msg.role === 'model' ? 'assistant' : 'user';
+                let content = typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : JSON.stringify(msg);
+                messages.push({ role, content });
+            });
+        } else if (contents.parts && contents.parts[0].text) {
+             messages.push({ role: "user", content: contents.parts[0].text });
+        }
+
+        try {
+            const openAIModel = (taskType === 'LOGIC') ? 'gpt-4o' : 'gpt-4o-mini';
+            const response = await retryWithBackoff(async () => {
+                const res = await fetch("https://api.openai.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                    body: JSON.stringify({ model: openAIModel, messages: messages, stream: false, response_format: jsonMode ? { type: "json_object" } : undefined })
                 });
-            } else if (contents.parts && contents.parts[0].text) {
-                 messages.push({ role: "user", content: contents.parts[0].text });
-            }
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw { status: res.status, message: err };
+                }
+                return res;
+            });
 
-            try {
-                const openAIModel = (taskType === 'LOGIC') ? 'gpt-4o' : 'gpt-4o-mini';
-                const response = await retryWithBackoff(async () => {
-                    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-                        body: JSON.stringify({ model: openAIModel, messages: messages, stream: false, response_format: jsonMode ? { type: "json_object" } : undefined })
-                    });
-                    if (!res.ok) {
-                        const err = await res.text();
-                        throw { status: res.status, message: err };
-                    }
-                    return res;
-                });
-
-                const data = await response.json();
-                return data.choices[0].message.content;
-            } catch (e: any) { 
-                console.error("OpenAI Error, fallback to Gemini:", e.message); 
-                // Fallthrough to Gemini
-            }
+            const data = await response.json();
+            return data.choices[0].message.content;
+        } catch (e: any) {
+            const message = e?.message || "OpenAI request failed.";
+            throw new Error(`OPENAI_ERROR: ${message}`);
         }
     }
 
     // --- DEEPSEEK HANDLER ---
     if (engine === 'DEEPSEEK') {
         const apiKey = getDeepSeekKey();
-        if (apiKey) {
-            let messages: any[] = [];
-            if (systemInstruction) messages.push({ role: "system", content: systemInstruction });
-            if (typeof contents === 'string') {
-                messages.push({ role: "user", content: contents });
-            } else if (Array.isArray(contents)) {
-                contents.forEach((msg: any) => {
-                    let role = msg.role === 'model' ? 'assistant' : 'user';
-                    let content = typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : JSON.stringify(msg);
-                    messages.push({ role, content });
-                });
-            } else if (contents.parts && contents.parts[0].text) {
-                 messages.push({ role: "user", content: contents.parts[0].text });
-            }
+        if (!apiKey) {
+            throw new Error("MISSING_DEEPSEEK_KEY: Please add your DeepSeek API key in Profile & Keys.");
+        }
+        let messages: any[] = [];
+        if (systemInstruction) messages.push({ role: "system", content: systemInstruction });
+        if (typeof contents === 'string') {
+            messages.push({ role: "user", content: contents });
+        } else if (Array.isArray(contents)) {
+            contents.forEach((msg: any) => {
+                let role = msg.role === 'model' ? 'assistant' : 'user';
+                let content = typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : JSON.stringify(msg);
+                messages.push({ role, content });
+            });
+        } else if (contents.parts && contents.parts[0].text) {
+             messages.push({ role: "user", content: contents.parts[0].text });
+        }
 
-            try {
-                const dsModel = (taskType === 'LOGIC') ? 'deepseek-reasoner' : 'deepseek-chat';
-                const response = await retryWithBackoff(async () => {
-                    const res = await fetch("https://api.deepseek.com/chat/completions", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-                        body: JSON.stringify({ model: dsModel, messages: messages, stream: false, response_format: jsonMode ? { type: "json_object" } : undefined })
-                    });
-                    if (!res.ok) {
-                        const err = await res.text();
-                        throw { status: res.status, message: err };
-                    }
-                    return res;
+        try {
+            const dsModel = (taskType === 'LOGIC') ? 'deepseek-reasoner' : 'deepseek-chat';
+            const response = await retryWithBackoff(async () => {
+                const res = await fetch("https://api.deepseek.com/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                    body: JSON.stringify({ model: dsModel, messages: messages, stream: false, response_format: jsonMode ? { type: "json_object" } : undefined })
                 });
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw { status: res.status, message: err };
+                }
+                return res;
+            });
 
-                const data = await response.json();
-                return data.choices[0].message.content;
-            } catch (e: any) { 
-                console.error("DeepSeek Error, fallback to Gemini:", e.message); 
-                // Fallthrough to Gemini
-            }
+            const data = await response.json();
+            return data.choices[0].message.content;
+        } catch (e: any) {
+            const message = e?.message || "DeepSeek request failed.";
+            throw new Error(`DEEPSEEK_ERROR: ${message}`);
         }
     }
 
@@ -308,7 +412,7 @@ export const generateCharacterDesign = async (
     imageModel: string = 'gemini-2.5-flash-image', 
     referenceImage?: string, 
     customApiKey?: string,
-    provider: ImageProvider = 'GEMINI'
+    provider?: ImageProvider
 ): Promise<{ description: string, imageUrl: string }> => {
     
     console.log(`[Art Service] Generating Character: ${name}. Provider: ${provider}`);
@@ -321,8 +425,10 @@ export const generateCharacterDesign = async (
         console.warn("Description refinement failed, using raw description.");
     }
     
+    return runImageTask(async () => {
+    const effectiveProvider = provider || getVisualProviderPreference();
     // --- GEMINI HANDLER ---
-    if (!provider || provider === 'GEMINI') {
+    if (effectiveProvider === 'GEMINI') {
         const ai = getAI(customApiKey);
         let imageConfig = {}; 
         if (imageModel === 'gemini-3-pro-image-preview') { imageConfig = { imageConfig: { aspectRatio: "1:1", imageSize: "1K" } }; }
@@ -368,21 +474,29 @@ export const generateCharacterDesign = async (
         }
     }
 
+    if (effectiveProvider === 'POLLINATIONS') {
+        const prompt = PROMPTS.characterImagePrompt(name, refinedDesc, styleGuide);
+        const seed = hashSeed(`${name}-${refinedDesc}`);
+        const imageUrl = buildPollinationsUrl(prompt, { width: 512, height: 512, seed });
+        return { description: refinedDesc, imageUrl };
+    }
+
     // --- OTHER PROVIDERS (Mocked/Placeholder) ---
-    if (provider === 'MIDJOURNEY' || provider === 'LEONARDO' || provider === 'FLUX') {
+    if (effectiveProvider === 'MIDJOURNEY' || effectiveProvider === 'LEONARDO' || effectiveProvider === 'FLUX') {
         // Placeholder until backend bridge is ready
         // throw new Error(`${provider} integration requires backend bridge.`);
-        console.warn(`[${provider}] Mocking image generation for demo.`);
+        console.warn(`[${effectiveProvider}] Mocking image generation for demo.`);
         // Return a mock image for testing UI flow if provider is not Gemini
         // In real app, this calls your backend endpoint
         await new Promise(r => setTimeout(r, 2000));
         return { 
             description: refinedDesc, 
-            imageUrl: `https://via.placeholder.com/512x512.png?text=${provider}+Generation+Mock`
+            imageUrl: `https://via.placeholder.com/512x512.png?text=${effectiveProvider}+Generation+Mock`
         };
     }
 
-    throw new Error(`Unknown provider: ${provider}`);
+    throw new Error(`Unknown provider: ${effectiveProvider}`);
+    });
 };
 
 // --- MULTI-PROVIDER PANEL GENERATOR ---
@@ -396,7 +510,7 @@ export const generatePanelImage = async (
     imageModel: string = 'gemini-2.5-flash-image', 
     assetImage?: string, 
     customApiKey?: string,
-    provider: ImageProvider = 'GEMINI' // Default to Gemini
+    provider?: ImageProvider // Default to preference
 ): Promise<string> => {
     
     const charDesc = characters.filter(c => panel.charactersInvolved.includes(c.name)).map(c => `${c.name}: ${c.description}`).join(". ");
@@ -406,10 +520,12 @@ export const generatePanelImage = async (
     const mainChar = characters.find(c => panel.charactersInvolved.includes(c.name) && c.imageUrl);
     const referenceImageUrl = mainChar?.imageUrl; 
 
-    console.log(`[Art Studio] Generating Panel via ${provider}.`);
+    const effectiveProvider = provider || getVisualProviderPreference();
+    console.log(`[Art Studio] Generating Panel via ${effectiveProvider}.`);
 
+    return runImageTask(async () => {
     // --- STRATEGY 1: GEMINI (Native Multimodal) ---
-    if (!provider || provider === 'GEMINI') {
+    if (effectiveProvider === 'GEMINI') {
         const ai = getAI(customApiKey);
         let imageConfig = {}; 
         if (imageModel === 'gemini-3-pro-image-preview') { imageConfig = { imageConfig: { aspectRatio: "16:9", imageSize: "1K" } }; }
@@ -451,13 +567,19 @@ export const generatePanelImage = async (
         throw new Error("Gemini produced no image.");
     }
 
-    // --- OTHER PROVIDERS (Mocked/Placeholder) ---
-    if (provider === 'MIDJOURNEY' || provider === 'LEONARDO' || provider === 'FLUX') {
-         await new Promise(r => setTimeout(r, 2000));
-         return `https://via.placeholder.com/800x450.png?text=${provider}+Panel+Mock`;
+    if (effectiveProvider === 'POLLINATIONS') {
+        const seed = hashSeed(`${panel.id}-${panel.description}`);
+        return buildPollinationsUrl(promptText, { width: 1024, height: 576, seed });
     }
 
-    throw new Error(`Unknown provider: ${provider}`);
+    // --- OTHER PROVIDERS (Mocked/Placeholder) ---
+    if (effectiveProvider === 'MIDJOURNEY' || effectiveProvider === 'LEONARDO' || effectiveProvider === 'FLUX') {
+         await new Promise(r => setTimeout(r, 2000));
+         return `https://via.placeholder.com/800x450.png?text=${effectiveProvider}+Panel+Mock`;
+    }
+
+    throw new Error(`Unknown provider: ${effectiveProvider}`);
+    });
 };
 
 export const generatePanelVideo = async (panel: ComicPanel, style: string): Promise<string> => {

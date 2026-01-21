@@ -24,6 +24,13 @@ export const getDynamicApiKey = (): string => {
 };
 
 const getAI = () => new GoogleGenAI({ apiKey: getDynamicApiKey() });
+let imageQueue: Promise<void> = Promise.resolve();
+
+const runImageTask = async <T>(task: () => Promise<T>): Promise<T> => {
+    const run = imageQueue.then(() => task(), () => task());
+    imageQueue = run.then(() => undefined, () => undefined);
+    return run;
+};
 
 const getTextModel = (tier: 'STANDARD' | 'PREMIUM' = 'STANDARD') => 
     tier === 'PREMIUM' ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview';
@@ -185,54 +192,56 @@ export const generateCharacterDesign = async (
     imageModel: string = 'gemini-2.5-flash-image',
     referenceImage?: string // NEW: Optional Reference
 ): Promise<{ description: string, imageUrl: string }> => {
-    const ai = getAI();
-    
-    const descResp = await ai.models.generateContent({
-        model: getTextModel(tier),
-        contents: PROMPTS.characterDesign(name, styleGuide, description, worldSetting)
-    });
-    const refinedDesc = descResp.text!;
-
-    let imageConfig = {};
-    if (imageModel === 'gemini-3-pro-image-preview') {
-        imageConfig = {
-            imageConfig: {
-                aspectRatio: "1:1",
-                imageSize: "1K"
-            }
-        };
-    }
-
-    // Build parts: Text Prompt + Optional Image
-    const parts: any[] = [{ text: PROMPTS.characterImagePrompt(name, refinedDesc, styleGuide) }];
-    
-    if (referenceImage) {
-        const cleanBase64 = referenceImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
-        parts.push({
-             inlineData: {
-                 mimeType: "image/png",
-                 data: cleanBase64
-             }
+    return runImageTask(async () => {
+        const ai = getAI();
+        
+        const descResp = await ai.models.generateContent({
+            model: getTextModel(tier),
+            contents: PROMPTS.characterDesign(name, styleGuide, description, worldSetting)
         });
-        // Add note to prompt to use image as reference
-        parts[0].text += " Use the attached image as a strict visual reference for the character's facial features and hair.";
-    }
+        const refinedDesc = descResp.text!;
 
-    const response = await ai.models.generateContent({
-        model: imageModel,
-        contents: { parts: parts },
-        config: imageConfig
-    });
-
-    let imageUrl = '';
-    if (response.candidates && response.candidates[0].content.parts) {
-        for (const part of response.candidates[0].content.parts) {
-             if (part.inlineData) {
-                 imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-             }
+        let imageConfig = {};
+        if (imageModel === 'gemini-3-pro-image-preview') {
+            imageConfig = {
+                imageConfig: {
+                    aspectRatio: "1:1",
+                    imageSize: "1K"
+                }
+            };
         }
-    }
-    return { description: refinedDesc, imageUrl };
+
+        // Build parts: Text Prompt + Optional Image
+        const parts: any[] = [{ text: PROMPTS.characterImagePrompt(name, refinedDesc, styleGuide) }];
+        
+        if (referenceImage) {
+            const cleanBase64 = referenceImage.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+            parts.push({
+                 inlineData: {
+                     mimeType: "image/png",
+                     data: cleanBase64
+                 }
+            });
+            // Add note to prompt to use image as reference
+            parts[0].text += " Use the attached image as a strict visual reference for the character's facial features and hair.";
+        }
+
+        const response = await ai.models.generateContent({
+            model: imageModel,
+            contents: { parts: parts },
+            config: imageConfig
+        });
+
+        let imageUrl = '';
+        if (response.candidates && response.candidates[0].content.parts) {
+            for (const part of response.candidates[0].content.parts) {
+                 if (part.inlineData) {
+                     imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                 }
+            }
+        }
+        return { description: refinedDesc, imageUrl };
+    });
 };
 
 // --- UPDATED generatePanelImage TO SUPPORT ASSETS ---
@@ -245,7 +254,6 @@ export const generatePanelImage = async (
     imageModel: string = 'gemini-2.5-flash-image',
     assetImage?: string // NEW: Optional Background Reference
 ): Promise<string> => {
-    const ai = getAI();
     const charDesc = characters.filter(c => panel.charactersInvolved.includes(c.name))
         .map(c => `${c.name}: ${c.description}`).join(". ");
     
@@ -301,21 +309,24 @@ export const generatePanelImage = async (
         }
     }
 
-    const response = await ai.models.generateContent({
-        model: imageModel,
-        contents: { parts: parts },
-        config: imageConfig
-    });
+    return runImageTask(async () => {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: imageModel,
+            contents: { parts: parts },
+            config: imageConfig
+        });
 
-    let imageUrl = '';
-    if (response.candidates && response.candidates[0].content.parts) {
-        for (const part of response.candidates[0].content.parts) {
-             if (part.inlineData) {
-                 imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-             }
+        let imageUrl = '';
+        if (response.candidates && response.candidates[0].content.parts) {
+            for (const part of response.candidates[0].content.parts) {
+                 if (part.inlineData) {
+                     imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                 }
+            }
         }
-    }
-    return imageUrl;
+        return imageUrl;
+    });
 };
 
 // ... remaining exports (video, summary, voice, consistency, translate, censor, continuity, marketing) ...

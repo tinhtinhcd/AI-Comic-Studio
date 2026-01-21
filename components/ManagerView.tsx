@@ -107,30 +107,30 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
     // MAIN NAVIGATION TABS RENDER
     const renderTabs = () => (
-        <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-1">
+        <div className="flex items-center gap-2 mb-4 sm:mb-6 border-b border-gray-200 dark:border-gray-700 pb-1 overflow-x-auto custom-scrollbar">
             <button 
                 onClick={() => setActiveTab('LOBBY')}
-                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'LOBBY' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                className={`px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'LOBBY' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
             >
                 <Home className="w-4 h-4"/> {t('manager.lobby')}
             </button>
             <button 
                 onClick={() => isProjectActive && setActiveTab('PIPELINE')}
-                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'PIPELINE' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : isProjectActive ? 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
+                className={`px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'PIPELINE' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : isProjectActive ? 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
                 title={!isProjectActive ? "Start a project to unlock" : ""}
             >
                 <Activity className="w-4 h-4"/> {t('manager.pipeline')}
             </button>
             <button 
                 onClick={() => isProjectActive && setActiveTab('CHAPTERS')}
-                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'CHAPTERS' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : isProjectActive ? 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
+                className={`px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'CHAPTERS' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : isProjectActive ? 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
                 title={!isProjectActive ? "Start a project to unlock" : ""}
             >
                 <Map className="w-4 h-4"/> Mục Lục (Chapters)
             </button>
             <button 
                 onClick={() => setActiveTab('SETTINGS')}
-                className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'SETTINGS' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                className={`px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'SETTINGS' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 translate-y-[1px]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
             >
                 <Settings className="w-4 h-4"/> {t('manager.settings')}
             </button>
@@ -140,19 +140,19 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     // --- VIEW: LOBBY (New / Load / Import) ---
     if (activeTab === 'LOBBY') {
         return (
-            <div className="flex flex-col h-full pb-8">
+            <div className="flex flex-col h-full pb-6 sm:pb-8">
                 {renderTabs()}
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 flex-1 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
                     {/* Active Projects List */}
                     <div>
                        <div className="flex justify-between items-center mb-4">
                            <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2"><Briefcase className="w-5 h-5 text-indigo-600 dark:text-indigo-400"/> {t('ui.resume')}</h3>
                        </div>
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                            {[0, 1, 2].map(i => {
                                const slotProject = activeProjects[i];
                                return slotProject ? (
-                                   <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-md transition-all relative group cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500" onClick={() => { handleLoadWIP(slotProject); setActiveTab('PIPELINE'); }}>
+                                   <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 shadow-sm hover:shadow-md transition-all relative group cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500" onClick={() => { handleLoadWIP(slotProject); setActiveTab('PIPELINE'); }}>
                                        <div className="flex justify-between items-start mb-3">
                                            <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">{slotProject.storyFormat?.replace('_', ' ')}</span>
                                            <button onClick={(e) => handleDeleteWIP(e, slotProject.id!)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 p-1 z-20 transition-colors bg-white dark:bg-gray-700 rounded-full border border-transparent hover:border-red-200 dark:hover:border-red-900 shadow-sm"><Trash2 className="w-4 h-4"/></button>

@@ -16,7 +16,7 @@ const FinalComicView: React.FC<FinalComicViewProps> = ({ project }) => {
   };
 
   return (
-    <div className="fixed right-0 top-0 bottom-0 w-80 lg:w-96 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-[0_0_40px_rgba(0,0,0,0.05)] dark:shadow-none overflow-hidden flex flex-col z-20 transition-colors">
+    <div className="fixed right-0 top-0 bottom-0 w-full sm:w-80 md:w-96 xl:w-[26rem] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-[0_0_40px_rgba(0,0,0,0.05)] dark:shadow-none overflow-hidden flex flex-col z-20 transition-colors">
         <style>{`
           @keyframes kenburns {
             0% { transform: scale(1.0) translate(0, 0); }
@@ -28,15 +28,15 @@ const FinalComicView: React.FC<FinalComicViewProps> = ({ project }) => {
           }
         `}</style>
 
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center z-10">
-            <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+        <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center z-10">
+            <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 text-sm sm:text-base">
                 <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>
                 Live Preview
             </h3>
             <span className="text-[10px] text-gray-400 font-mono">16:9 HD</span>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-950/50">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-gray-50 dark:bg-gray-950/50">
             {/* Cover Page */}
             <div className="bg-white dark:bg-gray-800 p-2 shadow-sm border border-gray-200 dark:border-gray-700 rounded-sm mb-8 relative group cursor-default">
                 <div className="aspect-[3/4] bg-gray-100 dark:bg-gray-900 relative overflow-hidden flex items-center justify-center">
@@ -48,11 +48,11 @@ const FinalComicView: React.FC<FinalComicViewProps> = ({ project }) => {
                         </div>
                     )}
                     
-                    <div className="absolute top-8 left-4 right-4 text-center">
-                        <h1 className="text-2xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] uppercase tracking-wider font-serif">
+                    <div className="absolute top-6 sm:top-8 left-4 right-4 text-center">
+                        <h1 className="text-xl sm:text-2xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] uppercase tracking-wider font-serif">
                             {project.title || "UNTITLED"}
                         </h1>
-                        <p className="mt-2 text-sm text-white/80 font-medium">{project.language} Edition</p>
+                        <p className="mt-2 text-xs sm:text-sm text-white/80 font-medium">{project.language} Edition</p>
                     </div>
                 </div>
             </div>

@@ -216,9 +216,9 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
     const activeTasksCount = (project.agentTasks || []).filter(task => task.role === role && !task.isCompleted).length;
 
     return (
-      <div className="w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-4 mb-6 sticky top-0 z-40 transition-colors">
-        <div className="flex items-center justify-between max-w-6xl mx-auto px-4">
-          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 flex-1 mr-4">
+      <div className="w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-3 sm:p-4 mb-4 sm:mb-6 sticky top-0 z-40 transition-colors">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 max-w-6xl mx-auto px-3 sm:px-4">
+          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 flex-1 w-full sm:mr-4">
             {WORKFLOW_STEPS_CONFIG.map((step, idx) => {
                 const stepStageIdx = getStepStageIndex(step.id);
                 const isUnlocked = effectiveCurrentIdx >= stepStageIdx;
@@ -236,11 +236,11 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                 }
 
                 return (
-                <div key={step.id} className="flex items-center flex-1 last:flex-none group min-w-[120px]">
+                <div key={step.id} className="flex items-center flex-1 last:flex-none group min-w-[96px] sm:min-w-[120px]">
                     <button 
                         onClick={() => isUnlocked && onAgentChange(step.agent)} 
                         disabled={!isUnlocked}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-bold transition-all whitespace-nowrap w-full justify-center ${statusColor}`}
+                        className={`flex items-center gap-2 px-2.5 sm:px-3 py-2 rounded-lg border text-[10px] sm:text-xs font-bold transition-all whitespace-nowrap w-full justify-center ${statusColor}`}
                     >
                         {!isUnlocked ? <Lock className="w-3 h-3"/> : <step.icon className={`w-4 h-4 ${isCurrentView ? 'animate-pulse' : ''}`} />}
                         <span className="">{t(step.labelKey)}</span>
@@ -251,10 +251,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
             })}
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
               <button 
                   onClick={() => setShowTodoList(!showTodoList)} 
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all shadow-sm border ${showTodoList ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/50 dark:text-amber-400 dark:border-amber-700' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-bold text-xs transition-all shadow-sm border flex-1 sm:flex-none justify-center ${showTodoList ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/50 dark:text-amber-400 dark:border-amber-700' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'}`}
                   title="Todo List"
               >
                   <ListTodo className="w-4 h-4" />
@@ -263,7 +263,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                   )}
               </button>
               
-              <button onClick={handleSaveWIP} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all shadow-sm ${saveStatus === 'SAVING' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400' : saveStatus === 'SAVED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-gray-900 text-white hover:bg-indigo-600 dark:bg-gray-700 dark:hover:bg-indigo-500'}`}>
+              <button onClick={handleSaveWIP} className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-bold text-xs transition-all shadow-sm flex-1 sm:flex-none justify-center ${saveStatus === 'SAVING' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400' : saveStatus === 'SAVED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-gray-900 text-white hover:bg-indigo-600 dark:bg-gray-700 dark:hover:bg-indigo-500'}`}>
                  {saveStatus === 'SAVING' ? <Loader2 className="w-3 h-3 animate-spin"/> : saveStatus === 'SAVED' ? <CheckCircle className="w-3 h-3"/> : <Save className="w-3 h-3"/>}
                  {saveStatus === 'SAVING' ? t('ui.saving') : saveStatus === 'SAVED' ? t('ui.saved') : t('ui.save')}
               </button>
@@ -294,7 +294,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
               const aiResponseText = await GeminiService.sendResearchChatMessage([], `Brief: "${project.theme}"`, { theme: project.theme, storyFormat: project.storyFormat, totalChapters: project.totalChapters, language: project.masterLanguage, originalScript: project.originalScript }, project.modelTier || 'STANDARD');
               const userMsg: Message = { role: 'user', content: `Brief: "${project.theme}"`, timestamp: Date.now() };
               updateProject({ researchChatHistory: [userMsg, { role: 'agent', senderId: AgentRole.MARKET_RESEARCHER, content: aiResponseText, timestamp: Date.now() + 1 }] });
-          } catch (e) { } finally { setLoading(false); }
+          } catch (e: any) {
+              const message = e?.message || "Unknown error";
+              addLog(AgentRole.MARKET_RESEARCHER, `Research chat failed: ${message}`, 'error');
+          } finally { setLoading(false); }
       }
   };
 
@@ -307,12 +310,20 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
       try {
           const aiResponseText = await GeminiService.sendResearchChatMessage(newHistory, researchChatInput, { theme: project.theme, storyFormat: project.storyFormat, totalChapters: project.totalChapters, language: project.masterLanguage, originalScript: project.originalScript }, project.modelTier || 'STANDARD');
           updateProject({ researchChatHistory: [...newHistory, { role: 'agent', senderId: AgentRole.MARKET_RESEARCHER, content: aiResponseText, timestamp: Date.now() + 1 }] });
-      } catch (e) { addLog(AgentRole.MARKET_RESEARCHER, "Chat failed.", 'error'); } finally { setLoading(false); }
+      } catch (e: any) {
+          const message = e?.message || "Unknown error";
+          addLog(AgentRole.MARKET_RESEARCHER, `Chat failed: ${message}`, 'error');
+      } finally { setLoading(false); }
   };
 
   const handleUpdateMarketAnalysis = (data: ResearchData) => updateProject({ marketAnalysis: data });
   
   const handleFinalizeStrategyFromChat = async () => { 
+      if (!project.researchChatHistory || project.researchChatHistory.length === 0) {
+          addLog(AgentRole.MARKET_RESEARCHER, "Finalize failed: no research chat history.", 'warning');
+          return;
+      }
+
       setLoading(true); 
       try { 
           const analysis = await GeminiService.extractStrategyFromChat(project.researchChatHistory, project.masterLanguage, project.modelTier || 'STANDARD'); 
@@ -324,8 +335,9 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
               addLog(AgentRole.MARKET_RESEARCHER, "Strategy Approved. Moving to Scripting.", 'success');
               setTimeout(() => onAgentChange(AgentRole.SCRIPTWRITER), 1000); 
           }
-      } catch (e) { 
-          addLog(AgentRole.MARKET_RESEARCHER, "Failed.", 'error'); 
+      } catch (e: any) { 
+          const message = e?.message || "Unknown error";
+          addLog(AgentRole.MARKET_RESEARCHER, `Finalize failed: ${message}`, 'error'); 
       } finally { 
           setLoading(false); 
       } 
@@ -654,15 +666,15 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
   const handleLoadProject = (p: ComicProject) => { updateProject(p); addLog(AgentRole.ARCHIVIST, `Loaded: ${p.title}`, 'info'); onAgentChange(AgentRole.PROJECT_MANAGER); };
   const handleGeneratePanelVideo = async (panel: ComicPanel, index: number) => { if ((window as any).aistudio) { const hasKey = await (window as any).aistudio.hasSelectedApiKey(); if (!hasKey) { await (window as any).aistudio.openSelectKey(); } } const newPanels = [...project.panels]; newPanels[index] = { ...newPanels[index], isGenerating: true }; updateProject({ panels: newPanels }); try { addLog(AgentRole.CINEMATOGRAPHER, `Generating video for panel ${index+1}...`, 'info'); const videoUrl = await GeminiService.generatePanelVideo(panel, project.style); const updatedPanels = [...project.panels]; updatedPanels[index] = { ...updatedPanels[index], videoUrl: videoUrl, isGenerating: false, shouldAnimate: true }; updateProject({ panels: updatedPanels }); addLog(AgentRole.CINEMATOGRAPHER, `Video generated.`, 'success'); } catch (e: any) { console.error("Video generation error:", e); const errorMsg = e.message || JSON.stringify(e); if (errorMsg.includes("Requested entity was not found") || e.status === 404 || (e.error && e.error.code === 404)) { addLog(AgentRole.CINEMATOGRAPHER, "Access denied. Please select a valid Paid API Key for Veo.", 'warning'); if ((window as any).aistudio) { await (window as any).aistudio.openSelectKey(); } } else { addLog(AgentRole.CINEMATOGRAPHER, `Generation failed: ${errorMsg}`, 'error'); } const updatedPanels = [...project.panels]; updatedPanels[index] = { ...updatedPanels[index], isGenerating: false }; updateProject({ panels: updatedPanels }); } };
   const handleRunContinuityCheck = async () => { setLoading(true); addLog(AgentRole.CONTINUITY_EDITOR, "Analyzing script logic...", 'info'); try { const report = await GeminiService.checkContinuity(project.panels, project.characters, project.seriesBible, project.modelTier); updateProject({ continuityReport: report }); addLog(AgentRole.CONTINUITY_EDITOR, "Continuity check complete.", 'success'); } catch (e) { addLog(AgentRole.CONTINUITY_EDITOR, "Analysis failed.", 'error'); } finally { setLoading(false); } };
-  const handleRunCensorCheck = async () => { setLoading(true); addLog(AgentRole.CENSOR, "Running compliance scan...", 'info'); try { const fullText = project.panels.map(p => p.description + " " + p.dialogue).join("\n"); const result = await GeminiService.censorContent(fullText, 'SCRIPT'); updateProject({ censorReport: result.report, isCensored: !result.passed }); addLog(AgentRole.CENSOR, result.passed ? "Content passed safety checks." : "Safety issues detected.", result.passed ? 'success' : 'warning'); } catch(e) { addLog(AgentRole.CENSOR, "Compliance check failed.", 'error'); } finally { setLoading(false); } };
+  const handleRunCensorCheck = async () => { setLoading(true); addLog(AgentRole.CENSOR, "Running compliance scan...", 'info'); try { const fullText = project.panels.map(p => p.description + " " + p.dialogue).join("\n"); const result = await GeminiService.censorContent(fullText, 'SCRIPT'); const report = result.report?.trim() || (result.passed ? 'Passed compliance scan.' : 'Failed compliance scan.'); updateProject({ censorReport: report, isCensored: !result.passed }); addLog(AgentRole.CENSOR, result.passed ? "Content passed safety checks." : "Safety issues detected.", result.passed ? 'success' : 'warning'); } catch(e) { addLog(AgentRole.CENSOR, "Compliance check failed.", 'error'); } finally { setLoading(false); } };
   const handleRevertStage = () => { if (!(window as any).confirm("Are you sure you want to revert to the previous stage?")) return; const currentIdx = getCurrentStageIndex(); if (currentIdx > 0) { const prevStage = WORKFLOW_ORDER[currentIdx - 1]; updateProject({ workflowStage: prevStage }); addLog(AgentRole.PROJECT_MANAGER, `Reverted stage to ${prevStage}`, 'warning'); onAgentChange(getAgentForStage(prevStage)); } };
   const handleJumpToChapter = (chapterNum: number) => { const isCurrentActive = project.currentChapter === chapterNum; if (isCurrentActive) { onAgentChange(AgentRole.SCRIPTWRITER); return; } if (project.panels.length > 0) { const confirmSwitch = (window as any).confirm(`Switching to Chapter ${chapterNum} will archive current Chapter ${project.currentChapter}. Continue?`); if (!confirmSwitch) return; const chapterData: ChapterArchive = { chapterNumber: project.currentChapter || 1, title: `Chapter ${project.currentChapter || 1}`, panels: [...project.panels], summary: "Auto-archived on switch", timestamp: Date.now() }; const cleanArchives = (project.completedChapters || []).filter(c => c.chapterNumber !== chapterData.chapterNumber); const targetArchived = project.completedChapters?.find(c => c.chapterNumber === chapterNum); updateProject({ completedChapters: [...cleanArchives, chapterData], currentChapter: chapterNum, panels: targetArchived ? targetArchived.panels : [], workflowStage: WorkflowStage.SCRIPTING }); } else { const targetArchived = project.completedChapters?.find(c => c.chapterNumber === chapterNum); updateProject({ currentChapter: chapterNum, panels: targetArchived ? targetArchived.panels : [], workflowStage: WorkflowStage.SCRIPTING }); } addLog(AgentRole.PROJECT_MANAGER, `Switched workspace to Chapter ${chapterNum}`, 'info'); onAgentChange(AgentRole.SCRIPTWRITER); };
 
   if (role === AgentRole.PROJECT_MANAGER) {
       return (
         <AgentViewWrapper progressBar={renderProgressBar()} todoList={showTodoList && <AgentTodoList role={role} project={project} updateProject={updateProject} t={t} onClose={() => setShowTodoList(false)} />} isLoading={isProjectLoading}>
-            <div className="max-w-7xl mx-auto w-full px-6 pb-8">
-                <div className="flex items-center justify-between mb-8">
+            <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-6 sm:pb-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
                     <div className="flex items-center gap-4">
                         <img src={AGENTS[role].avatar} alt="Manager" className="w-16 h-16 rounded-full border border-gray-100 dark:border-gray-600 shadow-md" />
                         <div>
@@ -673,16 +685,16 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                         </div>
                     </div>
                     {/* View Switcher: Dashboard vs Profile */}
-                    <div className="flex bg-white dark:bg-gray-800 rounded-xl p-1 border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div className="flex w-full sm:w-auto bg-white dark:bg-gray-800 rounded-xl p-1 border border-gray-200 dark:border-gray-700 shadow-sm">
                         <button 
                             onClick={() => setManagerViewMode('DASHBOARD')}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${managerViewMode === 'DASHBOARD' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}
+                            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${managerViewMode === 'DASHBOARD' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}
                         >
                             <Layout className="w-4 h-4"/> Dashboard
                         </button>
                         <button 
                             onClick={() => setManagerViewMode('PROFILE')}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${managerViewMode === 'PROFILE' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}
+                            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${managerViewMode === 'PROFILE' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}
                         >
                             <Key className="w-4 h-4"/> Profile & Keys
                         </button>
@@ -725,7 +737,38 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
   if (role === AgentRole.MARKET_RESEARCHER) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><ResearchView project={project} handleResearchChatSend={handleResearchChatSend} researchChatInput={researchChatInput} setResearchChatInput={setResearchChatInput} handleFinalizeStrategyFromChat={handleFinalizeStrategyFromChat} handleUpdateMarketAnalysis={handleUpdateMarketAnalysis} updateProject={updateProject} loading={loading} t={t} chatEndRef={chatEndRef} role={role}/></AgentViewWrapper>;
   if (role === AgentRole.SCRIPTWRITER) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><WriterView project={project} handleImportScript={handleImportScript} handleExportScript={handleExportScript} handleGenerateScript={handleGenerateScript} handleForceExtractCast={handleForceExtractCast} updateProject={updateProject} loading={loading} t={t} scriptStep={scriptStep} writerLogsEndRef={writerLogsEndRef} role={role} isLongFormat={isLongFormat}/></AgentViewWrapper>;
   if (role === AgentRole.VOICE_ACTOR) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><VoiceView project={project} handleUpdateCharacterVoice={handleUpdateCharacterVoice} handleVerifyVoice={handleVerifyVoice} applyVoiceSuggestion={applyVoiceSuggestion} voiceAnalysis={voiceAnalysis} analyzingVoiceId={analyzingVoiceId} role={role} t={t} availableVoices={AVAILABLE_VOICES}/></AgentViewWrapper>;
-  if (role === AgentRole.ARCHIVIST) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><div className="max-w-7xl mx-auto w-full px-8 pb-8"><div className="flex items-center justify-between mb-8"><div className="flex items-center gap-6"><img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-gray-600 shadow-md" /><div><h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('role.archivist')}</h2><p className="text-gray-500 dark:text-gray-400">Secure textual storage.</p></div></div></div><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{library.map((p) => (<div key={p.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-gray-600 transition-all group flex flex-col h-64 relative shadow-sm hover:shadow-md"><h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 line-clamp-1">{p.title}</h3><div className="flex gap-2 mt-auto"><button onClick={() => handleLoadProject(p)} className="flex-1 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"><Briefcase className="w-4 h-4"/> {t('ui.upload')}</button><button onClick={() => handleDeleteFromLibrary(p.id!)} className="px-3 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-500 rounded-lg transition-colors border border-red-200 dark:border-red-900"><RefreshCw className="w-4 h-4"/></button></div></div>))}</div></div></AgentViewWrapper>;
+  if (role === AgentRole.ARCHIVIST) {
+      return (
+          <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}>
+              <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-6 sm:pb-8">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+                      <div className="flex items-center gap-4 sm:gap-6">
+                          <img src={AGENTS[role].avatar} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-gray-200 dark:border-gray-600 shadow-md" />
+                          <div>
+                              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t('role.archivist')}</h2>
+                              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Secure textual storage.</p>
+                          </div>
+                      </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                      {library.map((p) => (
+                          <div key={p.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 sm:p-6 hover:border-gray-300 dark:hover:border-gray-600 transition-all group flex flex-col h-56 sm:h-64 relative shadow-sm hover:shadow-md">
+                              <h3 className="font-bold text-base sm:text-lg text-gray-800 dark:text-gray-100 mb-1 line-clamp-1">{p.title}</h3>
+                              <div className="flex flex-col sm:flex-row gap-2 mt-auto">
+                                  <button onClick={() => handleLoadProject(p)} className="w-full sm:flex-1 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                                      <Briefcase className="w-4 h-4"/> {t('ui.upload')}
+                                  </button>
+                                  <button onClick={() => handleDeleteFromLibrary(p.id!)} className="w-full sm:w-auto px-3 py-2 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-500 rounded-lg transition-colors border border-red-200 dark:border-red-900 flex items-center justify-center">
+                                      <RefreshCw className="w-4 h-4"/>
+                                  </button>
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+          </AgentViewWrapper>
+      );
+  }
   if (role === AgentRole.CHARACTER_DESIGNER) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><CharacterDesignerView project={project} handleFinishCharacterDesign={handleFinishCharacterDesign} handleRegenerateSingleCharacter={handleRegenerateSingleCharacter} handleGenerateAllCharacters={handleGenerateAllCharacters} handleUpdateCharacterDescription={handleUpdateCharacterDescription} handleUpdateCharacterVoice={handleUpdateCharacterVoice} toggleCharacterLock={toggleCharacterLock} handleCharacterUpload={handleCharacterUpload} handleCheckConsistency={handleCheckConsistency} handleSelectCharacterVariant={handleSelectCharacterVariant} role={role} t={t} availableVoices={AVAILABLE_VOICES} loading={loading} updateProject={updateProject}/></AgentViewWrapper>;
   if (role === AgentRole.TYPESETTER) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><TypesetterView project={project} handleFinishPrinting={handleFinishPrinting} role={role} t={t} /></AgentViewWrapper>;
   if (role === AgentRole.CINEMATOGRAPHER) return <AgentViewWrapper progressBar={progressBar} todoList={commonTodoList}><MotionView project={project} handleGeneratePanelVideo={handleGeneratePanelVideo} loading={loading} role={role} t={t}/></AgentViewWrapper>;

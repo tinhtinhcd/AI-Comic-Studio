@@ -91,7 +91,7 @@ const StudioContent: React.FC = () => {
   }
 
   return (
-    <div className={`flex h-screen font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+    <div className={`flex min-h-screen h-[100dvh] pt-6 sm:pt-7 font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       <div className="fixed top-0 left-0 right-0 z-[60] text-center text-[10px] font-bold uppercase tracking-widest bg-amber-200 text-amber-900 py-1 pointer-events-none">
         Lab / Learning Project — Not a Product
       </div>
@@ -106,7 +106,7 @@ const StudioContent: React.FC = () => {
 
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-gray-900/20 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
-           <div className={`absolute left-0 top-0 bottom-0 w-72 shadow-2xl transition-colors ${theme === 'dark' ? 'bg-gray-800 border-r border-gray-700' : 'bg-white'}`}>
+           <div className={`absolute left-0 top-0 bottom-0 w-[82vw] max-w-xs sm:max-w-sm shadow-2xl transition-colors ${theme === 'dark' ? 'bg-gray-800 border-r border-gray-700' : 'bg-white'}`}>
               <Sidebar 
                 currentRole={activeRole} 
                 onSelectRole={(role) => { setActiveRole(role); setMobileMenuOpen(false); }}
@@ -137,20 +137,20 @@ const StudioContent: React.FC = () => {
       </div>
 
       <div className="flex-1 flex flex-col h-full overflow-hidden relative transition-all duration-300">
-        <div className={`lg:hidden p-4 border-b flex items-center justify-between shadow-sm z-10 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+        <div className={`lg:hidden px-3 py-3 sm:p-4 border-b flex items-center justify-between shadow-sm z-10 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
            <div className="flex items-center gap-3 overflow-hidden">
                <button onClick={() => setMobileMenuOpen(true)} className="shrink-0 p-1">
                  <Menu className={`w-6 h-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
                </button>
                <Logo className="w-6 h-6 shrink-0" />
-               <span className="font-bold text-sm truncate">{project.title}</span>
+               <span className="font-bold text-sm sm:text-base truncate">{project.title}</span>
            </div>
-           <button onClick={() => setShowPreview(!showPreview)} className={`ml-2 shrink-0 text-xs px-3 py-1.5 rounded-lg font-bold border transition-colors ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+           <button onClick={() => setShowPreview(!showPreview)} className={`ml-2 shrink-0 text-[11px] sm:text-xs px-3 py-1.5 rounded-lg font-bold border transition-colors ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
               {showPreview ? 'Hide' : 'View'} Comic
            </button>
         </div>
 
-        <div className={`flex-1 overflow-hidden relative ${showPreview ? 'lg:mr-96' : ''}`}>
+        <div className={`flex-1 overflow-hidden relative ${showPreview ? 'lg:mr-96 xl:mr-[26rem]' : ''}`}>
            <AgentWorkspace 
              role={activeRole}
              project={project}

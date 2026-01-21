@@ -3,12 +3,21 @@ import { AgentRunState, ComicProject } from '../types';
 import JSZip from 'jszip';
 
 const DB_NAME = 'AIComicStudioDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_PROJECTS = 'active_projects';
 const STORE_LIBRARY = 'library';
 const AGENT_RUN_KEY = 'acs_agent_run_v1';
 
 // --- INDEXED DB UTILITIES (Fallback Layer) ---
+
+const ensureStores = (db: IDBDatabase) => {
+    if (!db.objectStoreNames.contains(STORE_PROJECTS)) {
+        db.createObjectStore(STORE_PROJECTS, { keyPath: 'id' });
+    }
+    if (!db.objectStoreNames.contains(STORE_LIBRARY)) {
+        db.createObjectStore(STORE_LIBRARY, { keyPath: 'id' });
+    }
+};
 
 const openDB = (): Promise<IDBDatabase> => {
     return new Promise((resolve, reject) => {
@@ -16,16 +25,25 @@ const openDB = (): Promise<IDBDatabase> => {
 
         request.onupgradeneeded = (event) => {
             const db = (event.target as IDBOpenDBRequest).result;
-            if (!db.objectStoreNames.contains(STORE_PROJECTS)) {
-                db.createObjectStore(STORE_PROJECTS, { keyPath: 'id' });
-            }
-            if (!db.objectStoreNames.contains(STORE_LIBRARY)) {
-                db.createObjectStore(STORE_LIBRARY, { keyPath: 'id' });
-            }
+            ensureStores(db);
         };
 
         request.onsuccess = (event) => {
-            resolve((event.target as IDBOpenDBRequest).result);
+            const db = (event.target as IDBOpenDBRequest).result;
+            const missingStores = [STORE_PROJECTS, STORE_LIBRARY].filter(store => !db.objectStoreNames.contains(store));
+            if (missingStores.length > 0) {
+                const upgradeVersion = db.version + 1;
+                db.close();
+                const upgradeRequest = indexedDB.open(DB_NAME, upgradeVersion);
+                upgradeRequest.onupgradeneeded = () => {
+                    const upgradeDb = upgradeRequest.result;
+                    ensureStores(upgradeDb);
+                };
+                upgradeRequest.onsuccess = () => resolve(upgradeRequest.result);
+                upgradeRequest.onerror = () => reject(upgradeRequest.error);
+                return;
+            }
+            resolve(db);
         };
 
         request.onerror = (event) => {
@@ -87,10 +105,12 @@ export const getActiveProjects = async (userId?: string): Promise<ComicProject[]
     }
 };
 
-export const saveWorkInProgress = async (project: ComicProject): Promise<{ success: boolean, message?: string }> => {
-    // Enforce ID
-    if (!project.id) project.id = crypto.randomUUID();
-    project.lastModified = Date.now();
+export const saveWorkInProgress = async (project: ComicProject): Promise<{ success: boolean, message?: string, id?: string }> => {
+    const projectToSave: ComicProject = {
+        ...project,
+        id: project.id || crypto.randomUUID(),
+        lastModified: Date.now()
+    };
 
     let cloudSuccess = false;
     let cloudMessage = "";
@@ -100,7 +120,7 @@ export const saveWorkInProgress = async (project: ComicProject): Promise<{ succe
         const res = await fetch('/api/projects/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ project, isActive: true })
+            body: JSON.stringify({ project: projectToSave, isActive: true })
         });
 
         if (res.ok) {
@@ -118,7 +138,7 @@ export const saveWorkInProgress = async (project: ComicProject): Promise<{ succe
     }
 
     if (cloudSuccess) {
-        return { success: true };
+        return { success: true, id: projectToSave.id };
     }
 
     // 2. Fallback to Local
@@ -126,14 +146,14 @@ export const saveWorkInProgress = async (project: ComicProject): Promise<{ succe
         // Check Local Slots
         const allLocal = await dbAction<ComicProject[]>(STORE_PROJECTS, 'readonly', (store) => store.getAll());
         // Simple quota check: if not update, and count >= 3
-        if (!allLocal.find(p => p.id === project.id) && allLocal.length >= 3) {
-             return { success: false, message: "SLOTS_FULL" };
+        if (!allLocal.find(p => p.id === projectToSave.id) && allLocal.length >= 3) {
+             return { success: false, message: "SLOTS_FULL", id: projectToSave.id };
         }
 
-        await dbAction(STORE_PROJECTS, 'readwrite', (store) => store.put(project));
-        return { success: true, message: "Saved (Offline Mode)" };
+        await dbAction(STORE_PROJECTS, 'readwrite', (store) => store.put(projectToSave));
+        return { success: true, message: "Saved (Offline Mode)", id: projectToSave.id };
     } catch (e: any) {
-        return { success: false, message: e.message };
+        return { success: false, message: e.message, id: projectToSave.id };
     }
 };
 
