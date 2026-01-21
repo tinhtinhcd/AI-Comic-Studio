@@ -850,3 +850,5 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
     return null;
 };
+                                    <p className="text-xs">Hãy thảo luận với Ban Biên Tập để tạo đề cương.</p>
+                                </div>
