@@ -197,9 +197,9 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
     const activeTasksCount = (project.agentTasks || []).filter(task => task.role === role && !task.isCompleted).length;
 
     return (
-      <div className="w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-4 mb-6 sticky top-0 z-40 transition-colors">
-        <div className="flex items-center justify-between max-w-6xl mx-auto px-4">
-          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 flex-1 mr-4">
+      <div className="w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-3 sm:p-4 mb-4 sm:mb-6 sticky top-0 z-40 transition-colors">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 max-w-6xl mx-auto px-3 sm:px-4">
+          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 flex-1 w-full sm:mr-4">
             {WORKFLOW_STEPS_CONFIG.map((step, idx) => {
                 const stepStageIdx = getStepStageIndex(step.id);
                 const effectiveCurrentIdx = (project.workflowStage === WorkflowStage.CENSORING_SCRIPT) 
@@ -221,11 +221,11 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                 }
 
                 return (
-                <div key={step.id} className="flex items-center flex-1 last:flex-none group min-w-[120px]">
+                <div key={step.id} className="flex items-center flex-1 last:flex-none group min-w-[96px] sm:min-w-[120px]">
                     <button 
                         onClick={() => isUnlocked && onAgentChange(step.agent)} 
                         disabled={!isUnlocked}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-bold transition-all whitespace-nowrap w-full justify-center ${statusColor}`}
+                        className={`flex items-center gap-2 px-2.5 sm:px-3 py-2 rounded-lg border text-[10px] sm:text-xs font-bold transition-all whitespace-nowrap w-full justify-center ${statusColor}`}
                     >
                         {!isUnlocked ? <Lock className="w-3 h-3"/> : <step.icon className={`w-4 h-4 ${isCurrentView ? 'animate-pulse' : ''}`} />}
                         <span className="">{t(step.labelKey)}</span>
@@ -236,10 +236,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
             })}
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
               <button 
                   onClick={() => setShowTodoList(!showTodoList)} 
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all shadow-sm border ${showTodoList ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/50 dark:text-amber-400 dark:border-amber-700' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-bold text-xs transition-all shadow-sm border flex-1 sm:flex-none justify-center ${showTodoList ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/50 dark:text-amber-400 dark:border-amber-700' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'}`}
                   title="Todo List"
               >
                   <ListTodo className="w-4 h-4" />
@@ -248,7 +248,7 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                   )}
               </button>
               
-              <button onClick={handleSaveWIP} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all shadow-sm ${saveStatus === 'SAVING' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400' : saveStatus === 'SAVED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-gray-900 text-white hover:bg-indigo-600 dark:bg-gray-700 dark:hover:bg-indigo-500'}`}>
+              <button onClick={handleSaveWIP} className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-bold text-xs transition-all shadow-sm flex-1 sm:flex-none justify-center ${saveStatus === 'SAVING' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400' : saveStatus === 'SAVED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-gray-900 text-white hover:bg-indigo-600 dark:bg-gray-700 dark:hover:bg-indigo-500'}`}>
                  {saveStatus === 'SAVING' ? <Loader2 className="w-3 h-3 animate-spin"/> : saveStatus === 'SAVED' ? <CheckCircle className="w-3 h-3"/> : <Save className="w-3 h-3"/>}
                  {saveStatus === 'SAVING' ? t('ui.saving') : saveStatus === 'SAVED' ? t('ui.saved') : t('ui.save')}
               </button>

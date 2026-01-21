@@ -88,7 +88,7 @@ const AgentTodoList: React.FC<AgentTodoListProps> = ({ role, project, updateProj
             {/* Backdrop for mobile */}
             <div className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity" onClick={onClose} />
             
-            <div className="fixed inset-x-0 bottom-0 top-auto md:top-24 md:right-6 md:left-auto md:bottom-auto md:w-96 bg-white dark:bg-gray-800 rounded-t-2xl md:rounded-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] md:shadow-2xl border-t md:border border-gray-200 dark:border-gray-700 flex flex-col z-50 animate-in slide-in-from-bottom-full md:slide-in-from-right-8 duration-300 ring-1 ring-gray-900/5 dark:ring-black/20 max-h-[85vh] md:max-h-[600px]">
+            <div className="fixed inset-x-0 bottom-0 top-auto sm:top-24 sm:right-6 sm:left-auto sm:bottom-auto sm:w-80 md:w-96 bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] sm:shadow-2xl border-t sm:border border-gray-200 dark:border-gray-700 flex flex-col z-50 animate-in slide-in-from-bottom-full sm:slide-in-from-right-8 duration-300 ring-1 ring-gray-900/5 dark:ring-black/20 max-h-[85vh] sm:max-h-[600px]">
                 {/* Header */}
                 <div className={`p-4 rounded-t-2xl flex items-center justify-between ${agent.color.replace('bg-', 'bg-').replace('600', '50')} dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 shrink-0`}>
                     <div className="flex items-center gap-2">
