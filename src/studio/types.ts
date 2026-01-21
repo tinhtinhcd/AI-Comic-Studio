@@ -142,6 +142,50 @@ export interface SystemLog {
   type: 'info' | 'success' | 'error' | 'warning';
 }
 
+export type AgentRunStatus = 'IDLE' | 'RUNNING' | 'PAUSED' | 'COMPLETED' | 'FAILED' | 'CANCELED';
+export type AgentStepStatus = 'PENDING' | 'RUNNING' | 'DONE' | 'ERROR' | 'SKIPPED';
+export type AgentGoalType = 'CREATE_CHAPTER';
+export type AgentToolName = 'analyzeResearch' | 'generateScript' | 'censorScript' | 'generateCharacters' | 'generatePanels';
+
+export interface AgentGoal {
+  id: string;
+  type: AgentGoalType;
+  chapterNumber: number;
+  note?: string;
+}
+
+export interface AgentStep {
+  id: string;
+  name: string;
+  stage: WorkflowStage;
+  tool: AgentToolName;
+  status: AgentStepStatus;
+  startedAt?: number;
+  finishedAt?: number;
+  error?: string;
+}
+
+export interface ToolCall {
+  id: string;
+  name: AgentToolName;
+  input: Record<string, unknown>;
+  output?: Record<string, unknown>;
+  error?: string;
+  timestamp: number;
+}
+
+export interface AgentRunState {
+  id: string;
+  goal: AgentGoal;
+  status: AgentRunStatus;
+  steps: AgentStep[];
+  toolCalls: ToolCall[];
+  startedAt: number;
+  updatedAt: number;
+  currentStepId?: string;
+  error?: string;
+}
+
 export type TaskPriority = 'HIGH' | 'MEDIUM' | 'LOW';
 
 export interface AgentTask {
@@ -236,6 +280,7 @@ export interface ComicProject {
   panels: ComicPanel[];
   pages?: BookPage[];
   agentTasks: AgentTask[];
+  agentRuns?: AgentRunState[];
   workflowStage: WorkflowStage;
   logs: SystemLog[];
 }

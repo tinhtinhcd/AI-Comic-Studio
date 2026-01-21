@@ -5,7 +5,6 @@ import Sidebar from './components/Sidebar';
 import AgentWorkspace from './components/AgentWorkspace';
 import FinalComicView from './components/FinalComicView';
 import { LoginScreen } from './components/LoginScreen';
-import { ReaderApp } from './components/ReaderApp';
 import { AgentRole, ComicProject, UserProfile } from './types';
 import { INITIAL_PROJECT_STATE } from './constants';
 import * as AuthService from './services/authService';
@@ -13,8 +12,6 @@ import { Menu, X, Maximize2, Minimize2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [isReaderMode, setIsReaderMode] = useState(false); // NEW STATE FOR READER PORTAL
-  
   const [activeRole, setActiveRole] = useState<AgentRole>(AgentRole.PROJECT_MANAGER);
   const [project, setProject] = useState<ComicProject>(INITIAL_PROJECT_STATE);
   const [showPreview, setShowPreview] = useState(true);
@@ -29,7 +26,6 @@ const App: React.FC = () => {
 
   const handleLogin = (user: UserProfile) => {
       setCurrentUser(user);
-      setIsReaderMode(false);
       // Reset project state to clean slate on login (or load from their last session in future)
       setProject({ ...INITIAL_PROJECT_STATE, ownerId: user.id });
   };
@@ -87,19 +83,17 @@ const App: React.FC = () => {
 
   // --- VIEW LOGIC ---
 
-  // 1. Reader Mode (No Auth Required)
-  if (isReaderMode) {
-      return <ReaderApp onExit={() => setIsReaderMode(false)} />;
-  }
-
-  // 2. Auth Gate
+  // 1. Auth Gate
   if (!currentUser) {
-      return <LoginScreen onLogin={handleLogin} onEnterReader={() => setIsReaderMode(true)} />;
+      return <LoginScreen onLogin={handleLogin} />;
   }
 
-  // 3. Studio Mode (Authenticated)
+  // 2. Studio Mode (Authenticated)
   return (
     <div className={`flex h-screen font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+      <div className="fixed top-0 left-0 right-0 z-[60] text-center text-[10px] font-bold uppercase tracking-widest bg-amber-200 text-amber-900 py-1 pointer-events-none">
+        Lab / Learning Project — Not a Product
+      </div>
       {/* Full Screen Toggle (Floating) */}
       <button 
           onClick={toggleFullScreen}

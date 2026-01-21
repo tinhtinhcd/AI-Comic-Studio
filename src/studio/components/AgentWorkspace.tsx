@@ -1,7 +1,7 @@
 
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
-import { AgentRole, ComicProject, Character, WorkflowStage, ResearchData, Message, ChapterArchive, AgentTask, CharacterVariant, UserProfile, ImageProvider, ComicPanel } from '../types';
+import { AgentRole, ComicProject, Character, WorkflowStage, ResearchData, Message, ChapterArchive, AgentTask, CharacterVariant, UserProfile, ImageProvider, ComicPanel, AgentRunState, AgentGoal } from '../types';
 import { AGENTS, TRANSLATIONS } from '../constants';
 import * as GeminiService from '../services/geminiService';
 import * as StorageService from '../services/storageService';
@@ -13,6 +13,7 @@ import { VoiceView, MotionView, TypesetterView, ContinuityView, CensorView, Tran
 import { UserProfileView } from './UserProfileView';
 import AgentTodoList from './AgentTodoList';
 import { useProjectManagement } from '../hooks/useProjectManagement';
+import { runAgentGoal } from '../services/agentDirector';
 
 interface AgentWorkspaceProps {
   role: AgentRole;
@@ -99,6 +100,8 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
   const [managerViewMode, setManagerViewMode] = useState<'DASHBOARD' | 'PROFILE'>('DASHBOARD');
   const [voiceAnalysis, setVoiceAnalysis] = useState<Record<string, {isSuitable: boolean, suggestion: string, reason: string}>>({});
   const [analyzingVoiceId, setAnalyzingVoiceId] = useState<string | null>(null);
+  const [agentRun, setAgentRun] = useState<AgentRunState | null>(() => StorageService.loadAgentRunState());
+  const agentRunCancelRef = useRef<(() => void) | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -120,7 +123,29 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
       uiLanguage
   );
 
+  const setAndPersistAgentRun = (run: AgentRunState | null) => {
+      setAgentRun(run);
+      if (run) {
+          StorageService.saveAgentRunState(run);
+          const existingRuns = projectRef.current.agentRuns || [];
+          const existingIndex = existingRuns.findIndex(r => r.id === run.id);
+          const updatedRuns = existingIndex === -1
+              ? [run, ...existingRuns]
+              : existingRuns.map(r => (r.id === run.id ? run : r));
+          updateProject({ agentRuns: updatedRuns });
+      } else {
+          StorageService.clearAgentRunState();
+      }
+  };
+
   useEffect(() => { projectRef.current = project; }, [project]);
+  useEffect(() => {
+      if (agentRun?.status === 'RUNNING') {
+          const pausedRun = { ...agentRun, status: 'PAUSED' as const, updatedAt: Date.now() };
+          setAndPersistAgentRun(pausedRun);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     if (role === AgentRole.PROJECT_MANAGER) (logsEndRef.current as any)?.scrollIntoView({ behavior: 'smooth' });
     if (role === AgentRole.SCRIPTWRITER && loading) (writerLogsEndRef.current as any)?.scrollIntoView({ behavior: 'smooth' });
@@ -155,6 +180,31 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
       }
       (window as any).alert(result.reason || "Transition not allowed.");
       return false;
+  };
+
+  const handleStartAutoRun = () => {
+      if (agentRun?.status === 'RUNNING') {
+          (window as any).alert("Auto-Run is already in progress.");
+          return;
+      }
+      const goal: AgentGoal = {
+          id: crypto.randomUUID(),
+          type: 'CREATE_CHAPTER',
+          chapterNumber: project.currentChapter || 1
+      };
+      const { cancel } = runAgentGoal(goal, {
+          getProject: () => projectRef.current,
+          updateProject,
+          addLog,
+          onAgentChange,
+          setRunState: setAndPersistAgentRun
+      });
+      agentRunCancelRef.current = cancel;
+  };
+
+  const handleCancelAutoRun = () => {
+      agentRunCancelRef.current?.();
+      agentRunCancelRef.current = null;
   };
 
   const getCurrentStageIndex = () => WORKFLOW_ORDER.indexOf(project.workflowStage);
@@ -651,6 +701,9 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
                                 handleRevertStage={handleRevertStage}
                                 handleJumpToChapter={handleJumpToChapter}
                                 handleAddLanguage={handleAddLanguage} 
+                                agentRun={agentRun}
+                                onStartAutoRun={handleStartAutoRun}
+                                onCancelAutoRun={handleCancelAutoRun}
                                 setInputText={setInputText} inputText={inputText} 
                                 loading={loading} t={t} isLongFormat={isLongFormat} supportedLanguages={SUPPORTED_LANGUAGES}
                             />

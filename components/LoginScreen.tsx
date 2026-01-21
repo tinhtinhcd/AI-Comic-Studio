@@ -3,18 +3,15 @@ import React, { useState } from 'react';
 import { Logo } from './Logo';
 import { UserProfile } from '../types';
 import * as AuthService from '../services/authService';
-import { Loader2, ArrowRight, UserPlus, LogIn, Sparkles, Palette, BookOpen, Book } from 'lucide-react';
+import { Loader2, ArrowRight, LogIn, Sparkles, Palette, BookOpen } from 'lucide-react';
 
 interface LoginScreenProps {
     onLogin: (user: UserProfile) => void;
-    onEnterReader: () => void; // NEW PROP
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onEnterReader }) => {
-    const [isRegistering, setIsRegistering] = useState(false);
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [username, setUsername] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -24,13 +21,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onEnterReader
         setLoading(true);
 
         try {
-            let user;
-            if (isRegistering) {
-                if (!username) throw new Error("Username is required");
-                user = await AuthService.register(email, password, username);
-            } else {
-                user = await AuthService.login(email, password);
-            }
+            const user = await AuthService.login(email, password);
             onLogin(user);
         } catch (err: any) {
             setError(err.message);
@@ -41,6 +32,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onEnterReader
 
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden font-sans">
+            <div className="fixed top-0 left-0 right-0 z-[60] text-center text-[10px] font-bold uppercase tracking-widest bg-amber-200 text-amber-900 py-1 pointer-events-none">
+                Lab / Learning Project — Not a Product
+            </div>
             {/* LEFT: ARTWORK / BRANDING */}
             <div className="hidden lg:flex w-1/2 bg-indigo-900 relative items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>
@@ -81,43 +75,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onEnterReader
                     <Logo className="w-12 h-12" />
                 </div>
 
-                {/* READER MODE BUTTON (TOP RIGHT) */}
-                <div className="absolute top-6 right-6">
-                    <button 
-                        onClick={onEnterReader}
-                        className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm border border-gray-200 dark:border-gray-700 group"
-                    >
-                        <Book className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform"/>
-                        Browse as Reader
-                    </button>
-                </div>
-
                 <div className="w-full max-w-md space-y-8">
                     <div className="text-center lg:text-left">
                         <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center justify-center lg:justify-start gap-3">
-                            {isRegistering ? <UserPlus className="w-8 h-8 text-indigo-600"/> : <LogIn className="w-8 h-8 text-indigo-600"/>}
-                            {isRegistering ? "Join the Studio" : "Creator Login"}
+                            <LogIn className="w-8 h-8 text-indigo-600"/>
+                            Creator Login
                         </h2>
                         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                            {isRegistering ? "Start your creative journey today." : "Log in to manage your projects and assets."}
+                            Log in to manage your projects and assets.
                         </p>
                     </div>
 
                     <form className="space-y-6" onSubmit={handleSubmit}>
-                        {isRegistering && (
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">Studio Name / Username</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                                    placeholder="e.g. Stan Lee"
-                                />
-                            </div>
-                        )}
-
                         <div>
                             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">Email Address</label>
                             <input
@@ -155,21 +124,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onEnterReader
                             className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {loading ? <Loader2 className="w-5 h-5 animate-spin"/> : <ArrowRight className="w-5 h-5"/>}
-                            {isRegistering ? "Create Account" : "Access Dashboard"}
+                            Access Dashboard
                         </button>
                     </form>
-
-                    <div className="text-center pt-4 border-t border-gray-100 dark:border-gray-800">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {isRegistering ? "Already have an account?" : "New to AI Comic Studio?"}
-                            <button 
-                                onClick={() => { setIsRegistering(!isRegistering); setError(''); }}
-                                className="ml-2 font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
-                            >
-                                {isRegistering ? "Log In" : "Create Account"}
-                            </button>
-                        </p>
-                    </div>
                 </div>
                 
                 <div className="absolute bottom-6 text-xs text-gray-400 dark:text-gray-600">

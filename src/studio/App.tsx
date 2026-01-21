@@ -86,16 +86,15 @@ const StudioContent: React.FC = () => {
       }
   }, []);
 
-  const handleGoToReader = () => {
-      window.location.href = '/reader/';
-  };
-
   if (!currentUser) {
-      return <LoginScreen onLogin={handleLogin} onEnterReader={handleGoToReader} />;
+      return <LoginScreen onLogin={handleLogin} />;
   }
 
   return (
     <div className={`flex h-screen font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+      <div className="fixed top-0 left-0 right-0 z-[60] text-center text-[10px] font-bold uppercase tracking-widest bg-amber-200 text-amber-900 py-1 pointer-events-none">
+        Lab / Learning Project — Not a Product
+      </div>
       
       <button 
           onClick={toggleFullScreen}

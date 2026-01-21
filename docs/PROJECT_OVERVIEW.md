@@ -1,6 +1,9 @@
 # AI Comic Studio Project Overview
 
 ## What this project is
+This is a lab/learning project and **not** a production product.
+
+Access is restricted to database-backed accounts; user registration is disabled.
 AI Comic Studio is a multi-surface web app for creating and reading AI-generated motion comics. It includes:
 - Studio: authenticated creator workspace with multiple AI agent roles.
 - Reader: public browsing and reading experience.
@@ -25,7 +28,7 @@ Scripts in `package.json` map to those targets:
 
 ## High-level flow
 1. Landing (root) is a lightweight entry and can route to Studio/Reader/Admin.
-2. Studio requires login. Auth is handled by `authService` with a cloud-first + local fallback strategy.
+2. Studio requires login. Auth is handled by `authService` via the backend database.
 3. Studio agents update a shared `ComicProject` state. The preview panel shows the final comic.
 4. Reader loads published projects from storage and displays them in a mobile-first reader UI.
 5. Admin pulls users/projects/stats from the backend.
@@ -66,7 +69,6 @@ Serverless API: `functions/api/[[route]].ts`
 
 ### Local fallback
 If cloud is unavailable:
-- Auth uses `localStorage`.
 - Projects are stored in IndexedDB (`storageService`).
 - The UI continues to work offline with a limited quota.
 

@@ -1,7 +1,7 @@
 
 /// <reference lib="dom" />
 import React, { useState, useEffect } from 'react';
-import { ComicProject, WorkflowStage, AgentRole } from '../types';
+import { ComicProject, WorkflowStage, AgentRole, AgentRunState } from '../types';
 import { AGENTS, COMMON_STYLES } from '../constants';
 import { WorkflowStateMachine } from '../services/workflowStateMachine';
 import { Settings, CheckCircle, Archive, Activity, LayoutTemplate, BookOpen, Library, Smartphone, FolderOpen, TrendingUp, Palette, Printer, Trash2, ArrowRight, RotateCcw, Map, Edit, Eye, Lock, Lightbulb, Home, Briefcase, BrainCircuit, FileText, Globe, X, Plus, Languages, Sliders, Hash, Key, Calendar, BarChart4, DollarSign, Info, Users, Shield, Zap, Sparkles } from 'lucide-react';
@@ -24,6 +24,9 @@ interface ManagerViewProps {
     handleImportProjectZip: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleAddLanguage: (lang: string) => void;
     handleJumpToChapter: (chapterNum: number) => void; 
+    agentRun: AgentRunState | null;
+    onStartAutoRun: () => void;
+    onCancelAutoRun: () => void;
     setInputText: (val: string) => void;
     inputText: string;
     loading: boolean;
@@ -54,6 +57,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     handleStartResearch, handleApproveResearchAndScript, handleStartCensoring, handleApproveScriptAndVisualize, handleStartPrinting, handleFinalizeProduction,
     handleRevertStage, handleJumpToChapter,
     handleImportManuscript, handleExportProjectZip, handleImportProjectZip, handleAddLanguage,
+    agentRun, onStartAutoRun, onCancelAutoRun,
     setInputText, inputText, loading, t, isLongFormat, supportedLanguages
 }) => {
     
@@ -145,6 +149,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     const canVisualize = canMoveTo(WorkflowStage.DESIGNING_CHARACTERS);
     const canPrint = canMoveTo(WorkflowStage.PRINTING);
     const canPostProd = canMoveTo(WorkflowStage.POST_PRODUCTION);
+    const autoRunStatus = agentRun?.status || 'IDLE';
+    const isAutoRunning = autoRunStatus === 'RUNNING';
+    const currentAutoStep = agentRun?.steps.find(step => step.id === agentRun.currentStepId);
 
     const renderTabs = () => (
         <div className="flex items-center gap-2 mb-6 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl max-w-full overflow-x-auto custom-scrollbar shrink-0">
@@ -378,6 +385,40 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                         placeholder={t('manager.themeplaceholder')}
                                         className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-sm text-gray-900 dark:text-gray-100 min-h-[100px] outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all placeholder-gray-400"
                                     />
+                                </div>
+
+                                <div className="mb-6 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                                                <BrainCircuit className="w-4 h-4 text-indigo-500"/> Auto-Run Director
+                                            </h4>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                Status: <span className="font-bold">{autoRunStatus}</span>
+                                            </p>
+                                            {currentAutoStep && (
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    Step: <span className="font-bold">{currentAutoStep.name}</span>
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={onStartAutoRun}
+                                                disabled={loading || isAutoRunning}
+                                                className="px-3 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white disabled:opacity-50"
+                                            >
+                                                Start Auto-Run
+                                            </button>
+                                            <button
+                                                onClick={onCancelAutoRun}
+                                                disabled={!isAutoRunning}
+                                                className="px-3 py-2 rounded-lg text-xs font-bold bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-3">

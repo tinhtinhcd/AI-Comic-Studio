@@ -2,12 +2,76 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ComicProject, Chapter, Comment } from './types';
 import * as StorageService from './services/storageService';
+import * as AuthService from '../studio/services/authService';
+import { UserProfile } from '../shared/types';
 import { 
     BookOpen, ChevronLeft, Heart, Share2, Search, X, Star, Layers, 
     Home, Compass, Library, User, Bell, Settings, MessageCircle, 
     MoreHorizontal, ArrowRight, PlayCircle, Clock, ThumbsUp 
 } from 'lucide-react';
 import { Logo } from './components/Logo';
+
+const LabNotice: React.FC = () => (
+    <div className="fixed top-0 left-0 right-0 z-[60] text-center text-[10px] font-bold uppercase tracking-widest bg-amber-200 text-amber-900 py-1 pointer-events-none">
+        Lab / Learning Project — Not a Product
+    </div>
+);
+
+const LoginGate: React.FC<{ onLogin: (user: UserProfile) => void }> = ({ onLogin }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        try {
+            const user = await AuthService.login(email, password);
+            onLogin(user);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black text-white flex items-center justify-center p-6">
+            <div className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl">
+                <h2 className="text-xl font-bold mb-2">Reader Login</h2>
+                <p className="text-xs text-gray-400 mb-6">Access requires a valid account.</p>
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                    <input
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
+                        className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-sm"
+                        required
+                    />
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword((e.target as HTMLInputElement).value)}
+                        className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-sm"
+                        required
+                    />
+                    {error && <div className="text-xs text-red-400">{error}</div>}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg text-sm disabled:opacity-60"
+                    >
+                        {loading ? 'Signing in...' : 'Sign In'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
 
 // --- MOCK DATA GENERATORS (To fill gaps in backend data) ---
 const MOCK_COMMENTS: Comment[] = [
@@ -91,6 +155,7 @@ const CommentDrawer: React.FC<{ isOpen: boolean, onClose: () => void }> = ({ isO
 // --- MAIN APP ---
 
 const ReaderApp: React.FC = () => {
+    const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
     const [view, setView] = useState<'HOME' | 'DETAILS' | 'READ'>('HOME');
     const [navTab, setNavTab] = useState('Home');
     const [library, setLibrary] = useState<ComicProject[]>([]);
@@ -100,6 +165,11 @@ const ReaderApp: React.FC = () => {
     const [scrollProgress, setScrollProgress] = useState(0);
 
     // Load Data
+    useEffect(() => {
+        const user = AuthService.getCurrentUser();
+        if (user) setCurrentUser(user);
+    }, []);
+
     useEffect(() => {
         const loadContent = async () => {
             const projects = await StorageService.getActiveProjects();
@@ -111,6 +181,15 @@ const ReaderApp: React.FC = () => {
         };
         loadContent();
     }, []);
+
+    if (!currentUser) {
+        return (
+            <>
+                <LabNotice />
+                <LoginGate onLogin={setCurrentUser} />
+            </>
+        );
+    }
 
     const handleOpenProject = (project: ComicProject) => {
         setSelectedProject(project);
@@ -142,6 +221,7 @@ const ReaderApp: React.FC = () => {
 
         return (
             <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white pb-20">
+                <LabNotice />
                 {/* Header */}
                 <header className="sticky top-0 z-30 bg-white/80 dark:bg-black/80 backdrop-blur-md px-4 py-3 flex justify-between items-center border-b border-gray-100 dark:border-gray-800">
                     <div className="flex items-center gap-2">
@@ -238,6 +318,7 @@ const ReaderApp: React.FC = () => {
     if (view === 'DETAILS' && selectedProject) {
         return (
             <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
+                <LabNotice />
                 {/* Navbar Overlay */}
                 <div className="fixed top-0 left-0 right-0 p-4 z-40 flex justify-between items-center text-white mix-blend-difference">
                     <button onClick={handleBack} className="p-2 bg-white/10 backdrop-blur-md rounded-full"><ChevronLeft className="w-6 h-6"/></button>
@@ -321,6 +402,7 @@ const ReaderApp: React.FC = () => {
     if (view === 'READ' && selectedProject) {
         return (
             <div className="fixed inset-0 bg-black z-50 flex flex-col h-screen">
+                <LabNotice />
                 {/* Reader Header */}
                 <div className={`fixed top-0 left-0 right-0 bg-gray-900/90 backdrop-blur-md text-white px-4 py-3 flex justify-between items-center border-b border-gray-800 z-50 transition-transform duration-300 ${uiVisible ? 'translate-y-0' : '-translate-y-full'}`}>
                     <button onClick={handleBack} className="p-2 hover:bg-gray-800 rounded-full transition-colors flex items-center gap-2">

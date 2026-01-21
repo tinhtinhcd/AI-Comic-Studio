@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, BarChart3, ShieldAlert, Settings, LogOut, XCircle, Search, Wallet, Edit2, Check, X, FileText, Trash2 } from 'lucide-react';
 import { UserProfile, ComicProject } from '../types';
 import { Logo } from './components/Logo';
+import * as AuthService from '../studio/services/authService';
 
 // --- COMPONENTS ---
 
@@ -64,6 +65,7 @@ const UserEditModal: React.FC<{ user: UserProfile, onClose: () => void, onSave: 
 // --- MAIN APP ---
 
 const AdminApp: React.FC = () => {
+    const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
     const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'CONTENT'>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('acs_admin_active_tab');
@@ -133,14 +135,67 @@ const AdminApp: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        const user = AuthService.getCurrentUser();
+        if (user) setCurrentUser(user as UserProfile);
+    }, []);
+
     const handleLogout = () => {
-        window.location.href = '/';
+        AuthService.logout();
+        setCurrentUser(null);
     };
 
     const filteredUsers = users.filter(u => 
         u.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
         u.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    if (!currentUser) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+                <div className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl p-6 shadow-xl">
+                    <h2 className="text-xl font-bold text-slate-900 mb-2">Admin Login</h2>
+                    <p className="text-xs text-slate-500 mb-6">Access requires a valid account.</p>
+                    <form
+                        className="space-y-4"
+                        onSubmit={async (e) => {
+                            e.preventDefault();
+                            const form = e.target as HTMLFormElement;
+                            const email = (form.elements.namedItem('email') as HTMLInputElement).value;
+                            const password = (form.elements.namedItem('password') as HTMLInputElement).value;
+                            try {
+                                const user = await AuthService.login(email, password);
+                                setCurrentUser(user as UserProfile);
+                            } catch (err: any) {
+                                alert(err.message);
+                            }
+                        }}
+                    >
+                        <input
+                            name="email"
+                            type="email"
+                            placeholder="Email"
+                            className="w-full px-4 py-3 rounded-lg border border-slate-300 text-sm"
+                            required
+                        />
+                        <input
+                            name="password"
+                            type="password"
+                            placeholder="Password"
+                            className="w-full px-4 py-3 rounded-lg border border-slate-300 text-sm"
+                            required
+                        />
+                        <button
+                            type="submit"
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg text-sm"
+                        >
+                            Sign In
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
@@ -181,10 +236,15 @@ const AdminApp: React.FC = () => {
             {/* Main Content */}
             <div className="flex-1 overflow-y-auto">
                 <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
-                    <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        {activeTab === 'DASHBOARD' ? 'System Overview' : activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}
-                        {loading && <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>}
-                    </h2>
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            {activeTab === 'DASHBOARD' ? 'System Overview' : activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}
+                            {loading && <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>}
+                        </h2>
+                        <span className="text-[10px] font-bold uppercase tracking-widest bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
+                            Lab / Learning Project — Not a Product
+                        </span>
+                    </div>
                     <div className="flex items-center gap-4">
                         <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700 text-xs border border-indigo-200">AD</div>
                         <span className="text-sm font-medium text-slate-600">Super Admin</span>

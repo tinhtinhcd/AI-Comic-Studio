@@ -1,11 +1,12 @@
 
-import { ComicProject } from '../types';
+import { AgentRunState, ComicProject } from '../types';
 import JSZip from 'jszip';
 
 const DB_NAME = 'AIComicStudioDB';
 const DB_VERSION = 1;
 const STORE_PROJECTS = 'active_projects';
 const STORE_LIBRARY = 'library';
+const AGENT_RUN_KEY = 'acs_agent_run_v1';
 
 // --- INDEXED DB UTILITIES (Fallback Layer) ---
 
@@ -210,5 +211,33 @@ export const importProjectFromZip = async (file: File): Promise<ComicProject> =>
     } catch (e) {
         console.error("Failed to import project", e);
         throw e;
+    }
+};
+
+// --- AGENT RUN STATE (Local Only) ---
+
+export const saveAgentRunState = (run: AgentRunState) => {
+    try {
+        localStorage.setItem(AGENT_RUN_KEY, JSON.stringify(run));
+    } catch (e) {
+        console.error("Failed to save agent run state", e);
+    }
+};
+
+export const loadAgentRunState = (): AgentRunState | null => {
+    try {
+        const raw = localStorage.getItem(AGENT_RUN_KEY);
+        return raw ? (JSON.parse(raw) as AgentRunState) : null;
+    } catch (e) {
+        console.error("Failed to load agent run state", e);
+        return null;
+    }
+};
+
+export const clearAgentRunState = () => {
+    try {
+        localStorage.removeItem(AGENT_RUN_KEY);
+    } catch (e) {
+        console.error("Failed to clear agent run state", e);
     }
 };
