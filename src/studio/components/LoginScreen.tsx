@@ -31,12 +31,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     };
 
     return (
-        <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden font-sans">
+        <div className="flex min-h-screen h-[100dvh] pt-6 sm:pt-7 bg-gray-50 dark:bg-gray-900 overflow-hidden font-sans">
             <div className="fixed top-0 left-0 right-0 z-[60] text-center text-[10px] font-bold uppercase tracking-widest bg-amber-200 text-amber-900 py-1 pointer-events-none">
                 Lab / Learning Project — Not a Product
             </div>
             {/* LEFT: ARTWORK / BRANDING */}
-            <div className="hidden lg:flex w-1/2 bg-indigo-900 relative items-center justify-center overflow-hidden">
+            <div className="hidden md:flex w-1/2 bg-indigo-900 relative items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>
                 <div className="absolute inset-0 bg-gradient-to-tr from-indigo-900 via-purple-900/80 to-transparent"></div>
                 
@@ -70,8 +70,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             </div>
 
             {/* RIGHT: LOGIN FORM */}
-            <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 bg-white dark:bg-gray-900 relative">
-                <div className="absolute top-4 right-4 lg:hidden">
+            <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-6 sm:p-8 bg-white dark:bg-gray-900 relative">
+                <div className="absolute top-4 right-4 md:hidden">
                     <Logo className="w-12 h-12" />
                 </div>
 
@@ -129,7 +129,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                     </form>
                 </div>
                 
-                <div className="absolute bottom-6 text-xs text-gray-400 dark:text-gray-600">
+                <div className="mt-10 md:absolute md:bottom-6 text-xs text-gray-400 dark:text-gray-600">
                     &copy; 2024 AI Comic Studio. Powered by Gemini.
                 </div>
             </div>

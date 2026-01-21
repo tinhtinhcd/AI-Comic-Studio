@@ -128,10 +128,10 @@ const DrawingCanvas: React.FC<{
     const handleSave = () => { if (canvasRef.current) { onSave(canvasRef.current.toDataURL('image/png')); onClose(); } };
 
     return (
-        <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-2xl max-w-4xl w-full flex flex-col gap-4 max-h-[90vh]">
+        <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-xl shadow-2xl max-w-4xl w-full flex flex-col gap-4 max-h-[90vh]">
                 <div className="flex justify-between items-center">
-                    <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2"><PenTool className="w-5 h-5"/> {title || "Quick Sketch / Fix"}</h3>
+                    <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 text-sm sm:text-base"><PenTool className="w-5 h-5"/> {title || "Quick Sketch / Fix"}</h3>
                     <button onClick={onClose}><X className="w-6 h-6 text-gray-500 hover:text-red-500"/></button>
                 </div>
                 <div className="relative border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-900 cursor-crosshair mx-auto overflow-hidden flex-1 w-full flex items-center justify-center touch-none">
@@ -166,8 +166,8 @@ const DrawingCanvas: React.FC<{
 export const ResearchView: React.FC<any> = (props) => {
     const { project, handleResearchChatSend, researchChatInput, setResearchChatInput, handleFinalizeStrategyFromChat, loading, t, chatEndRef, role } = props;
     return (
-        <div className="max-w-7xl mx-auto w-full px-4 lg:px-6 pb-8 h-full flex flex-col min-h-[calc(100dvh-140px)]">
-            <div className="flex items-center gap-4 lg:gap-6 mb-4 shrink-0">
+        <div className="max-w-7xl mx-auto w-full px-4 lg:px-6 pb-6 sm:pb-8 h-full flex flex-col min-h-[calc(100dvh-140px)]">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:gap-6 mb-4 shrink-0">
                 <img src={AGENTS[role as AgentRole].avatar} className="w-12 h-12 lg:w-16 lg:h-16 rounded-full border-2 border-indigo-200 shadow-md" />
                 <div><h2 className="text-xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2><p className="text-xs lg:text-base text-gray-500 dark:text-gray-400">{t('planner.desc')}</p></div>
             </div>
@@ -195,7 +195,7 @@ export const WriterView: React.FC<any> = (props) => {
     const panels = project.panels || [];
     const characters = project.characters || [];
     return (
-        <div className="max-w-7xl mx-auto w-full px-4 lg:px-6 pb-8 h-full flex flex-col min-h-[calc(100dvh-140px)]">
+        <div className="max-w-7xl mx-auto w-full px-4 lg:px-6 pb-6 sm:pb-8 h-full flex flex-col min-h-[calc(100dvh-140px)]">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 shrink-0 gap-4">
                 <div className="flex items-center gap-6">
                     <img src={AGENTS[role as AgentRole].avatar} className="w-12 h-12 lg:w-16 lg:h-16 rounded-full border-2 border-emerald-200 shadow-md" />
@@ -289,11 +289,11 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
     const costInfo = COST_ESTIMATES[selectedProvider];
 
     return (
-        <div className="max-w-7xl mx-auto w-full px-6 pb-24">
-            <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
-                <div className="flex items-center gap-6 w-full md:w-auto">
-                    <img src={AGENTS[role as AgentRole].avatar} className="w-16 h-16 rounded-full border-2 border-purple-200 shadow-md" />
-                    <div><h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2><p className="text-gray-500 dark:text-gray-400">Model Sheets & Visual Development</p></div>
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16 sm:pb-24">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 sm:mb-8 gap-4">
+                <div className="flex items-center gap-4 sm:gap-6 w-full md:w-auto">
+                    <img src={AGENTS[role as AgentRole].avatar} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-purple-200 shadow-md" />
+                    <div><h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role as AgentRole].name)}</h2><p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Model Sheets & Visual Development</p></div>
                 </div>
                 
                 {/* TOOLBAR: Style, Key, Generate */}
@@ -456,7 +456,7 @@ export const PanelArtistView: React.FC<{
     const costInfo = COST_ESTIMATES[selectedProvider];
 
     return (
-        <div className="flex h-[calc(100vh-100px)] relative">
+        <div className="flex min-h-[calc(100dvh-120px)] relative">
              {drawingPanel && (
                 <DrawingCanvas 
                     initialImage={drawingPanel.panel.imageUrl || drawingPanel.panel.layoutSketch}
@@ -466,13 +466,13 @@ export const PanelArtistView: React.FC<{
                 />
             )}
 
-            <div className="flex-1 p-4 lg:p-8 overflow-y-auto pb-24">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8">
-                    <div className="flex items-center gap-6">
-                        <img src={AGENTS[role].avatar} className="w-16 h-16 rounded-full border-2 border-rose-200 shadow-md" />
+            <div className="flex-1 p-3 sm:p-4 lg:p-8 overflow-y-auto pb-16 sm:pb-24">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6 sm:mb-8">
+                    <div className="flex items-center gap-4 sm:gap-6">
+                        <img src={AGENTS[role].avatar} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-rose-200 shadow-md" />
                         <div>
-                            <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role].name)}</h2>
-                            <p className="text-gray-500 dark:text-gray-400">Storyboard & Illustration</p>
+                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t(AGENTS[role].name)}</h2>
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Storyboard & Illustration</p>
                         </div>
                     </div>
                     
