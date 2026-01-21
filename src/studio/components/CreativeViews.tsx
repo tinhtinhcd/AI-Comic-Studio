@@ -308,8 +308,8 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                 </div>
                 
                 {/* TOOLBAR: Style, Key, Generate */}
-                <div className="flex flex-wrap gap-2 w-full md:w-auto items-end">
-                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-[10px] font-bold text-gray-500">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-2 w-full md:w-auto items-end">
+                    <div className="flex items-center justify-between gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-[10px] font-bold text-gray-500 w-full sm:col-span-2 lg:w-auto">
                         <span>Queue</span>
                         <span className="text-gray-700 dark:text-gray-200">
                             {imageQueue.total === 0
@@ -319,7 +319,7 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                     </div>
                     
                     {/* Provider Selector */}
-                    <div className="flex flex-col gap-1 w-full md:w-32">
+                    <div className="flex flex-col gap-1 w-full sm:min-w-[140px] lg:w-32">
                         <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Zap className="w-3 h-3"/> Engine</label>
                         <select 
                             value={selectedProvider}
@@ -336,7 +336,7 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                     </div>
 
                     {/* Style Selector */}
-                    <div className="flex flex-col gap-1 w-full md:w-40">
+                    <div className="flex flex-col gap-1 w-full sm:min-w-[160px] lg:w-40">
                         <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Palette className="w-3 h-3"/> Style</label>
                         <select 
                             value={globalStyle} 
@@ -349,7 +349,7 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                     </div>
 
                     {/* API Key Input */}
-                    <div className="flex flex-col gap-1 w-full md:w-40">
+                    <div className="flex flex-col gap-1 w-full sm:min-w-[160px] lg:w-40">
                         <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Key className="w-3 h-3"/> API Key</label>
                         <input 
                             type="password"
@@ -360,14 +360,14 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                         />
                     </div>
 
-                    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex-1 md:flex-none">
-                        <button onClick={() => handleGenerateAllCharacters(globalStyle, tempApiKey, selectedProvider)} disabled={isGlobalGenerating || loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 text-xs md:text-sm whitespace-nowrap">{isGlobalGenerating || loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>} Generate All</button>
+                    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 w-full sm:col-span-2 lg:w-auto">
+                        <button onClick={() => handleGenerateAllCharacters(globalStyle, tempApiKey, selectedProvider)} disabled={isGlobalGenerating || loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 text-xs sm:text-sm whitespace-nowrap">{isGlobalGenerating || loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>} Generate All</button>
                     </div>
-                    <button onClick={handleFinishCharacterDesign} className="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none transition-all text-xs md:text-sm whitespace-nowrap"><CheckCircle className="w-5 h-5"/> {t('designer.finalize')}</button>
+                    <button onClick={handleFinishCharacterDesign} className="w-full sm:col-span-2 lg:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none transition-all text-xs sm:text-sm whitespace-nowrap"><CheckCircle className="w-5 h-5"/> {t('designer.finalize')}</button>
                 </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                 {characters.map((char: Character, idx: number) => (
                     <div key={char.id} className={`bg-white dark:bg-gray-800 border ${char.error ? 'border-red-400 dark:border-red-500' : char.consistencyStatus === 'FAIL' ? 'border-amber-400' : 'border-gray-200 dark:border-gray-700'} rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all group flex flex-col h-full`}>
                         <div className="aspect-square bg-gray-50 dark:bg-gray-900 relative overflow-hidden flex items-center justify-center shrink-0">
@@ -397,18 +397,21 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                             
                             {char.imageUrl ? (<img src={char.imageUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />) : (<Users className="w-12 h-12 text-gray-300 dark:text-gray-600"/>)}
                             
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm">
-                                <label className="p-3 bg-white rounded-full text-gray-800 hover:text-blue-600 shadow-lg transform hover:scale-110 transition-all cursor-pointer" title="Upload Reference (Manual)"><Upload className="w-5 h-5"/><input type="file" className="hidden" accept="image/*" onChange={(e) => handleCharacterUpload(e, idx)} /></label>
-                                <label className="p-3 bg-white rounded-full text-gray-800 hover:text-indigo-600 shadow-lg transform hover:scale-110 transition-all cursor-pointer" title="Upload Anchor Image (For AI Consistency)"><Anchor className="w-5 h-5"/><input type="file" className="hidden" accept="image/*" onChange={(e) => handleAnchorUpload(e, idx)} /></label>
-                                <button onClick={() => toggleCharacterLock(char.id)} className={`p-3 rounded-full shadow-lg transform hover:scale-110 transition-all ${char.isLocked ? 'bg-emerald-500 text-white' : 'bg-white text-gray-400 hover:text-emerald-500'}`} title="Lock Design">{char.isLocked ? <Lock className="w-5 h-5"/> : <Unlock className="w-5 h-5"/>}</button>
+                            <div className="absolute inset-0 bg-black/20 sm:bg-black/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[1px] sm:backdrop-blur-sm pointer-events-auto sm:pointer-events-none sm:group-hover:pointer-events-auto">
+                                <label className="p-2.5 sm:p-3 bg-white rounded-full text-gray-800 hover:text-blue-600 shadow-lg transform hover:scale-110 transition-all cursor-pointer" title="Upload Reference (Manual)"><Upload className="w-4 h-4 sm:w-5 sm:h-5"/><input type="file" className="hidden" accept="image/*" onChange={(e) => handleCharacterUpload(e, idx)} /></label>
+                                <label className="p-2.5 sm:p-3 bg-white rounded-full text-gray-800 hover:text-indigo-600 shadow-lg transform hover:scale-110 transition-all cursor-pointer" title="Upload Anchor Image (For AI Consistency)"><Anchor className="w-4 h-4 sm:w-5 sm:h-5"/><input type="file" className="hidden" accept="image/*" onChange={(e) => handleAnchorUpload(e, idx)} /></label>
+                                <button onClick={() => toggleCharacterLock(char.id)} className={`p-2.5 sm:p-3 rounded-full shadow-lg transform hover:scale-110 transition-all ${char.isLocked ? 'bg-emerald-500 text-white' : 'bg-white text-gray-400 hover:text-emerald-500'}`} title="Lock Design">{char.isLocked ? <Lock className="w-4 h-4 sm:w-5 sm:h-5"/> : <Unlock className="w-4 h-4 sm:w-5 sm:h-5"/>}</button>
                             </div>
                         </div>
                         
                         {char.variants && char.variants.length > 0 && (<div className="px-4 pt-4 pb-2 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700"><p className="text-[10px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-1"><Layers className="w-3 h-3"/> Variations</p><div className="flex gap-2 overflow-x-auto custom-scrollbar pb-2">{char.variants.map((variant) => (<button key={variant.id} onClick={() => handleSelectCharacterVariant(idx, variant)} className={`w-10 h-10 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${char.imageUrl === variant.imageUrl ? 'border-purple-500 ring-2 ring-purple-100 dark:ring-purple-900' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'}`}><img src={variant.imageUrl} className="w-full h-full object-cover" /></button>))}</div></div>)}
                         
-                        <div className="p-5 flex-1 flex flex-col space-y-4">
-                            <div><h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{char.name}</h3><span className="text-xs text-purple-600 dark:text-purple-300 font-bold bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">{char.role}</span></div>
-                            <div><textarea className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs text-gray-600 dark:text-gray-300 focus:border-purple-300 outline-none resize-none h-20" value={char.description} onChange={(e) => handleUpdateCharacterDescription(idx, (e.target as any).value)} /></div>
+                        <div className="p-4 sm:p-5 flex-1 flex flex-col space-y-4">
+                            <div>
+                                <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-gray-100">{char.name}</h3>
+                                <span className="text-[10px] sm:text-xs text-purple-600 dark:text-purple-300 font-bold bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">{char.role}</span>
+                            </div>
+                            <div><textarea className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs text-gray-600 dark:text-gray-300 focus:border-purple-300 outline-none resize-none h-20 sm:h-24" value={char.description} onChange={(e) => handleUpdateCharacterDescription(idx, (e.target as any).value)} /></div>
                             <div className="flex gap-2">
                                 <button onClick={() => handleRegenerateSingleCharacter(char, idx, globalStyle, tempApiKey)} className="flex-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 p-2 rounded-lg hover:bg-purple-200 font-bold text-xs">Regenerate</button>
                                 <button onClick={() => handleCheckConsistency(char, idx)} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 p-2 rounded-lg hover:bg-gray-50" title="Check Consistency"><ScanFace className="w-4 h-4"/></button>
