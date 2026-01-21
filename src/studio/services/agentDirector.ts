@@ -159,8 +159,9 @@ const censorScript: ToolHandler = async (context) => {
   const project = context.getProject();
   const fullText = project.panels.map(p => `${p.description} ${p.dialogue}`).join('\n');
   const result = await GeminiService.censorContent(fullText, 'SCRIPT');
+  const report = result.report?.trim() || (result.passed ? 'Passed compliance scan.' : 'Failed compliance scan.');
   context.updateProject({
-    censorReport: result.report,
+    censorReport: report,
     isCensored: !result.passed,
     workflowStage: result.passed ? WorkflowStage.DESIGNING_CHARACTERS : WorkflowStage.CENSORING_SCRIPT
   });
