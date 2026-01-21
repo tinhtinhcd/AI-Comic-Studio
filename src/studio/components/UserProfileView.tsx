@@ -64,7 +64,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
         setGeminiKeyInput(user.apiKeys?.gemini || '');
     };
 
-    const handleSave = async (source: 'profile' | 'ai' = 'profile') => {
+    const handleSaveProfile = async () => {
         try {
             const updated = await AuthService.updateUserProfile(user.id, {
                 ...formData,
@@ -78,9 +78,34 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
             onUpdate(updated);
             setIsEditing(false);
             setIsEditingAI(false);
-            (window as any).alert(source === 'ai' ? 'AI preferences saved.' : 'Profile & AI Keys Saved to Database!');
+            (window as any).alert('Profile & AI Keys Saved to Database!');
         } catch (e) {
             console.error(e);
+        }
+    };
+
+    const handleSaveAI = async (nextPrefs?: UserAIPreferences) => {
+        try {
+            const updated = await AuthService.updateUserProfile(user.id, {
+                aiPreferences: nextPrefs || aiPrefs,
+                apiKeys: {
+                    gemini: geminiKeyInput,
+                    deepseek: deepSeekKeyInput,
+                    openai: openAIKeyInput
+                }
+            });
+            onUpdate(updated);
+            setIsEditingAI(false);
+            (window as any).alert('AI preferences saved.');
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const updateAIPreferences = (nextPrefs: UserAIPreferences) => {
+        setAiPrefs(nextPrefs);
+        if (!isEditing && !isEditingAI) {
+            void handleSaveAI(nextPrefs);
         }
     };
 
@@ -122,7 +147,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                 Cancel
                             </button>
                             <button 
-                                onClick={() => handleSave('profile')}
+                                onClick={handleSaveProfile}
                                 className="bg-white text-indigo-600 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg hover:bg-gray-50 transition-all"
                             >
                                 <Save className="w-4 h-4"/> Save Changes
@@ -210,19 +235,19 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                     <BrainCircuit className="w-5 h-5 text-indigo-600"/>
                                     AI Engine Matrix (Iron Triangle)
                                 </h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    Keys are now synced to your account securely.
-                                </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        Model preferences auto-save. Keys require edit mode.
+                                    </p>
                             </div>
                             {!isEditing && (
                                 <div className="flex gap-2">
                                     {isEditingAI ? (
                                         <>
                                             <button
-                                                onClick={() => handleSave('ai')}
+                                                onClick={() => handleSaveAI()}
                                                 className="px-3 py-2 text-xs font-bold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                                             >
-                                                Save AI Prefs
+                                                Save AI Keys
                                             </button>
                                             <button
                                                 onClick={handleCancelAI}
@@ -236,7 +261,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                             onClick={() => setIsEditingAI(true)}
                                             className="px-3 py-2 text-xs font-bold rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:hover:bg-indigo-900/60 transition-colors"
                                         >
-                                            Edit AI Preferences
+                                            Edit API Keys
                                         </button>
                                     )}
                                 </div>
@@ -321,25 +346,15 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
-                                                {canEditAI ? (
-                                                    <select 
-                                                        value={aiPrefs.creativeEngine}
-                                                        onChange={(e) => setAiPrefs({...aiPrefs, creativeEngine: (e.target.value as any)})}
-                                                        className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs font-bold w-full"
-                                                    >
-                                                        <option value="GEMINI">Gemini 3.0 Pro</option>
-                                                        <option value="DEEPSEEK">DeepSeek-V3</option>
-                                                        <option value="OPENAI">GPT-5 (Orion)</option>
-                                                    </select>
-                                                ) : (
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                                                        aiPrefs.creativeEngine === 'GEMINI' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
-                                                        aiPrefs.creativeEngine === 'DEEPSEEK' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 
-                                                        'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                    }`}>
-                                                        {aiPrefs.creativeEngine === 'GEMINI' ? 'Gemini 3.0' : aiPrefs.creativeEngine === 'DEEPSEEK' ? 'DeepSeek-V3' : 'GPT-5'}
-                                                    </span>
-                                                )}
+                                                <select 
+                                                    value={aiPrefs.creativeEngine}
+                                                    onChange={(e) => updateAIPreferences({ ...aiPrefs, creativeEngine: (e.target.value as any) })}
+                                                    className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs font-bold w-full"
+                                                >
+                                                    <option value="GEMINI">Gemini 3.0 Pro</option>
+                                                    <option value="DEEPSEEK">DeepSeek-V3</option>
+                                                    <option value="OPENAI">GPT-5 (Orion)</option>
+                                                </select>
                                             </td>
                                             <td className="py-4 px-4 text-xs text-gray-500 italic">
                                                 GPT-5 offers best nuance.
@@ -358,25 +373,15 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
-                                                {canEditAI ? (
-                                                    <select 
-                                                        value={aiPrefs.logicEngine}
-                                                        onChange={(e) => setAiPrefs({...aiPrefs, logicEngine: (e.target.value as any)})}
-                                                        className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs font-bold w-full"
-                                                    >
-                                                        <option value="GEMINI">Gemini 3.0 Flash</option>
-                                                        <option value="DEEPSEEK">DeepSeek-R1 (Best Value)</option>
-                                                        <option value="OPENAI">GPT-5 (Max IQ)</option>
-                                                    </select>
-                                                ) : (
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                                                        aiPrefs.logicEngine === 'GEMINI' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
-                                                        aiPrefs.logicEngine === 'DEEPSEEK' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 
-                                                        'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                    }`}>
-                                                        {aiPrefs.logicEngine === 'GEMINI' ? 'Gemini 3.0' : aiPrefs.logicEngine === 'DEEPSEEK' ? 'DeepSeek-R1' : 'GPT-5'}
-                                                    </span>
-                                                )}
+                                                <select 
+                                                    value={aiPrefs.logicEngine}
+                                                    onChange={(e) => updateAIPreferences({ ...aiPrefs, logicEngine: (e.target.value as any) })}
+                                                    className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs font-bold w-full"
+                                                >
+                                                    <option value="GEMINI">Gemini 3.0 Flash</option>
+                                                    <option value="DEEPSEEK">DeepSeek-R1 (Best Value)</option>
+                                                    <option value="OPENAI">GPT-5 (Max IQ)</option>
+                                                </select>
                                             </td>
                                             <td className="py-4 px-4 text-xs text-gray-500 italic">
                                                 DeepSeek-R1 rivals GPT-5 at 1/10th the cost.
@@ -395,25 +400,15 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
-                                                {canEditAI ? (
-                                                    <select 
-                                                        value={aiPrefs.translationEngine}
-                                                        onChange={(e) => setAiPrefs({...aiPrefs, translationEngine: (e.target.value as any)})}
-                                                        className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs font-bold w-full"
-                                                    >
-                                                        <option value="GEMINI">Gemini 3.0</option>
-                                                        <option value="DEEPSEEK">DeepSeek-V3</option>
-                                                        <option value="OPENAI">GPT-5</option>
-                                                    </select>
-                                                ) : (
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                                                        aiPrefs.translationEngine === 'GEMINI' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
-                                                        aiPrefs.translationEngine === 'DEEPSEEK' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' : 
-                                                        'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                    }`}>
-                                                        {aiPrefs.translationEngine === 'GEMINI' ? 'Gemini 3.0' : aiPrefs.translationEngine === 'DEEPSEEK' ? 'DeepSeek-V3' : 'GPT-5'}
-                                                    </span>
-                                                )}
+                                                <select 
+                                                    value={aiPrefs.translationEngine}
+                                                    onChange={(e) => updateAIPreferences({ ...aiPrefs, translationEngine: (e.target.value as any) })}
+                                                    className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs font-bold w-full"
+                                                >
+                                                    <option value="GEMINI">Gemini 3.0</option>
+                                                    <option value="DEEPSEEK">DeepSeek-V3</option>
+                                                    <option value="OPENAI">GPT-5</option>
+                                                </select>
                                             </td>
                                             <td className="py-4 px-4 text-xs text-gray-500 italic">
                                                 Bulk tasks should use DeepSeek.
