@@ -571,4 +571,279 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             ) : selectedOutline ? (
                                 <div className="max-w-2xl mx-auto space-y-6"><div className="bg-amber-50 dark:bg-amber-900/20 p-6 rounded-2xl border border-amber-100 dark:border-amber-800"><h4 className="font-bold text-amber-800 dark:text-amber-300 mb-4 text-sm uppercase tracking-wider flex items-center gap-2"><Lightbulb className="w-4 h-4"/> Tóm tắt Đề Cương</h4><p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-serif">"{selectedOutline.summary}"</p></div></div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4"><Lock className="w-16 h-16 opacity-20"/><p>Chưa có dữ liệu cho chương này.</p><p className="text-xs">Hãy thảo luận với Ban Biên Tập để
+                                <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+                                    <Lock className="w-16 h-16 opacity-20"/>
+                                    <p>Chưa có dữ liệu cho chương này.</p>
+                                    <p className="text-xs">Hãy thảo luận với Ban Biên Tập để lên đề cương.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (activeTab === 'TEAM') {
+        const stageRoleMap: Record<WorkflowStage, AgentRole> = {
+            [WorkflowStage.IDLE]: AgentRole.PROJECT_MANAGER,
+            [WorkflowStage.RESEARCHING]: AgentRole.MARKET_RESEARCHER,
+            [WorkflowStage.SCRIPTING]: AgentRole.SCRIPTWRITER,
+            [WorkflowStage.CENSORING_SCRIPT]: AgentRole.CENSOR,
+            [WorkflowStage.DESIGNING_CHARACTERS]: AgentRole.CHARACTER_DESIGNER,
+            [WorkflowStage.VISUALIZING_PANELS]: AgentRole.PANEL_ARTIST,
+            [WorkflowStage.PRINTING]: AgentRole.TYPESETTER,
+            [WorkflowStage.POST_PRODUCTION]: AgentRole.CINEMATOGRAPHER,
+            [WorkflowStage.COMPLETED]: AgentRole.PUBLISHER
+        };
+        const activeRole = stageRoleMap[project.workflowStage] || AgentRole.PROJECT_MANAGER;
+
+        return (
+            <div className="flex flex-col h-full pb-8">
+                {renderTabs()}
+                <div className="flex-1 overflow-y-auto pr-1">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <div className="flex items-start justify-between mb-6 gap-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                                    <Users className="w-5 h-5 text-indigo-500"/> {t('team.title') || 'Team'}
+                                </h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('team.desc') || 'Your AI Production Team is online and ready.'}</p>
+                            </div>
+                            <span className="text-[10px] uppercase tracking-wider bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+                                {t('team.status_active')}: {t(AGENTS[activeRole].name)}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {Object.values(AGENTS).map((agent) => {
+                                const isActive = agent.id === activeRole;
+                                return (
+                                    <div key={agent.id} className="flex items-start gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40">
+                                        <img src={agent.avatar} alt={agent.name} className="w-12 h-12 rounded-full border border-gray-200 dark:border-gray-700 object-cover"/>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <h4 className="font-bold text-sm text-gray-800 dark:text-gray-100 truncate">{t(agent.name)}</h4>
+                                                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800' : 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'}`}>
+                                                    {isActive ? t('team.status_active') : t('team.status_idle')}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{agent.description}</p>
+                                            <p className="text-[10px] text-indigo-500 dark:text-indigo-300 mt-2 font-bold uppercase tracking-wider">{t(agent.department)}</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (activeTab === 'SETTINGS') {
+        return (
+            <div className="flex flex-col h-full pb-8">
+                {renderTabs()}
+                {showMarketModal && <MarketIntelligenceModal />}
+                <div className="w-full flex flex-col h-full overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex-1 overflow-y-auto">
+                        <div className="space-y-6 max-w-2xl">
+                            <div className="bg-blue-50 dark:bg-blue-900/10 p-5 rounded-xl border border-blue-100 dark:border-blue-900">
+                                <label className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider mb-2 block flex items-center gap-2">
+                                    <Key className="w-4 h-4"/> API Key Management
+                                </label>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                    Add your own API keys to improve stability and switch providers.
+                                </p>
+
+                                <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                                    <select
+                                        value={selectedProvider}
+                                        onChange={(e) => setSelectedProvider(e.target.value as StoredKey['provider'])}
+                                        className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 outline-none focus:border-blue-500"
+                                    >
+                                        <option value="GEMINI">Gemini</option>
+                                        <option value="DEEPSEEK">DeepSeek</option>
+                                        <option value="OPENAI">OpenAI</option>
+                                    </select>
+                                    <input
+                                        type="password"
+                                        value={apiKeyInput}
+                                        onChange={(e) => setApiKeyInput((e.target as HTMLInputElement).value)}
+                                        placeholder="Paste new API Key here..."
+                                        className="flex-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-blue-500"
+                                    />
+                                    <button onClick={handleAddKey} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors flex items-center gap-1">
+                                        <Plus className="w-3 h-3"/> Add Key
+                                    </button>
+                                </div>
+
+                                {storedKeys.length > 0 ? (
+                                    <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                                        {storedKeys.map((k) => (
+                                            <div key={k.id} className={`flex items-center justify-between p-2 rounded-lg border text-xs ${k.isActive ? 'bg-white dark:bg-gray-800 border-blue-400 dark:border-blue-500 shadow-sm' : 'bg-gray-100 dark:bg-gray-900/50 border-transparent text-gray-500'}`}>
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="radio"
+                                                        name={`activeKey-${k.provider}`}
+                                                        checked={k.isActive}
+                                                        onChange={() => handleSelectKey(k.id, k.provider)}
+                                                        className="cursor-pointer"
+                                                    />
+                                                    <div>
+                                                        <p className="font-bold flex items-center gap-2">
+                                                            <span className="text-indigo-600 dark:text-indigo-400">{k.provider}</span>
+                                                            {k.isActive && <CheckCircle className="w-3 h-3 text-blue-500"/>}
+                                                        </p>
+                                                        <p className="text-[10px] opacity-70 flex items-center gap-1">
+                                                            <Calendar className="w-3 h-3"/>
+                                                            Added: {new Date(k.timestamp).toLocaleString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => handleDeleteKey(k.id)} className="text-gray-400 hover:text-red-500 p-1">
+                                                    <Trash2 className="w-4 h-4"/>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-4 bg-white/50 dark:bg-gray-900/30 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
+                                        <p className="text-xs text-gray-400">No custom keys added. Using system default.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="text-xs text-purple-600 dark:text-purple-400 font-bold uppercase tracking-wider flex items-center gap-2">
+                                        <Languages className="w-4 h-4"/> {t('manager.target_langs')}
+                                    </label>
+                                    <button onClick={() => setShowMarketModal(true)} className="text-[10px] px-2 py-1 rounded-lg border border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-1">
+                                        <BarChart4 className="w-3 h-3"/> Market Report
+                                    </button>
+                                </div>
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {project.targetLanguages?.map(lang => (
+                                        <span key={lang} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300">
+                                            {lang}
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {supportedLanguages.filter(l => !project.targetLanguages?.includes(l)).map(lang => (
+                                        <button key={lang} onClick={() => handleAddLanguage(lang)} className="px-2 py-1 text-xs border rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-300">{lang}</button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+                                <label className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 block flex items-center gap-2">
+                                    <Settings className="w-4 h-4"/> Project Defaults
+                                </label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">{t('manager.lang')}</label>
+                                        <select
+                                            value={project.masterLanguage}
+                                            onChange={(e) => updateProject({ masterLanguage: (e.target as HTMLSelectElement).value })}
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200"
+                                        >
+                                            {supportedLanguages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">{t('manager.format')}</label>
+                                        <select
+                                            value={project.storyFormat || 'SHORT_STORY'}
+                                            onChange={(e) => updateProject({ storyFormat: e.target.value as any })}
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200"
+                                        >
+                                            <option value="SHORT_STORY">{t('fmt.short')}</option>
+                                            <option value="LONG_SERIES">{t('fmt.series')}</option>
+                                            <option value="EPISODIC">{t('fmt.episodic')}</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">{t('manager.pub_type')}</label>
+                                        <select
+                                            value={project.publicationType}
+                                            onChange={(e) => updateProject({ publicationType: e.target.value as any })}
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200"
+                                        >
+                                            <option value="COMIC">{t('type.comic')}</option>
+                                            <option value="NOVEL">{t('type.novel')}</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">{t('manager.tier')}</label>
+                                        <select
+                                            value={project.modelTier || 'STANDARD'}
+                                            onChange={(e) => updateProject({ modelTier: e.target.value as 'STANDARD' | 'PREMIUM' })}
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200"
+                                        >
+                                            <option value="STANDARD">Standard</option>
+                                            <option value="PREMIUM">Premium</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">{t('manager.text_engine')}</label>
+                                        <select
+                                            value={project.textEngine || 'GEMINI'}
+                                            onChange={(e) => updateProject({ textEngine: e.target.value as any })}
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200"
+                                        >
+                                            <option value="GEMINI">Gemini</option>
+                                            <option value="DEEPSEEK">DeepSeek</option>
+                                            <option value="OPENAI">OpenAI</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">{t('manager.image_engine')}</label>
+                                        <select
+                                            value={project.imageProvider || 'GEMINI'}
+                                            onChange={(e) => updateProject({ imageProvider: e.target.value as any })}
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200"
+                                        >
+                                            <option value="GEMINI">Gemini</option>
+                                            <option value="FLUX">Flux</option>
+                                            <option value="LEONARDO">Leonardo</option>
+                                            <option value="MIDJOURNEY">Midjourney</option>
+                                        </select>
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">{t('manager.style')}</label>
+                                        <select
+                                            value={project.style}
+                                            onChange={(e) => updateProject({ style: (e.target as HTMLSelectElement).value })}
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200"
+                                        >
+                                            {COMMON_STYLES.map(style => <option key={style} value={style}>{style}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-gray-100 dark:border-gray-700 pt-6 mt-2 flex flex-col gap-3">
+                                <button onClick={handleExportProjectZip} className="w-full flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 text-xs font-bold py-3 px-6 rounded-xl transition-colors border border-gray-200 dark:border-gray-600">
+                                    <Archive className="w-4 h-4"/> {t('ui.export_zip_btn')}
+                                </button>
+
+                                {project.id && (
+                                    <button 
+                                        onClick={(e) => handleDeleteWIP(e, project.id!)} 
+                                        className="w-full flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 text-xs font-bold py-3 px-6 rounded-xl transition-colors border border-red-200 dark:border-red-800"
+                                    >
+                                        <Trash2 className="w-4 h-4"/> {t('manager.delete')} Project
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return null;
+};
