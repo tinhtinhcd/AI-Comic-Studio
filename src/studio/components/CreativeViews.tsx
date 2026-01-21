@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AgentRole, ComicProject, Character, ResearchData, CharacterVariant, AgentTask, ComicPanel, Asset, ImageProvider } from '../types';
 import { AGENTS, COMMON_STYLES } from '../constants';
+import { getCurrentImageQueue, subscribeImageQueue } from '../services/geminiService';
 import { MessageCircle, Loader2, Send, FileText, TrendingUp, Upload, Download, BookOpen, Sparkles, Lightbulb, Users, Feather, CheckCircle, RefreshCw, Lock, Unlock, ScanFace, Globe, Palette, Layers, ListTodo, Plus, Check, Trash2, Bot, Play, Film, AlertTriangle, Search, Eraser, PenTool, X, Anchor, Image as ImageIcon, MapPin, Edit2, Key, Zap, DollarSign } from 'lucide-react';
 
 // UPDATED FOR 2026 PROJECTIONS - COMIC FOCUS
@@ -25,6 +26,13 @@ const safeRender = (value: any): React.ReactNode => {
         return JSON.stringify(value);
     }
     return '';
+};
+
+const useImageQueueStatus = () => {
+    const [queue, setQueue] = useState(() => getCurrentImageQueue());
+
+    useEffect(() => subscribeImageQueue(setQueue), []);
+    return queue;
 };
 
 const DrawingCanvas: React.FC<{
@@ -282,6 +290,7 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
     const [globalStyle, setGlobalStyle] = useState(project.style || 'Japanese Manga (B&W)');
     const [tempApiKey, setTempApiKey] = useState('');
     const [selectedProvider, setSelectedProvider] = useState<ImageProvider>('GEMINI');
+    const imageQueue = useImageQueueStatus();
     
     const characters = project.characters || [];
     const isGlobalGenerating = characters.some((c: any) => c.isGenerating);
@@ -300,6 +309,14 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                 
                 {/* TOOLBAR: Style, Key, Generate */}
                 <div className="flex flex-wrap gap-2 w-full md:w-auto items-end">
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-[10px] font-bold text-gray-500">
+                        <span>Queue</span>
+                        <span className="text-gray-700 dark:text-gray-200">
+                            {imageQueue.total === 0
+                                ? 'Idle'
+                                : `${imageQueue.running ? '1 running' : '0 running'} / ${imageQueue.pending} waiting`}
+                        </span>
+                    </div>
                     
                     {/* Provider Selector */}
                     <div className="flex flex-col gap-1 w-full md:w-32">
@@ -421,6 +438,7 @@ export const PanelArtistView: React.FC<{
     const [newAsset, setNewAsset] = useState<{name: string, type: 'BACKGROUND' | 'PROP', image?: string}>({name: '', type: 'BACKGROUND'});
     const [tempApiKey, setTempApiKey] = useState('');
     const [selectedProvider, setSelectedProvider] = useState<ImageProvider>('GEMINI');
+    const imageQueue = useImageQueueStatus();
     
     const panels = project.panels || [];
     const assets = project.assets || [];
@@ -481,6 +499,14 @@ export const PanelArtistView: React.FC<{
                     </div>
                     
                     <div className="flex gap-2 w-full sm:w-auto items-end flex-wrap">
+                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-[10px] font-bold text-gray-500">
+                            <span>Queue</span>
+                            <span className="text-gray-700 dark:text-gray-200">
+                                {imageQueue.total === 0
+                                    ? 'Idle'
+                                    : `${imageQueue.running ? '1 running' : '0 running'} / ${imageQueue.pending} waiting`}
+                            </span>
+                        </div>
                         {/* Provider Selector */}
                         <div className="flex flex-col gap-1 w-full sm:w-40">
                             <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Zap className="w-3 h-3"/> Engine</label>

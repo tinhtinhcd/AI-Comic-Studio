@@ -17,10 +17,66 @@ interface StoredKey {
 const STORAGE_KEY_AI_PREFS = 'ai_comic_user_prefs_v1';
 const POLLINATIONS_BASE_URL = 'https://image.pollinations.ai/prompt/';
 const POLLINATIONS_DEFAULT_MODEL = 'flux';
+
+type ImageQueueSnapshot = {
+    pending: number;
+    running: number;
+    total: number;
+};
+
 let imageQueue: Promise<void> = Promise.resolve();
+let imageQueuePending = 0;
+let imageQueueRunning = 0;
+const imageQueueListeners = new Set<(snapshot: ImageQueueSnapshot) => void>();
+
+const getImageQueueSnapshot = (): ImageQueueSnapshot => ({
+    pending: imageQueuePending,
+    running: imageQueueRunning,
+    total: imageQueuePending + imageQueueRunning
+});
+
+const notifyImageQueue = () => {
+    const snapshot = getImageQueueSnapshot();
+    imageQueueListeners.forEach(listener => listener(snapshot));
+};
+
+export const subscribeImageQueue = (listener: (snapshot: ImageQueueSnapshot) => void) => {
+    imageQueueListeners.add(listener);
+    listener(getImageQueueSnapshot());
+    return () => imageQueueListeners.delete(listener);
+};
+
+export const getCurrentImageQueue = () => getImageQueueSnapshot();
 
 const runImageTask = async <T>(task: () => Promise<T>): Promise<T> => {
-    const run = imageQueue.then(() => task(), () => task());
+    imageQueuePending += 1;
+    notifyImageQueue();
+
+    const run = imageQueue.then(
+        async () => {
+            imageQueuePending -= 1;
+            imageQueueRunning = 1;
+            notifyImageQueue();
+            try {
+                return await task();
+            } finally {
+                imageQueueRunning = 0;
+                notifyImageQueue();
+            }
+        },
+        async () => {
+            imageQueuePending -= 1;
+            imageQueueRunning = 1;
+            notifyImageQueue();
+            try {
+                return await task();
+            } finally {
+                imageQueueRunning = 0;
+                notifyImageQueue();
+            }
+        }
+    );
+
     imageQueue = run.then(() => undefined, () => undefined);
     return run;
 };
