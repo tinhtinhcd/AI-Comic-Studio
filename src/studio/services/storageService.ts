@@ -3,12 +3,21 @@ import { AgentRunState, ComicProject } from '../types';
 import JSZip from 'jszip';
 
 const DB_NAME = 'AIComicStudioDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_PROJECTS = 'active_projects';
 const STORE_LIBRARY = 'library';
 const AGENT_RUN_KEY = 'acs_agent_run_v1';
 
 // --- INDEXED DB UTILITIES (Fallback Layer) ---
+
+const ensureStores = (db: IDBDatabase) => {
+    if (!db.objectStoreNames.contains(STORE_PROJECTS)) {
+        db.createObjectStore(STORE_PROJECTS, { keyPath: 'id' });
+    }
+    if (!db.objectStoreNames.contains(STORE_LIBRARY)) {
+        db.createObjectStore(STORE_LIBRARY, { keyPath: 'id' });
+    }
+};
 
 const openDB = (): Promise<IDBDatabase> => {
     return new Promise((resolve, reject) => {
@@ -16,16 +25,25 @@ const openDB = (): Promise<IDBDatabase> => {
 
         request.onupgradeneeded = (event) => {
             const db = (event.target as IDBOpenDBRequest).result;
-            if (!db.objectStoreNames.contains(STORE_PROJECTS)) {
-                db.createObjectStore(STORE_PROJECTS, { keyPath: 'id' });
-            }
-            if (!db.objectStoreNames.contains(STORE_LIBRARY)) {
-                db.createObjectStore(STORE_LIBRARY, { keyPath: 'id' });
-            }
+            ensureStores(db);
         };
 
         request.onsuccess = (event) => {
-            resolve((event.target as IDBOpenDBRequest).result);
+            const db = (event.target as IDBOpenDBRequest).result;
+            const missingStores = [STORE_PROJECTS, STORE_LIBRARY].filter(store => !db.objectStoreNames.contains(store));
+            if (missingStores.length > 0) {
+                const upgradeVersion = db.version + 1;
+                db.close();
+                const upgradeRequest = indexedDB.open(DB_NAME, upgradeVersion);
+                upgradeRequest.onupgradeneeded = () => {
+                    const upgradeDb = upgradeRequest.result;
+                    ensureStores(upgradeDb);
+                };
+                upgradeRequest.onsuccess = () => resolve(upgradeRequest.result);
+                upgradeRequest.onerror = () => reject(upgradeRequest.error);
+                return;
+            }
+            resolve(db);
         };
 
         request.onerror = (event) => {
