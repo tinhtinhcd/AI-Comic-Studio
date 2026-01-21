@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile, UserAIPreferences } from '../types';
 import { Camera, Edit2, Save, User, Mail, Briefcase, Calendar, Star, Layers, Users, BrainCircuit, Cpu, Paintbrush, Globe, Feather, Zap } from 'lucide-react';
 import * as AuthService from '../services/authService';
@@ -12,6 +12,7 @@ interface UserProfileViewProps {
 
 export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate }) => {
     const [isEditing, setIsEditing] = useState(false);
+    const [isEditingAI, setIsEditingAI] = useState(false);
     const [formData, setFormData] = useState({
         username: user.username,
         studioName: user.studioName || '',
@@ -26,7 +27,44 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
     const [openAIKeyInput, setOpenAIKeyInput] = useState(user.apiKeys?.openai || '');
     const [geminiKeyInput, setGeminiKeyInput] = useState(user.apiKeys?.gemini || '');
 
-    const handleSave = async () => {
+    const canEditAI = isEditing || isEditingAI;
+
+    useEffect(() => {
+        if (isEditing || isEditingAI) return;
+        setFormData({
+            username: user.username,
+            studioName: user.studioName || '',
+            bio: user.bio || ''
+        });
+        setAiPrefs(user.aiPreferences ? { ...user.aiPreferences } : { ...DEFAULT_USER_PREFERENCES });
+        setDeepSeekKeyInput(user.apiKeys?.deepseek || '');
+        setOpenAIKeyInput(user.apiKeys?.openai || '');
+        setGeminiKeyInput(user.apiKeys?.gemini || '');
+    }, [user, isEditing, isEditingAI]);
+
+    const handleCancelProfile = () => {
+        setIsEditing(false);
+        setIsEditingAI(false);
+        setFormData({
+            username: user.username,
+            studioName: user.studioName || '',
+            bio: user.bio || ''
+        });
+        setAiPrefs(user.aiPreferences ? { ...user.aiPreferences } : { ...DEFAULT_USER_PREFERENCES });
+        setDeepSeekKeyInput(user.apiKeys?.deepseek || '');
+        setOpenAIKeyInput(user.apiKeys?.openai || '');
+        setGeminiKeyInput(user.apiKeys?.gemini || '');
+    };
+
+    const handleCancelAI = () => {
+        setIsEditingAI(false);
+        setAiPrefs(user.aiPreferences ? { ...user.aiPreferences } : { ...DEFAULT_USER_PREFERENCES });
+        setDeepSeekKeyInput(user.apiKeys?.deepseek || '');
+        setOpenAIKeyInput(user.apiKeys?.openai || '');
+        setGeminiKeyInput(user.apiKeys?.gemini || '');
+    };
+
+    const handleSave = async (source: 'profile' | 'ai' = 'profile') => {
         try {
             const updated = await AuthService.updateUserProfile(user.id, {
                 ...formData,
@@ -39,7 +77,8 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
             });
             onUpdate(updated);
             setIsEditing(false);
-            (window as any).alert("Profile & AI Keys Saved to Database!");
+            setIsEditingAI(false);
+            (window as any).alert(source === 'ai' ? 'AI preferences saved.' : 'Profile & AI Keys Saved to Database!');
         } catch (e) {
             console.error(e);
         }
@@ -77,13 +116,13 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                     ) : (
                         <div className="flex gap-2">
                             <button 
-                                onClick={() => setIsEditing(false)} 
+                                onClick={handleCancelProfile}
                                 className="bg-black/20 backdrop-blur-md hover:bg-black/30 text-white px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all"
                             >
                                 Cancel
                             </button>
                             <button 
-                                onClick={handleSave}
+                                onClick={() => handleSave('profile')}
                                 className="bg-white text-indigo-600 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg hover:bg-gray-50 transition-all"
                             >
                                 <Save className="w-4 h-4"/> Save Changes
@@ -165,14 +204,43 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
 
                     {/* 2. AI Preference Matrix */}
                     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-                            <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                                <BrainCircuit className="w-5 h-5 text-indigo-600"/>
-                                AI Engine Matrix (Iron Triangle)
-                            </h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Keys are now synced to your account securely.
-                            </p>
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div>
+                                <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                                    <BrainCircuit className="w-5 h-5 text-indigo-600"/>
+                                    AI Engine Matrix (Iron Triangle)
+                                </h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Keys are now synced to your account securely.
+                                </p>
+                            </div>
+                            {!isEditing && (
+                                <div className="flex gap-2">
+                                    {isEditingAI ? (
+                                        <>
+                                            <button
+                                                onClick={() => handleSave('ai')}
+                                                className="px-3 py-2 text-xs font-bold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                                            >
+                                                Save AI Prefs
+                                            </button>
+                                            <button
+                                                onClick={handleCancelAI}
+                                                className="px-3 py-2 text-xs font-bold rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button
+                                            onClick={() => setIsEditingAI(true)}
+                                            className="px-3 py-2 text-xs font-bold rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:hover:bg-indigo-900/60 transition-colors"
+                                        >
+                                            Edit AI Preferences
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="p-6">
@@ -180,7 +248,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                             <div className="space-y-4 mb-6">
                                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
                                     <label className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase block mb-1">Gemini API Key (Primary)</label>
-                                    {isEditing ? (
+                                    {canEditAI ? (
                                         <input 
                                             type="password"
                                             value={geminiKeyInput}
@@ -198,7 +266,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
                                         <label className="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase block mb-1">DeepSeek API Key</label>
-                                        {isEditing ? (
+                                        {canEditAI ? (
                                             <input 
                                                 type="password"
                                                 value={deepSeekKeyInput}
@@ -214,7 +282,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                     </div>
                                     <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800">
                                         <label className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase block mb-1">OpenAI API Key</label>
-                                        {isEditing ? (
+                                        {canEditAI ? (
                                             <input 
                                                 type="password"
                                                 value={openAIKeyInput}
@@ -253,7 +321,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
-                                                {isEditing ? (
+                                                {canEditAI ? (
                                                     <select 
                                                         value={aiPrefs.creativeEngine}
                                                         onChange={(e) => setAiPrefs({...aiPrefs, creativeEngine: (e.target.value as any)})}
@@ -290,7 +358,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
-                                                {isEditing ? (
+                                                {canEditAI ? (
                                                     <select 
                                                         value={aiPrefs.logicEngine}
                                                         onChange={(e) => setAiPrefs({...aiPrefs, logicEngine: (e.target.value as any)})}
@@ -327,7 +395,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
-                                                {isEditing ? (
+                                                {canEditAI ? (
                                                     <select 
                                                         value={aiPrefs.translationEngine}
                                                         onChange={(e) => setAiPrefs({...aiPrefs, translationEngine: (e.target.value as any)})}
