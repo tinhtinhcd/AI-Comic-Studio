@@ -17,6 +17,13 @@ interface StoredKey {
 const STORAGE_KEY_AI_PREFS = 'ai_comic_user_prefs_v1';
 const POLLINATIONS_BASE_URL = 'https://image.pollinations.ai/prompt/';
 const POLLINATIONS_DEFAULT_MODEL = 'flux';
+let imageQueue: Promise<void> = Promise.resolve();
+
+const runImageTask = async <T>(task: () => Promise<T>): Promise<T> => {
+    const run = imageQueue.then(() => task(), () => task());
+    imageQueue = run.then(() => undefined, () => undefined);
+    return run;
+};
 
 const getLocalKey = (provider: 'GEMINI' | 'DEEPSEEK' | 'OPENAI'): string | undefined => {
     try {
@@ -358,6 +365,7 @@ export const generateCharacterDesign = async (
         console.warn("Description refinement failed, using raw description.");
     }
     
+    return runImageTask(async () => {
     // --- GEMINI HANDLER ---
     if (!provider || provider === 'GEMINI') {
         const ai = getAI(customApiKey);
@@ -427,6 +435,7 @@ export const generateCharacterDesign = async (
     }
 
     throw new Error(`Unknown provider: ${provider}`);
+    });
 };
 
 // --- MULTI-PROVIDER PANEL GENERATOR ---
@@ -452,6 +461,7 @@ export const generatePanelImage = async (
 
     console.log(`[Art Studio] Generating Panel via ${provider}.`);
 
+    return runImageTask(async () => {
     // --- STRATEGY 1: GEMINI (Native Multimodal) ---
     if (!provider || provider === 'GEMINI') {
         const ai = getAI(customApiKey);
@@ -507,6 +517,7 @@ export const generatePanelImage = async (
     }
 
     throw new Error(`Unknown provider: ${provider}`);
+    });
 };
 
 export const generatePanelVideo = async (panel: ComicPanel, style: string): Promise<string> => {
