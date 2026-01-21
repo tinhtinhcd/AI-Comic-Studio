@@ -348,7 +348,51 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
 
   // Re-export other handlers (strategy, concept, cast, script etc) - keeping internal logic same as previous steps
   const handleUpdateMarketAnalysis = (data: ResearchData) => { updateProject({ marketAnalysis: data }); };
-  const handleFinalizeStrategyFromChat = async () => { setLoading(true); try { const analysis = await GeminiService.extractStrategyFromChat(project.researchChatHistory, project.masterLanguage, project.modelTier || 'STANDARD'); const effectiveTheme = project.theme.includes("Tone:") ? project.theme : `${project.theme}. Tone: ${narrativeTone}.`; let estimatedChapters = 1; if (analysis.estimatedChapters) { const match = analysis.estimatedChapters.match(/(\d+)/); if (match) estimatedChapters = parseInt(match[1]); } else { estimatedChapters = isLongFormat ? 50 : 1; } const newSystemTasks = generateSystemTasks(estimatedChapters, 1, isLongFormat); const artStyleGuide = await GeminiService.generateArtStyleGuide(analysis.visualStyle, analysis.worldSetting, project.masterLanguage, project.modelTier); const updatedProject: ComicProject = { ...project, marketAnalysis: analysis, title: analysis.suggestedTitle, style: analysis.visualStyle, artStyleGuide: artStyleGuide, theme: effectiveTheme + " " + analysis.narrativeStructure, workflowStage: WorkflowStage.SCRIPTING, id: project.id || crypto.randomUUID(), totalChapters: analysis.estimatedChapters, agentTasks: [...(project.agentTasks || []), ...newSystemTasks] }; updateProject(updatedProject); addLog(AgentRole.MARKET_RESEARCHER, `Strategy Finalized. Generated Roadmap for ${estimatedChapters} chapters.`, 'success'); StorageService.saveWorkInProgress(updatedProject); if (isLongFormat) { await handleBreakdownChapterTasks(1, updatedProject); } setTimeout(() => onAgentChange(AgentRole.SCRIPTWRITER), 1000); } catch (e) { addLog(AgentRole.MARKET_RESEARCHER, "Failed to extract strategy.", 'error'); } finally { setLoading(false); } };
+  const handleFinalizeStrategyFromChat = async () => {
+      if (!project.researchChatHistory || project.researchChatHistory.length === 0) {
+          addLog(AgentRole.MARKET_RESEARCHER, "Finalize failed: no research chat history.", 'warning');
+          return;
+      }
+
+      setLoading(true);
+      try {
+          const analysis = await GeminiService.extractStrategyFromChat(project.researchChatHistory, project.masterLanguage, project.modelTier || 'STANDARD');
+          const effectiveTheme = project.theme.includes("Tone:") ? project.theme : `${project.theme}. Tone: ${narrativeTone}.`;
+          let estimatedChapters = 1;
+          if (analysis.estimatedChapters) {
+              const match = analysis.estimatedChapters.match(/(\d+)/);
+              if (match) estimatedChapters = parseInt(match[1]);
+          } else {
+              estimatedChapters = isLongFormat ? 50 : 1;
+          }
+          const newSystemTasks = generateSystemTasks(estimatedChapters, 1, isLongFormat);
+          const artStyleGuide = await GeminiService.generateArtStyleGuide(analysis.visualStyle, analysis.worldSetting, project.masterLanguage, project.modelTier);
+          const updatedProject: ComicProject = {
+              ...project,
+              marketAnalysis: analysis,
+              title: analysis.suggestedTitle,
+              style: analysis.visualStyle,
+              artStyleGuide: artStyleGuide,
+              theme: effectiveTheme + " " + analysis.narrativeStructure,
+              workflowStage: WorkflowStage.SCRIPTING,
+              id: project.id || crypto.randomUUID(),
+              totalChapters: analysis.estimatedChapters,
+              agentTasks: [...(project.agentTasks || []), ...newSystemTasks]
+          };
+          updateProject(updatedProject);
+          addLog(AgentRole.MARKET_RESEARCHER, `Strategy Finalized. Generated Roadmap for ${estimatedChapters} chapters.`, 'success');
+          StorageService.saveWorkInProgress(updatedProject);
+          if (isLongFormat) {
+              await handleBreakdownChapterTasks(1, updatedProject);
+          }
+          setTimeout(() => onAgentChange(AgentRole.SCRIPTWRITER), 1000);
+      } catch (e: any) {
+          const message = e?.message || "Unknown error";
+          addLog(AgentRole.MARKET_RESEARCHER, `Finalize failed: ${message}`, 'error');
+      } finally {
+          setLoading(false);
+      }
+  };
   const handleBreakdownChapterTasks = async (chapterNum: number, currentProjectState: ComicProject) => { addLog(AgentRole.MARKET_RESEARCHER, `Breaking down tasks for Chapter ${chapterNum}...`, 'info'); const newTasks: AgentTask[] = [ createSystemTask(AgentRole.SCRIPTWRITER, `[Ch ${chapterNum}] Outline High-level Beat Sheet`, chapterNum), createSystemTask(AgentRole.SCRIPTWRITER, `[Ch ${chapterNum}] Draft Scene 1-3 (Opening)`, chapterNum), createSystemTask(AgentRole.SCRIPTWRITER, `[Ch ${chapterNum}] Draft Scene 4-6 (Development)`, chapterNum), createSystemTask(AgentRole.SCRIPTWRITER, `[Ch ${chapterNum}] Draft Scene 7-End (Climax/Ending)`, chapterNum), createSystemTask(AgentRole.SCRIPTWRITER, `[Ch ${chapterNum}] Polish Dialogue & Pacing`, chapterNum), createSystemTask(AgentRole.PROJECT_MANAGER, `[Ch ${chapterNum}] Review & Approve Final Script`, chapterNum) ]; updateProject({ agentTasks: [...(currentProjectState.agentTasks || []), ...newTasks] }); };
   const handleGenerateConcept = async () => { setLoading(true); updateProject({ workflowStage: WorkflowStage.SCRIPTING }); setScriptStep('CONCEPT'); try { const concept = await GeminiService.generateStoryConceptsWithSearch(project.theme, project.style, project.masterLanguage, project.modelTier || 'STANDARD'); updateProject({ storyConcept: concept }); setScriptStep('CASTING'); addLog(AgentRole.SCRIPTWRITER, `Concept Found: ${concept.uniqueTwist}`, 'success'); } catch (e: any) { addLog(AgentRole.SCRIPTWRITER, `Research failed: ${e.message}`, 'error'); throw e; } };
   const handleGenerateCast = async () => { if ((project.characters || []).length > 0) { addLog(AgentRole.SCRIPTWRITER, `Using ${project.characters.length} characters identified by Editorial Dept.`, 'info'); setScriptStep('WRITING'); const charsWithVoice = project.characters.map(c => ({ ...c, voice: c.voice || AVAILABLE_VOICES[Math.floor(Math.random() * AVAILABLE_VOICES.length)] })); updateProject({ characters: charsWithVoice }); return; } if (!project.storyConcept) return; setScriptStep('CASTING'); try { const setting = project.marketAnalysis?.worldSetting || "Standard"; const sourceText = project.originalScript || project.seriesBible?.characterArcs || ""; const complexChars = await GeminiService.generateComplexCharacters(project.storyConcept, project.masterLanguage, setting, project.modelTier || 'STANDARD', sourceText); const charsWithVoice = complexChars.map(c => ({ ...c, voice: AVAILABLE_VOICES[Math.floor(Math.random() * AVAILABLE_VOICES.length)] })); updateProject({ characters: charsWithVoice }); setScriptStep('WRITING'); addLog(AgentRole.SCRIPTWRITER, `Cast assembled. Found ${charsWithVoice.length} characters.`, 'success'); } catch (e: any) { addLog(AgentRole.SCRIPTWRITER, `Casting failed: ${e.message}`, 'error'); throw e; } };
