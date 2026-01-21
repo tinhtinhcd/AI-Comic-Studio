@@ -2,6 +2,7 @@
 import { UserProfile } from '../types';
 
 const STORAGE_KEY_SESSION = 'acs_session_v1';
+const STORAGE_KEY_AI_PREFS = 'ai_comic_user_prefs_v1';
 
 // --- AUTH API ---
 
@@ -55,6 +56,9 @@ export const updateUserProfile = async (id: string, updates: Partial<UserProfile
     
     const updatedUser = { ...current, ...updates };
     localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(updatedUser));
+    if (updates.aiPreferences) {
+        localStorage.setItem(STORAGE_KEY_AI_PREFS, JSON.stringify(updates.aiPreferences));
+    }
 
     try {
         await fetch('/api/admin/user/update', {

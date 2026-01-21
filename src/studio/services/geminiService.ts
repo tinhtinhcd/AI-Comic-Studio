@@ -14,6 +14,8 @@ interface StoredKey {
     isActive: boolean;
 }
 
+const STORAGE_KEY_AI_PREFS = 'ai_comic_user_prefs_v1';
+
 const getLocalKey = (provider: 'GEMINI' | 'DEEPSEEK' | 'OPENAI'): string | undefined => {
     try {
         const rawStore = localStorage.getItem('ai_comic_keystore_v2');
@@ -29,6 +31,16 @@ const getLocalKey = (provider: 'GEMINI' | 'DEEPSEEK' | 'OPENAI'): string | undef
         console.error("Error reading API key store", e);
     }
     return undefined;
+};
+
+const getStoredUserPrefs = (): UserAIPreferences | null => {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY_AI_PREFS);
+        return raw ? (JSON.parse(raw) as UserAIPreferences) : null;
+    } catch (e) {
+        console.warn("Failed to read stored AI preferences.");
+        return null;
+    }
 };
 
 export const getDynamicApiKey = (): string => {
@@ -107,7 +119,7 @@ const cleanAndParseJSON = (text: string) => {
 
 const getUserPreference = (): UserAIPreferences => {
     const user = getCurrentUser();
-    return user?.aiPreferences || DEFAULT_USER_PREFERENCES;
+    return user?.aiPreferences || getStoredUserPrefs() || DEFAULT_USER_PREFERENCES;
 };
 
 // --- RETRY UTILITY ---
@@ -159,85 +171,87 @@ const unifiedGenerateText = async (options: GenTextOptions): Promise<string> => 
     // --- OPENAI HANDLER ---
     if (engine === 'OPENAI') {
         const apiKey = getOpenAIKey();
-        if (apiKey) {
-            let messages: any[] = [];
-            if (systemInstruction) messages.push({ role: "system", content: systemInstruction });
+        if (!apiKey) {
+            throw new Error("MISSING_OPENAI_KEY: Please add your OpenAI API key in Profile & Keys.");
+        }
+        let messages: any[] = [];
+        if (systemInstruction) messages.push({ role: "system", content: systemInstruction });
 
-            if (typeof contents === 'string') {
-                messages.push({ role: "user", content: contents });
-            } else if (Array.isArray(contents)) {
-                contents.forEach((msg: any) => {
-                    let role = msg.role === 'model' ? 'assistant' : 'user';
-                    let content = typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : JSON.stringify(msg);
-                    messages.push({ role, content });
+        if (typeof contents === 'string') {
+            messages.push({ role: "user", content: contents });
+        } else if (Array.isArray(contents)) {
+            contents.forEach((msg: any) => {
+                let role = msg.role === 'model' ? 'assistant' : 'user';
+                let content = typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : JSON.stringify(msg);
+                messages.push({ role, content });
+            });
+        } else if (contents.parts && contents.parts[0].text) {
+             messages.push({ role: "user", content: contents.parts[0].text });
+        }
+
+        try {
+            const openAIModel = (taskType === 'LOGIC') ? 'gpt-4o' : 'gpt-4o-mini';
+            const response = await retryWithBackoff(async () => {
+                const res = await fetch("https://api.openai.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                    body: JSON.stringify({ model: openAIModel, messages: messages, stream: false, response_format: jsonMode ? { type: "json_object" } : undefined })
                 });
-            } else if (contents.parts && contents.parts[0].text) {
-                 messages.push({ role: "user", content: contents.parts[0].text });
-            }
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw { status: res.status, message: err };
+                }
+                return res;
+            });
 
-            try {
-                const openAIModel = (taskType === 'LOGIC') ? 'gpt-4o' : 'gpt-4o-mini';
-                const response = await retryWithBackoff(async () => {
-                    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-                        body: JSON.stringify({ model: openAIModel, messages: messages, stream: false, response_format: jsonMode ? { type: "json_object" } : undefined })
-                    });
-                    if (!res.ok) {
-                        const err = await res.text();
-                        throw { status: res.status, message: err };
-                    }
-                    return res;
-                });
-
-                const data = await response.json();
-                return data.choices[0].message.content;
-            } catch (e: any) { 
-                console.error("OpenAI Error, fallback to Gemini:", e.message); 
-                // Fallthrough to Gemini
-            }
+            const data = await response.json();
+            return data.choices[0].message.content;
+        } catch (e: any) {
+            const message = e?.message || "OpenAI request failed.";
+            throw new Error(`OPENAI_ERROR: ${message}`);
         }
     }
 
     // --- DEEPSEEK HANDLER ---
     if (engine === 'DEEPSEEK') {
         const apiKey = getDeepSeekKey();
-        if (apiKey) {
-            let messages: any[] = [];
-            if (systemInstruction) messages.push({ role: "system", content: systemInstruction });
-            if (typeof contents === 'string') {
-                messages.push({ role: "user", content: contents });
-            } else if (Array.isArray(contents)) {
-                contents.forEach((msg: any) => {
-                    let role = msg.role === 'model' ? 'assistant' : 'user';
-                    let content = typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : JSON.stringify(msg);
-                    messages.push({ role, content });
-                });
-            } else if (contents.parts && contents.parts[0].text) {
-                 messages.push({ role: "user", content: contents.parts[0].text });
-            }
+        if (!apiKey) {
+            throw new Error("MISSING_DEEPSEEK_KEY: Please add your DeepSeek API key in Profile & Keys.");
+        }
+        let messages: any[] = [];
+        if (systemInstruction) messages.push({ role: "system", content: systemInstruction });
+        if (typeof contents === 'string') {
+            messages.push({ role: "user", content: contents });
+        } else if (Array.isArray(contents)) {
+            contents.forEach((msg: any) => {
+                let role = msg.role === 'model' ? 'assistant' : 'user';
+                let content = typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : JSON.stringify(msg);
+                messages.push({ role, content });
+            });
+        } else if (contents.parts && contents.parts[0].text) {
+             messages.push({ role: "user", content: contents.parts[0].text });
+        }
 
-            try {
-                const dsModel = (taskType === 'LOGIC') ? 'deepseek-reasoner' : 'deepseek-chat';
-                const response = await retryWithBackoff(async () => {
-                    const res = await fetch("https://api.deepseek.com/chat/completions", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-                        body: JSON.stringify({ model: dsModel, messages: messages, stream: false, response_format: jsonMode ? { type: "json_object" } : undefined })
-                    });
-                    if (!res.ok) {
-                        const err = await res.text();
-                        throw { status: res.status, message: err };
-                    }
-                    return res;
+        try {
+            const dsModel = (taskType === 'LOGIC') ? 'deepseek-reasoner' : 'deepseek-chat';
+            const response = await retryWithBackoff(async () => {
+                const res = await fetch("https://api.deepseek.com/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                    body: JSON.stringify({ model: dsModel, messages: messages, stream: false, response_format: jsonMode ? { type: "json_object" } : undefined })
                 });
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw { status: res.status, message: err };
+                }
+                return res;
+            });
 
-                const data = await response.json();
-                return data.choices[0].message.content;
-            } catch (e: any) { 
-                console.error("DeepSeek Error, fallback to Gemini:", e.message); 
-                // Fallthrough to Gemini
-            }
+            const data = await response.json();
+            return data.choices[0].message.content;
+        } catch (e: any) {
+            const message = e?.message || "DeepSeek request failed.";
+            throw new Error(`DEEPSEEK_ERROR: ${message}`);
         }
     }
 
