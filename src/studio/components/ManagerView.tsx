@@ -571,4 +571,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             ) : selectedOutline ? (
                                 <div className="max-w-2xl mx-auto space-y-6"><div className="bg-amber-50 dark:bg-amber-900/20 p-6 rounded-2xl border border-amber-100 dark:border-amber-800"><h4 className="font-bold text-amber-800 dark:text-amber-300 mb-4 text-sm uppercase tracking-wider flex items-center gap-2"><Lightbulb className="w-4 h-4"/> Tóm tắt Đề Cương</h4><p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-serif">"{selectedOutline.summary}"</p></div></div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4"><Lock className="w-16 h-16 opacity-20"/><p>Chưa có dữ liệu cho chương này.</p><p className="text-xs">Hãy thảo luận với Ban Biên Tập để
+                                <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+                                    <Lock className="w-16 h-16 opacity-20"/>
+                                    <p>Chưa có dữ liệu cho chương này.</p>
+                                    <p className="text-xs">Hãy thảo luận với Ban Biên Tập để tạo đề cương.</p>
+                                </div>
