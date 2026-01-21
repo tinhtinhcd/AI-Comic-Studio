@@ -294,7 +294,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
               const aiResponseText = await GeminiService.sendResearchChatMessage([], `Brief: "${project.theme}"`, { theme: project.theme, storyFormat: project.storyFormat, totalChapters: project.totalChapters, language: project.masterLanguage, originalScript: project.originalScript }, project.modelTier || 'STANDARD');
               const userMsg: Message = { role: 'user', content: `Brief: "${project.theme}"`, timestamp: Date.now() };
               updateProject({ researchChatHistory: [userMsg, { role: 'agent', senderId: AgentRole.MARKET_RESEARCHER, content: aiResponseText, timestamp: Date.now() + 1 }] });
-          } catch (e) { } finally { setLoading(false); }
+          } catch (e: any) {
+              const message = e?.message || "Unknown error";
+              addLog(AgentRole.MARKET_RESEARCHER, `Research chat failed: ${message}`, 'error');
+          } finally { setLoading(false); }
       }
   };
 
@@ -307,7 +310,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
       try {
           const aiResponseText = await GeminiService.sendResearchChatMessage(newHistory, researchChatInput, { theme: project.theme, storyFormat: project.storyFormat, totalChapters: project.totalChapters, language: project.masterLanguage, originalScript: project.originalScript }, project.modelTier || 'STANDARD');
           updateProject({ researchChatHistory: [...newHistory, { role: 'agent', senderId: AgentRole.MARKET_RESEARCHER, content: aiResponseText, timestamp: Date.now() + 1 }] });
-      } catch (e) { addLog(AgentRole.MARKET_RESEARCHER, "Chat failed.", 'error'); } finally { setLoading(false); }
+      } catch (e: any) {
+          const message = e?.message || "Unknown error";
+          addLog(AgentRole.MARKET_RESEARCHER, `Chat failed: ${message}`, 'error');
+      } finally { setLoading(false); }
   };
 
   const handleUpdateMarketAnalysis = (data: ResearchData) => updateProject({ marketAnalysis: data });

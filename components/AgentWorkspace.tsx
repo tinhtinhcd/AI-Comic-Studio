@@ -312,7 +312,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
               const aiResponseText = await GeminiService.sendResearchChatMessage([], `${prefix}"${project.theme}"`, { theme: project.theme, storyFormat: project.storyFormat, totalChapters: project.totalChapters, language: chatLanguage, originalScript: project.originalScript }, project.modelTier || 'STANDARD');
               const userMsg: Message = { role: 'user', content: `${prefix}"${project.theme}"`, timestamp: Date.now() };
               updateProject({ researchChatHistory: [userMsg, { role: 'agent', senderId: AgentRole.MARKET_RESEARCHER, content: aiResponseText, timestamp: Date.now() + 1 }] });
-          } catch (e) { } finally { setLoading(false); }
+          } catch (e: any) {
+              const message = e?.message || "Unknown error";
+              addLog(AgentRole.MARKET_RESEARCHER, `Research chat failed: ${message}`, 'error');
+          } finally { setLoading(false); }
       }
   };
 
@@ -343,7 +346,10 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
               setShowTodoList(true); 
           }
           updateProject({ researchChatHistory: [...newHistory, { role: 'agent', senderId: AgentRole.MARKET_RESEARCHER, content: cleanResponseText, timestamp: Date.now() + 1 }] });
-      } catch (e) { addLog(AgentRole.MARKET_RESEARCHER, "Chat failed.", 'error'); } finally { setLoading(false); }
+      } catch (e: any) {
+          const message = e?.message || "Unknown error";
+          addLog(AgentRole.MARKET_RESEARCHER, `Chat failed: ${message}`, 'error');
+      } finally { setLoading(false); }
   };
 
   // Re-export other handlers (strategy, concept, cast, script etc) - keeping internal logic same as previous steps
