@@ -87,10 +87,12 @@ export const getActiveProjects = async (userId?: string): Promise<ComicProject[]
     }
 };
 
-export const saveWorkInProgress = async (project: ComicProject): Promise<{ success: boolean, message?: string }> => {
-    // Enforce ID
-    if (!project.id) project.id = crypto.randomUUID();
-    project.lastModified = Date.now();
+export const saveWorkInProgress = async (project: ComicProject): Promise<{ success: boolean, message?: string, id?: string }> => {
+    const projectToSave: ComicProject = {
+        ...project,
+        id: project.id || crypto.randomUUID(),
+        lastModified: Date.now()
+    };
 
     let cloudSuccess = false;
     let cloudMessage = "";
@@ -100,7 +102,7 @@ export const saveWorkInProgress = async (project: ComicProject): Promise<{ succe
         const res = await fetch('/api/projects/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ project, isActive: true })
+            body: JSON.stringify({ project: projectToSave, isActive: true })
         });
 
         if (res.ok) {
@@ -118,7 +120,7 @@ export const saveWorkInProgress = async (project: ComicProject): Promise<{ succe
     }
 
     if (cloudSuccess) {
-        return { success: true };
+        return { success: true, id: projectToSave.id };
     }
 
     // 2. Fallback to Local
@@ -126,14 +128,14 @@ export const saveWorkInProgress = async (project: ComicProject): Promise<{ succe
         // Check Local Slots
         const allLocal = await dbAction<ComicProject[]>(STORE_PROJECTS, 'readonly', (store) => store.getAll());
         // Simple quota check: if not update, and count >= 3
-        if (!allLocal.find(p => p.id === project.id) && allLocal.length >= 3) {
-             return { success: false, message: "SLOTS_FULL" };
+        if (!allLocal.find(p => p.id === projectToSave.id) && allLocal.length >= 3) {
+             return { success: false, message: "SLOTS_FULL", id: projectToSave.id };
         }
 
-        await dbAction(STORE_PROJECTS, 'readwrite', (store) => store.put(project));
-        return { success: true, message: "Saved (Offline Mode)" };
+        await dbAction(STORE_PROJECTS, 'readwrite', (store) => store.put(projectToSave));
+        return { success: true, message: "Saved (Offline Mode)", id: projectToSave.id };
     } catch (e: any) {
-        return { success: false, message: e.message };
+        return { success: false, message: e.message, id: projectToSave.id };
     }
 };
 

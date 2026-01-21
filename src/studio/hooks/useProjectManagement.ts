@@ -51,7 +51,11 @@ export const useProjectManagement = (
     const handleSaveWIP = async () => {
         setSaveStatus('SAVING');
         try {
-            const result = await StorageService.saveWorkInProgress(project);
+            const projectToSave = project.id ? project : { ...project, id: crypto.randomUUID() };
+            if (!project.id) {
+                updateProject({ id: projectToSave.id });
+            }
+            const result = await StorageService.saveWorkInProgress(projectToSave);
             if (result.success) {
                 setSaveStatus('SAVED');
                 addLog(AgentRole.PROJECT_MANAGER, "Project Saved to Database.", 'success');
