@@ -501,8 +501,8 @@ export const PanelArtistView: React.FC<{
                         </div>
                     </div>
                     
-                    <div className="flex gap-2 w-full sm:w-auto items-end flex-wrap">
-                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-[10px] font-bold text-gray-500">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-2 w-full sm:w-auto items-end">
+                        <div className="flex items-center justify-between gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-[10px] font-bold text-gray-500 w-full sm:col-span-2 lg:w-auto">
                             <span>Queue</span>
                             <span className="text-gray-700 dark:text-gray-200">
                                 {imageQueue.total === 0
@@ -511,7 +511,7 @@ export const PanelArtistView: React.FC<{
                             </span>
                         </div>
                         {/* Provider Selector */}
-                        <div className="flex flex-col gap-1 w-full sm:w-40">
+                        <div className="flex flex-col gap-1 w-full sm:min-w-[160px] lg:w-40">
                             <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Zap className="w-3 h-3"/> Engine</label>
                             <select 
                                 value={selectedProvider}
@@ -532,7 +532,7 @@ export const PanelArtistView: React.FC<{
                         </div>
 
                         {/* API Key Input */}
-                        <div className="flex flex-col gap-1 w-full sm:w-40">
+                        <div className="flex flex-col gap-1 w-full sm:min-w-[160px] lg:w-40">
                             <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Key className="w-3 h-3"/> API Key</label>
                             <input 
                                 type="password"
@@ -543,19 +543,19 @@ export const PanelArtistView: React.FC<{
                             />
                         </div>
 
-                        <button onClick={() => setShowAssetLibrary(!showAssetLibrary)} className={`flex-1 sm:flex-none justify-center px-4 py-2 rounded-xl font-bold flex items-center gap-2 border transition-all ${showAssetLibrary ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600'}`}>
+                        <button onClick={() => setShowAssetLibrary(!showAssetLibrary)} className={`w-full sm:flex-none sm:col-span-2 lg:w-auto justify-center px-4 py-2 rounded-xl font-bold flex items-center gap-2 border transition-all ${showAssetLibrary ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600'}`}>
                             <MapPin className="w-5 h-5"/> Assets
                         </button>
                         {hasStartedGeneration ? (
-                            <button onClick={handleFinishPanelArt} className="flex-1 sm:flex-none justify-center bg-rose-600 hover:bg-rose-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-rose-200 dark:shadow-none transition-all">
+                            <button onClick={handleFinishPanelArt} className="w-full sm:col-span-2 lg:w-auto justify-center bg-rose-600 hover:bg-rose-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-rose-200 dark:shadow-none transition-all">
                                 <CheckCircle className="w-5 h-5"/> {t('ui.approve')}
                             </button>
                         ) : (
-                            <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex-1 sm:flex-none justify-center">
+                            <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 w-full sm:col-span-2 lg:w-auto justify-center">
                                 <button 
                                     onClick={() => handleStartPanelGeneration(selectedStyle, tempApiKey, selectedProvider)} 
                                     disabled={loading}
-                                    className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all shadow-md disabled:opacity-50"
+                                    className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-md disabled:opacity-50 w-full justify-center"
                                 >
                                     {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>}
                                     Generate
@@ -565,7 +565,7 @@ export const PanelArtistView: React.FC<{
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {panels.map((panel, idx) => (
                         <div key={panel.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden group shadow-sm hover:shadow-md transition-all">
                             <div className="aspect-video bg-gray-50 dark:bg-gray-900 relative flex items-center justify-center border-b border-gray-100 dark:border-gray-700">
@@ -583,24 +583,24 @@ export const PanelArtistView: React.FC<{
                                     <Palette className="w-8 h-8 text-gray-300 dark:text-gray-600"/>
                                 )}
                                 
-                                <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 pointer-events-auto sm:pointer-events-none sm:group-hover:pointer-events-auto">
                                     <button 
                                         onClick={() => handleRegenerateSinglePanel(panel, idx, tempApiKey, selectedProvider)} 
-                                        className="p-3 rounded-full bg-white text-gray-800 shadow-md border border-gray-200 hover:text-rose-600 transition-transform hover:scale-110"
+                                        className="p-2.5 sm:p-3 rounded-full bg-white text-gray-800 shadow-md border border-gray-200 hover:text-rose-600 transition-transform hover:scale-110"
                                         title="Regenerate"
                                     >
-                                        <RefreshCw className="w-5 h-5"/>
+                                        <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5"/>
                                     </button>
                                     <button 
                                         onClick={() => setDrawingPanel({panel, index: idx})} 
-                                        className="p-3 rounded-full bg-white text-gray-800 shadow-md border border-gray-200 hover:text-indigo-600 transition-transform hover:scale-110"
+                                        className="p-2.5 sm:p-3 rounded-full bg-white text-gray-800 shadow-md border border-gray-200 hover:text-indigo-600 transition-transform hover:scale-110"
                                         title="Redline / Fix"
                                     >
-                                        <PenTool className="w-5 h-5"/>
+                                        <PenTool className="w-4 h-4 sm:w-5 sm:h-5"/>
                                     </button>
                                 </div>
                             </div>
-                            <div className="p-4">
+                            <div className="p-3 sm:p-4">
                                 <h4 className="font-bold text-gray-700 dark:text-gray-200 text-sm mb-2">Panel #{idx + 1}</h4>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-3">{panel.description}</p>
                             </div>
@@ -613,7 +613,7 @@ export const PanelArtistView: React.FC<{
             {showAssetLibrary && (
                 <>
                     <div className="absolute inset-0 bg-black/50 z-20 md:hidden transition-opacity" onClick={() => setShowAssetLibrary(false)}></div>
-                    <div className="absolute inset-y-0 right-0 z-30 w-80 bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 p-4 overflow-y-auto flex flex-col gap-4 shadow-xl transform transition-transform duration-300 md:static md:transform-none">
+                    <div className="absolute inset-y-0 right-0 z-30 w-[85vw] max-w-sm md:w-80 bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 p-4 overflow-y-auto flex flex-col gap-4 shadow-xl transform transition-transform duration-300 md:static md:transform-none">
                         <div className="flex justify-between items-center">
                             <h3 className="font-bold text-gray-800 dark:text-gray-100">Studio Assets</h3>
                             <button onClick={() => setShowAssetLibrary(false)}><X className="w-5 h-5 text-gray-500"/></button>
