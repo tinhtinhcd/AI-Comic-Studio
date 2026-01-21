@@ -281,9 +281,15 @@ export const runAgentGoal = (goal: AgentGoal, context: AgentRunContext) => {
   const cancel = () => {
     cancelled = true;
     run = updateRun(run, { status: 'CANCELED' }, context);
+    context.addLog(AgentRole.PROJECT_MANAGER, 'Auto-run canceled.', 'warning');
   };
 
   const execute = async () => {
+    context.addLog(
+      AgentRole.PROJECT_MANAGER,
+      `Auto-run started for Chapter ${goal.chapterNumber}.`,
+      'info'
+    );
     for (const step of run.steps) {
       if (cancelled) return;
 
@@ -292,6 +298,11 @@ export const runAgentGoal = (goal: AgentGoal, context: AgentRunContext) => {
       if (!gate.allowed && project.workflowStage !== step.stage) {
         run = updateStep(run, step.id, { status: 'ERROR', error: gate.reason, finishedAt: Date.now() }, context);
         run = updateRun(run, { status: 'FAILED', error: gate.reason }, context);
+        context.addLog(
+          STAGE_ROLE_MAP[step.stage] || AgentRole.PROJECT_MANAGER,
+          `Auto-run blocked before "${step.name}": ${gate.reason}`,
+          'error'
+        );
         return;
       }
 
@@ -318,11 +329,17 @@ export const runAgentGoal = (goal: AgentGoal, context: AgentRunContext) => {
         );
         run = updateStep(run, step.id, { status: 'ERROR', error: e.message || 'Tool error', finishedAt: Date.now() }, context);
         run = updateRun(run, { status: 'FAILED', error: e.message || 'Tool error' }, context);
+        context.addLog(
+          STAGE_ROLE_MAP[step.stage] || AgentRole.PROJECT_MANAGER,
+          `Auto-run failed at "${step.name}": ${e.message || 'Tool error'}`,
+          'error'
+        );
         return;
       }
     }
 
     run = updateRun(run, { status: 'COMPLETED' }, context);
+    context.addLog(AgentRole.PROJECT_MANAGER, 'Auto-run completed.', 'success');
   };
 
   void execute();
