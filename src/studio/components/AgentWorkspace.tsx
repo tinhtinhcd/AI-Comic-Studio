@@ -313,6 +313,11 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
   const handleUpdateMarketAnalysis = (data: ResearchData) => updateProject({ marketAnalysis: data });
   
   const handleFinalizeStrategyFromChat = async () => { 
+      if (!project.researchChatHistory || project.researchChatHistory.length === 0) {
+          addLog(AgentRole.MARKET_RESEARCHER, "Finalize failed: no research chat history.", 'warning');
+          return;
+      }
+
       setLoading(true); 
       try { 
           const analysis = await GeminiService.extractStrategyFromChat(project.researchChatHistory, project.masterLanguage, project.modelTier || 'STANDARD'); 
@@ -324,8 +329,9 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
               addLog(AgentRole.MARKET_RESEARCHER, "Strategy Approved. Moving to Scripting.", 'success');
               setTimeout(() => onAgentChange(AgentRole.SCRIPTWRITER), 1000); 
           }
-      } catch (e) { 
-          addLog(AgentRole.MARKET_RESEARCHER, "Failed.", 'error'); 
+      } catch (e: any) { 
+          const message = e?.message || "Unknown error";
+          addLog(AgentRole.MARKET_RESEARCHER, `Finalize failed: ${message}`, 'error'); 
       } finally { 
           setLoading(false); 
       } 
