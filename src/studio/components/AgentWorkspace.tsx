@@ -621,7 +621,13 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
       } 
   };
 
-  const handleRegenerateSingleCharacter = async (char: Character, index: number, specificStyle?: string, key?: string) => {
+  const handleRegenerateSingleCharacter = async (
+      char: Character,
+      index: number,
+      specificStyle?: string,
+      key?: string,
+      provider?: ImageProvider
+  ) => {
       const charsStart = [...project.characters];
       charsStart[index] = { ...charsStart[index], isGenerating: true, error: undefined };
       updateProject({ characters: charsStart });
@@ -634,10 +640,17 @@ const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ role, project, updatePr
           let styleGuide = project.artStyleGuide; 
           if (!styleGuide) styleGuide = `Style: ${styleToUse}`;
           
-          // Note: Regenerate uses Gemini by default unless provider is passed (currently not passed in this function signature, defaulting to Gemini)
-          // To fix this, we would need to pass provider here too, but for now we assume Gemini for single regen or update signature later.
-          // For consistency with batch, we will stick to default (Gemini) as it was before, unless we update the view to pass provider.
-          const result = await GeminiService.generateCharacterDesign(char.name, styleGuide, char.description, worldSetting, project.modelTier || 'STANDARD', currentImageModel, char.referenceImage, key);
+          const result = await GeminiService.generateCharacterDesign(
+              char.name,
+              styleGuide,
+              char.description,
+              worldSetting,
+              project.modelTier || 'STANDARD',
+              currentImageModel,
+              char.referenceImage,
+              key,
+              provider
+          );
           
           const newVariant: CharacterVariant = { id: crypto.randomUUID(), imageUrl: result.imageUrl, style: styleToUse, timestamp: Date.now() };
           const charsDone = [...projectRef.current.characters];

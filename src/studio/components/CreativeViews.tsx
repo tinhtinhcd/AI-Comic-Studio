@@ -297,7 +297,7 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
     const handleAnchorUpload = (e: React.ChangeEvent<HTMLInputElement>, charIndex: number) => { const file = (e.target as any).files?.[0]; if (!file) return; const reader = new FileReader(); reader.onloadend = () => { const newChars = [...characters]; newChars[charIndex] = { ...newChars[charIndex], referenceImage: reader.result as string }; updateProject({ characters: newChars }); }; reader.readAsDataURL(file); };
 
     const costInfo = COST_ESTIMATES[selectedProvider];
-    const isKeyOptional = selectedProvider === 'GEMINI' || selectedProvider === 'POLLINATIONS';
+    const isKeyOptional = selectedProvider !== 'GEMINI';
 
     return (
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16 sm:pb-24">
@@ -327,7 +327,6 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 outline-none shadow-sm focus:ring-2 focus:ring-purple-500"
                         >
                             <option value="GEMINI">Gemini</option>
-                            <option value="POLLINATIONS">Pollinations (Free)</option>
                             <option value="FLUX">Flux</option>
                             <option value="MIDJOURNEY">Midjourney</option>
                             <option value="LEONARDO">Leonardo</option>
@@ -378,7 +377,7 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                                     <AlertTriangle className="w-10 h-10 text-red-500 mb-3"/>
                                     <p className="text-xs font-bold text-red-600 dark:text-red-400 mb-4 leading-relaxed">{char.error}</p>
                                     <button 
-                                        onClick={() => handleRegenerateSingleCharacter(char, idx, globalStyle, tempApiKey)} 
+                                        onClick={() => handleRegenerateSingleCharacter(char, idx, globalStyle, tempApiKey, selectedProvider)} 
                                         className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all shadow-md"
                                     >
                                         <RefreshCw className="w-3 h-3"/> Retry Now
@@ -413,7 +412,7 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                             </div>
                             <div><textarea className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs text-gray-600 dark:text-gray-300 focus:border-purple-300 outline-none resize-none h-20 sm:h-24" value={char.description} onChange={(e) => handleUpdateCharacterDescription(idx, (e.target as any).value)} /></div>
                             <div className="flex gap-2">
-                                <button onClick={() => handleRegenerateSingleCharacter(char, idx, globalStyle, tempApiKey)} className="flex-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 p-2 rounded-lg hover:bg-purple-200 font-bold text-xs">Regenerate</button>
+                                <button onClick={() => handleRegenerateSingleCharacter(char, idx, globalStyle, tempApiKey, selectedProvider)} className="flex-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 p-2 rounded-lg hover:bg-purple-200 font-bold text-xs">Regenerate</button>
                                 <button onClick={() => handleCheckConsistency(char, idx)} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 p-2 rounded-lg hover:bg-gray-50" title="Check Consistency"><ScanFace className="w-4 h-4"/></button>
                             </div>
                         </div>
