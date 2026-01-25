@@ -209,7 +209,52 @@ const getUserPreference = (): UserAIPreferences => {
 };
 
 const getVisualProviderPreference = (): ImageProvider => {
-    return getUserPreference().visualEngine || 'GEMINI';
+    const pref = getUserPreference().visualEngine || 'GEMINI';
+    const allowed: ImageProvider[] = ['GEMINI', 'OPENAI', 'STABILITY', 'FLUX', 'LEONARDO', 'POLLINATIONS'];
+    if (!allowed.includes(pref as ImageProvider)) return 'GEMINI';
+    return pref as ImageProvider;
+};
+
+const stripDataUrl = (value?: string): string | undefined => {
+    if (!value) return undefined;
+    return value.replace(/^data:image\/(png|jpg|jpeg|webp);base64,/, "");
+};
+
+const generateImageViaProxy = async (payload: {
+    provider: ImageProvider;
+    prompt: string;
+    width?: number;
+    height?: number;
+    referenceImage?: string;
+    apiKey?: string;
+}) => {
+    const response = await fetch('/api/image/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            provider: payload.provider,
+            prompt: payload.prompt,
+            width: payload.width,
+            height: payload.height,
+            referenceImage: payload.referenceImage,
+            apiKey: payload.apiKey
+        })
+    });
+
+    if (!response.ok) {
+        let message = 'Image generation failed.';
+        try {
+            const err = await response.json();
+            message = err.error || message;
+        } catch {}
+        throw new Error(message);
+    }
+
+    const data = await response.json();
+    if (!data?.imageUrl) {
+        throw new Error('Image generation returned no image.');
+    }
+    return data.imageUrl as string;
 };
 
 // --- RETRY UTILITY ---
@@ -481,18 +526,17 @@ export const generateCharacterDesign = async (
         return { description: refinedDesc, imageUrl };
     }
 
-    // --- OTHER PROVIDERS (Mocked/Placeholder) ---
-    if (effectiveProvider === 'MIDJOURNEY' || effectiveProvider === 'LEONARDO' || effectiveProvider === 'FLUX') {
-        // Placeholder until backend bridge is ready
-        // throw new Error(`${provider} integration requires backend bridge.`);
-        console.warn(`[${effectiveProvider}] Mocking image generation for demo.`);
-        // Return a mock image for testing UI flow if provider is not Gemini
-        // In real app, this calls your backend endpoint
-        await new Promise(r => setTimeout(r, 2000));
-        return { 
-            description: refinedDesc, 
-            imageUrl: `https://via.placeholder.com/512x512.png?text=${effectiveProvider}+Generation+Mock`
-        };
+    if (effectiveProvider === 'OPENAI' || effectiveProvider === 'STABILITY' || effectiveProvider === 'LEONARDO' || effectiveProvider === 'FLUX') {
+        const prompt = PROMPTS.characterImagePrompt(name, refinedDesc, styleGuide);
+        const imageUrl = await generateImageViaProxy({
+            provider: effectiveProvider,
+            prompt,
+            width: 1024,
+            height: 1024,
+            referenceImage,
+            apiKey: customApiKey
+        });
+        return { description: refinedDesc, imageUrl };
     }
 
     throw new Error(`Unknown provider: ${effectiveProvider}`);
@@ -572,10 +616,17 @@ export const generatePanelImage = async (
         return buildPollinationsUrl(promptText, { width: 1024, height: 576, seed });
     }
 
-    // --- OTHER PROVIDERS (Mocked/Placeholder) ---
-    if (effectiveProvider === 'MIDJOURNEY' || effectiveProvider === 'LEONARDO' || effectiveProvider === 'FLUX') {
-         await new Promise(r => setTimeout(r, 2000));
-         return `https://via.placeholder.com/800x450.png?text=${effectiveProvider}+Panel+Mock`;
+    if (effectiveProvider === 'OPENAI' || effectiveProvider === 'STABILITY' || effectiveProvider === 'LEONARDO' || effectiveProvider === 'FLUX') {
+        const referenceImage = panel.layoutSketch || assetImage || referenceImageUrl;
+        const imageUrl = await generateImageViaProxy({
+            provider: effectiveProvider,
+            prompt: promptText,
+            width: 1024,
+            height: 576,
+            referenceImage,
+            apiKey: customApiKey
+        });
+        return imageUrl;
     }
 
     throw new Error(`Unknown provider: ${effectiveProvider}`);

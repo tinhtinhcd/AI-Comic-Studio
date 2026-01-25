@@ -41,7 +41,7 @@ const LoginGate: React.FC<{ onLogin: (user: UserProfile) => void }> = ({ onLogin
         <div className="fixed inset-0 bg-black text-white flex items-center justify-center p-6">
             <div className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl">
                 <h2 className="text-xl font-bold mb-2">Reader Login</h2>
-                <p className="text-xs text-gray-400 mb-6">Access requires a valid account.</p>
+                <p className="text-xs text-gray-400 mb-6">Access requires a valid account. Test mode (VITE_USE_TEST_AUTH): user@test.com / 123456</p>
                 <form className="space-y-4" onSubmit={handleSubmit}>
                     <input
                         type="email"

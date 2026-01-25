@@ -1,10 +1,10 @@
 
 /// <reference lib="dom" />
-import React, { useState, useEffect } from 'react';
-import { ComicProject, WorkflowStage, AgentRole, AgentRunState } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ComicProject, WorkflowStage, AgentRole, AgentRunState, SystemLog } from '../types';
 import { AGENTS, COMMON_STYLES } from '../constants';
 import { WorkflowStateMachine } from '../services/workflowStateMachine';
-import { Settings, CheckCircle, Archive, Activity, LayoutTemplate, BookOpen, Library, Smartphone, FolderOpen, TrendingUp, Palette, Printer, Trash2, ArrowRight, RotateCcw, Map, Edit, Eye, Lock, Lightbulb, Home, Briefcase, BrainCircuit, FileText, Globe, X, Plus, Languages, Sliders, Hash, Key, Calendar, BarChart4, DollarSign, Info, Users, Shield, Zap, Sparkles } from 'lucide-react';
+import { Settings, CheckCircle, Archive, Activity, LayoutTemplate, BookOpen, Library, Smartphone, FolderOpen, TrendingUp, Palette, Printer, Trash2, ArrowRight, RotateCcw, Map as MapIcon, Edit, Eye, Lock, Lightbulb, Home, Briefcase, BrainCircuit, FileText, Globe, X, Plus, Languages, Sliders, Hash, Key, Calendar, BarChart4, DollarSign, Info, Users, Shield, Zap, Sparkles } from 'lucide-react';
 
 interface ManagerViewProps {
     project: ComicProject;
@@ -152,6 +152,16 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     const autoRunStatus = agentRun?.status || 'IDLE';
     const isAutoRunning = autoRunStatus === 'RUNNING';
     const currentAutoStep = agentRun?.steps.find(step => step.id === agentRun.currentStepId);
+    const logs = project.logs || [];
+    const logsByAgent = useMemo(() => {
+        const grouped = new Map<AgentRole, SystemLog[]>();
+        for (const log of logs) {
+            const existing = grouped.get(log.agentId) || [];
+            existing.push(log);
+            grouped.set(log.agentId, existing);
+        }
+        return grouped;
+    }, [logs]);
 
     const renderTabs = () => (
         <div className="flex items-center gap-1.5 sm:gap-2 mb-4 sm:mb-6 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl max-w-full overflow-x-auto custom-scrollbar shrink-0">
@@ -173,7 +183,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 className={`px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'CHAPTERS' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : isProjectActive ? 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
                 title={!isProjectActive ? "Start a project to unlock" : ""}
             >
-                <Map className="w-4 h-4"/> {t('ui.current_chapter')}
+                <MapIcon className="w-4 h-4"/> {t('ui.current_chapter')}
             </button>
             <button 
                 onClick={() => setActiveTab('TEAM')}
@@ -479,16 +489,26 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                     <h3 className="font-bold text-gray-800 dark:text-gray-100">{t('manager.logs')}</h3>
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white dark:bg-gray-800 font-mono text-xs">
-                                    {project.logs?.length === 0 && <div className="text-gray-400 dark:text-gray-500 text-center italic mt-10">{t('ui.waiting')}</div>}
-                                    {project.logs?.map((log) => (
-                                        <div key={log.id} className="flex gap-2">
-                                            <span className="text-gray-400 dark:text-gray-500 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}]</span>
-                                            <div className="flex-1">
-                                                <span className="text-blue-600 dark:text-blue-400 font-bold">{t(AGENTS[log.agentId].name)}: </span>
-                                                <span className="text-gray-700 dark:text-gray-300">{log.message}</span>
+                                    {logs.length === 0 && <div className="text-gray-400 dark:text-gray-500 text-center italic mt-10">{t('ui.waiting')}</div>}
+                                    {logs.length > 0 && Object.values(AGENTS).map((agent) => {
+                                        const agentLogs = logsByAgent.get(agent.id) || [];
+                                        if (agentLogs.length === 0) return null;
+                                        return (
+                                            <div key={agent.id} className="space-y-2">
+                                                <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-300">
+                                                    {t(agent.name)} ({agentLogs.length})
+                                                </div>
+                                                {agentLogs.map((log) => (
+                                                    <div key={log.id} className="flex gap-2">
+                                                        <span className="text-gray-400 dark:text-gray-500 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}]</span>
+                                                        <div className="flex-1">
+                                                            <span className="text-gray-700 dark:text-gray-300">{log.message}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
@@ -808,10 +828,11 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                                             className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200"
                                         >
                                             <option value="GEMINI">Gemini</option>
+                                            <option value="OPENAI">OpenAI</option>
+                                            <option value="STABILITY">Stability</option>
                                             <option value="POLLINATIONS">Pollinations (Free)</option>
                                             <option value="FLUX">Flux</option>
                                             <option value="LEONARDO">Leonardo</option>
-                                            <option value="MIDJOURNEY">Midjourney</option>
                                         </select>
                                     </div>
                                     <div className="sm:col-span-2">

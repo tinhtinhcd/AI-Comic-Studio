@@ -25,21 +25,20 @@ export interface Agent {
 }
 
 export type AIProvider = 'GEMINI' | 'DEEPSEEK' | 'OPENAI';
-export type ImageProvider = 'GEMINI' | 'MIDJOURNEY' | 'LEONARDO' | 'FLUX'; // NEW TYPES
+export type ImageProvider = 'GEMINI' | 'OPENAI' | 'STABILITY' | 'FLUX' | 'LEONARDO' | 'POLLINATIONS';
 
 export interface UserAIPreferences {
     creativeEngine: AIProvider; 
     logicEngine: AIProvider;    
     translationEngine: AIProvider; 
-    visualEngine: 'GEMINI';     
+    visualEngine: ImageProvider;     
 }
 
 export interface UserKeys {
     gemini?: string;
     deepseek?: string;
     openai?: string;
-    midjourney?: string; // NEW
-    leonardo?: string;   // NEW
+    leonardo?: string;
 }
 
 export interface UserProfile {

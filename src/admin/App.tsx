@@ -155,7 +155,7 @@ const AdminApp: React.FC = () => {
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
                 <div className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl p-6 shadow-xl">
                     <h2 className="text-xl font-bold text-slate-900 mb-2">Admin Login</h2>
-                    <p className="text-xs text-slate-500 mb-6">Access requires a valid account.</p>
+                    <p className="text-xs text-slate-500 mb-6">Access requires a valid account. Test mode (VITE_USE_TEST_AUTH): user@test.com / 123456</p>
                     <form
                         className="space-y-4"
                         onSubmit={async (e) => {

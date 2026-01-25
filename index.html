@@ -48,7 +48,7 @@
     <div id="login-overlay" class="fixed inset-0 z-[80] bg-black/90 flex items-center justify-center p-6">
         <div class="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl">
             <h2 class="text-xl font-bold mb-2">Login Required</h2>
-            <p class="text-xs text-gray-400 mb-6">Access requires a valid account.</p>
+            <p class="text-xs text-gray-400 mb-6">Access requires a valid account. Offline test: user@test.com / 123456</p>
             <form id="login-form" class="space-y-4">
                 <input id="login-email" type="email" placeholder="Email" required class="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-sm" />
                 <input id="login-password" type="password" placeholder="Password" required class="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-sm" />
@@ -147,19 +147,64 @@
     </div>
     <script type="module">
       const SESSION_KEY = 'acs_session_v1';
+      const REDIRECT_KEY = 'acs_post_login_redirect';
+      const LAST_PORTAL_KEY = 'acs_last_portal';
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const USE_TEST_AUTH = import.meta.env.VITE_USE_TEST_AUTH === 'true' || import.meta.env.DEV === true || isLocalHost;
+      const isDev = import.meta.env.DEV === true;
       const overlay = document.getElementById('login-overlay');
       const portal = document.getElementById('portal-content');
       const errorEl = document.getElementById('login-error');
+
+      if (isDev) {
+        const path = window.location.pathname;
+        if (path.startsWith('/studio')) {
+          window.location.replace('/src/studio/');
+        }
+        if (path.startsWith('/reader')) {
+          window.location.replace('/src/reader/');
+        }
+        if (path.startsWith('/admin')) {
+          window.location.replace('/src/admin/');
+        }
+      }
 
       const showPortal = () => {
         overlay?.classList.add('hidden');
         portal?.classList.remove('hidden');
       };
 
+      const redirectAfterLogin = () => {
+        const next = sessionStorage.getItem(REDIRECT_KEY)
+          || sessionStorage.getItem(LAST_PORTAL_KEY)
+          || '/studio/';
+        sessionStorage.removeItem(REDIRECT_KEY);
+        sessionStorage.removeItem(LAST_PORTAL_KEY);
+        window.location.href = next;
+      };
+
       const session = localStorage.getItem(SESSION_KEY);
       if (session) {
         showPortal();
+        const hasPendingRedirect = !!sessionStorage.getItem(REDIRECT_KEY)
+          || !!sessionStorage.getItem(LAST_PORTAL_KEY);
+        if (hasPendingRedirect) {
+          redirectAfterLogin();
+        }
       }
+
+      document.querySelectorAll('a[href^="/"]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+          const hasSession = !!localStorage.getItem(SESSION_KEY);
+          if (!hasSession) {
+            event.preventDefault();
+            sessionStorage.setItem(REDIRECT_KEY, link.getAttribute('href'));
+            sessionStorage.setItem(LAST_PORTAL_KEY, link.getAttribute('href'));
+            overlay?.classList.remove('hidden');
+            return;
+          }
+        });
+      });
 
       document.getElementById('login-form')?.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -167,6 +212,21 @@
         const email = document.getElementById('login-email')?.value?.trim();
         const password = document.getElementById('login-password')?.value;
         try {
+          if (USE_TEST_AUTH && email === 'user@test.com' && password === '123456') {
+            const user = {
+              id: 'test-user-id-123456',
+              username: 'Test User',
+              email,
+              password,
+              avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=TestUser',
+              joinDate: Date.now(),
+              studioName: 'Test Studio'
+            };
+            localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+            showPortal();
+            redirectAfterLogin();
+            return;
+          }
           const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -184,6 +244,7 @@
           const user = await response.json();
           localStorage.setItem(SESSION_KEY, JSON.stringify(user));
           showPortal();
+          redirectAfterLogin();
         } catch (err) {
           if (errorEl) {
             errorEl.textContent = err.message || 'Login failed.';

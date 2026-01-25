@@ -433,9 +433,10 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onUpdate
                                                     className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs font-bold w-full"
                                                 >
                                                     <option value="GEMINI">Gemini 3 (Multimodal)</option>
+                                                    <option value="OPENAI">OpenAI</option>
+                                                    <option value="STABILITY">Stability</option>
                                                     <option value="POLLINATIONS">Pollinations (Free)</option>
                                                     <option value="FLUX">Flux</option>
-                                                    <option value="MIDJOURNEY">Midjourney</option>
                                                     <option value="LEONARDO">Leonardo</option>
                                                 </select>
                                             </td>

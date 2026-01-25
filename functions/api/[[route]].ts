@@ -56,10 +56,217 @@ async function hashPassword(password: string, salt: string) {
     return Array.from(new Uint8Array(derivedBits)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        binary += String.fromCharCode(...chunk);
+    }
+    return btoa(binary);
+};
+
+const fetchImageAsDataUrl = async (url: string) => {
+    const res = await fetch(url);
+    if (!res.ok) {
+        throw new Error(`Failed to fetch image url: ${res.status}`);
+    }
+    const contentType = res.headers.get('content-type') || 'image/png';
+    const buffer = await res.arrayBuffer();
+    const base64 = arrayBufferToBase64(buffer);
+    return `data:${contentType};base64,${base64}`;
+};
+
+const extractImageFromJson = (data: any) => {
+    if (!data) return undefined;
+    if (data.imageUrl) return data.imageUrl;
+    if (data.url) return data.url;
+    if (data.image) return data.image;
+    if (data.b64_json) return `data:image/png;base64,${data.b64_json}`;
+    if (data.data?.[0]?.b64_json) return `data:image/png;base64,${data.data[0].b64_json}`;
+    if (data.data?.[0]?.url) return data.data[0].url;
+    if (data.images?.[0]?.url) return data.images[0].url;
+    if (data.generated_images?.[0]?.url) return data.generated_images[0].url;
+    if (data.generations_by_pk?.generated_images?.[0]?.url) return data.generations_by_pk.generated_images[0].url;
+    if (data.result?.image) return data.result.image;
+    if (data.result?.images?.[0]) return data.result.images[0];
+    if (data.output?.[0]) return data.output[0];
+    return undefined;
+};
+
+const handleImageGenerate = async (context: any) => {
+    const body: any = await context.request.json();
+    const provider = body.provider as string;
+    const prompt = body.prompt as string;
+    const width = body.width ? Number(body.width) : undefined;
+    const height = body.height ? Number(body.height) : undefined;
+    const referenceImage = body.referenceImage as string | undefined;
+    const apiKeyOverride = body.apiKey as string | undefined;
+
+    if (!provider || !prompt) {
+        return new Response(JSON.stringify({ error: "Missing provider or prompt." }), { status: 400 });
+    }
+
+    if (provider === 'OPENAI') {
+        const apiKey = apiKeyOverride || context.env.OPENAI_API_KEY;
+        if (!apiKey) return new Response(JSON.stringify({ error: "Missing OPENAI_API_KEY." }), { status: 400 });
+        const model = context.env.OPENAI_IMAGE_MODEL || 'gpt-image-1.5';
+        const size = width && height
+            ? (width >= height ? '1536x1024' : '1024x1536')
+            : '1024x1024';
+        const response = await fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model,
+                prompt,
+                n: 1,
+                size,
+                response_format: 'b64_json'
+            })
+        });
+        if (!response.ok) {
+            const errText = await response.text();
+            return new Response(JSON.stringify({ error: errText || 'OpenAI image generation failed.' }), { status: response.status });
+        }
+        const data = await response.json();
+        let image = extractImageFromJson(data);
+        if (image?.startsWith('http')) image = await fetchImageAsDataUrl(image);
+        return new Response(JSON.stringify({ imageUrl: image }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (provider === 'STABILITY') {
+        const apiKey = apiKeyOverride || context.env.STABILITY_API_KEY;
+        if (!apiKey) return new Response(JSON.stringify({ error: "Missing STABILITY_API_KEY." }), { status: 400 });
+        const endpoint = context.env.STABILITY_IMAGE_URL || 'https://api.stability.ai/v2beta/stable-image/generate/core';
+        const form = new FormData();
+        form.append('prompt', prompt);
+        form.append('output_format', 'png');
+        if (width && height) {
+            form.append('width', String(width));
+            form.append('height', String(height));
+        }
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Accept': 'image/*'
+            },
+            body: form
+        });
+        if (!response.ok) {
+            const errText = await response.text();
+            return new Response(JSON.stringify({ error: errText || 'Stability image generation failed.' }), { status: response.status });
+        }
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.startsWith('image/')) {
+            const buffer = await response.arrayBuffer();
+            const base64 = arrayBufferToBase64(buffer);
+            return new Response(JSON.stringify({ imageUrl: `data:${contentType};base64,${base64}` }), { headers: { 'Content-Type': 'application/json' } });
+        }
+        const data = await response.json();
+        let image = extractImageFromJson(data);
+        if (image?.startsWith('http')) image = await fetchImageAsDataUrl(image);
+        return new Response(JSON.stringify({ imageUrl: image }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (provider === 'FLUX') {
+        const apiKey = apiKeyOverride || context.env.BFL_API_KEY;
+        if (!apiKey) return new Response(JSON.stringify({ error: "Missing BFL_API_KEY." }), { status: 400 });
+        const baseUrl = context.env.BFL_BASE_URL || 'https://api.bfl.ai';
+        const modelPath = context.env.BFL_MODEL_PATH || '/v1/flux-2-max';
+        const payload: any = {
+            prompt,
+            width: width || 1024,
+            height: height || 1024,
+            output_format: 'png'
+        };
+        if (referenceImage) {
+            payload.input_image = referenceImage.replace(/^data:image\/(png|jpg|jpeg|webp);base64,/, "");
+        }
+        const response = await fetch(`${baseUrl}${modelPath}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-key': apiKey
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            const errText = await response.text();
+            return new Response(JSON.stringify({ error: errText || 'Flux image generation failed.' }), { status: response.status });
+        }
+        const data = await response.json();
+        const pollingUrl = data.polling_url || data.pollingUrl;
+        if (!pollingUrl) return new Response(JSON.stringify({ error: "Flux did not return polling_url." }), { status: 502 });
+        let image: string | undefined;
+        for (let i = 0; i < 30; i++) {
+            const poll = await fetch(pollingUrl, { headers: { 'x-key': apiKey } });
+            const pollData = await poll.json();
+            image = extractImageFromJson(pollData);
+            if (image) break;
+            await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+        if (image?.startsWith('http')) image = await fetchImageAsDataUrl(image);
+        if (!image) return new Response(JSON.stringify({ error: "Flux generation timed out." }), { status: 504 });
+        return new Response(JSON.stringify({ imageUrl: image }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (provider === 'LEONARDO') {
+        const apiKey = apiKeyOverride || context.env.LEONARDO_API_KEY;
+        if (!apiKey) return new Response(JSON.stringify({ error: "Missing LEONARDO_API_KEY." }), { status: 400 });
+        const modelId = context.env.LEONARDO_MODEL_ID || '6bef9f1b-29cb-40c7-b9df-32b51c1f67d3';
+        const response = await fetch('https://cloud.leonardo.ai/api/rest/v1/generations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'accept': 'application/json',
+                'authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                prompt,
+                width: width || 1024,
+                height: height || 1024,
+                modelId
+            })
+        });
+        if (!response.ok) {
+            const errText = await response.text();
+            return new Response(JSON.stringify({ error: errText || 'Leonardo image generation failed.' }), { status: response.status });
+        }
+        const data = await response.json();
+        const generationId = data.generationId || data.sdGenerationJob?.generationId || data.sdGenerationJob?.id;
+        if (!generationId) return new Response(JSON.stringify({ error: "Leonardo did not return generation id." }), { status: 502 });
+        let image: string | undefined;
+        for (let i = 0; i < 30; i++) {
+            const poll = await fetch(`https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`, {
+                headers: { 'authorization': `Bearer ${apiKey}`, 'accept': 'application/json' }
+            });
+            const pollData = await poll.json();
+            image = extractImageFromJson(pollData);
+            if (image) break;
+            await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+        if (image?.startsWith('http')) image = await fetchImageAsDataUrl(image);
+        if (!image) return new Response(JSON.stringify({ error: "Leonardo generation timed out." }), { status: 504 });
+        return new Response(JSON.stringify({ imageUrl: image }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    return new Response(JSON.stringify({ error: `Unsupported provider: ${provider}` }), { status: 400 });
+};
+
 export const onRequest = async (context: any) => {
   const url = new URL(context.request.url);
   const method = context.request.method;
   const path = url.pathname.replace('/api/', ''); 
+
+  if (path === 'image/generate' && method === 'POST') {
+      return handleImageGenerate(context);
+  }
 
   // Safely get DB URL
   const dbUrl = context.env.DATABASE_URL;

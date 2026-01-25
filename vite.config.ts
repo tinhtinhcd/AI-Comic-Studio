@@ -68,19 +68,51 @@ export default defineConfig(({ mode }) => {
       fs: {
         allow: [projectRoot]
       },
-      proxy: {
-        '/studio': {
-          target: 'http://localhost:5173/src/studio/index.html',
-          rewrite: (path) => '/src/studio/index.html'
-        },
-        '/reader': {
-          target: 'http://localhost:5173/src/reader/index.html',
-          rewrite: (path) => '/src/reader/index.html'
-        },
-        '/admin': {
-          target: 'http://localhost:5173/src/admin/index.html',
-          rewrite: (path) => '/src/admin/index.html'
-        }
+      configureServer(server) {
+        const studioHtml = path.resolve(projectRoot, 'src/studio/index.html');
+        const readerHtml = path.resolve(projectRoot, 'src/reader/index.html');
+        const adminHtml = path.resolve(projectRoot, 'src/admin/index.html');
+
+        const serveHtml = async (url: string, htmlPath: string, res: any) => {
+          const html = fs.readFileSync(htmlPath, 'utf-8');
+          const transformed = await server.transformIndexHtml(url, html);
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'text/html');
+          res.end(transformed);
+        };
+
+        server.middlewares.use(async (req, res, next) => {
+          const url = req.url || '';
+
+          if (url === '/studio' || url === '/studio/') {
+            await serveHtml('/studio/', studioHtml, res);
+            return;
+          }
+          if (url.startsWith('/studio/')) {
+            req.url = url.replace('/studio', '/src/studio');
+            return next();
+          }
+
+          if (url === '/reader' || url === '/reader/') {
+            await serveHtml('/reader/', readerHtml, res);
+            return;
+          }
+          if (url.startsWith('/reader/')) {
+            req.url = url.replace('/reader', '/src/reader');
+            return next();
+          }
+
+          if (url === '/admin' || url === '/admin/') {
+            await serveHtml('/admin/', adminHtml, res);
+            return;
+          }
+          if (url.startsWith('/admin/')) {
+            req.url = url.replace('/admin', '/src/admin');
+            return next();
+          }
+
+          return next();
+        });
       }
     },
     resolve: {

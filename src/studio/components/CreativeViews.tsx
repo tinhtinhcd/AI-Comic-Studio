@@ -8,12 +8,12 @@ import { MessageCircle, Loader2, Send, FileText, TrendingUp, Upload, Download, B
 // UPDATED FOR 2026 PROJECTIONS - COMIC FOCUS
 const COST_ESTIMATES: Record<string, { cost: string, label: string, color: string }> = {
     'GEMINI': { cost: '~$0.004', label: 'Recommended', color: 'text-blue-600' },
+    'OPENAI': { cost: '~$0.040', label: 'High Quality', color: 'text-green-600' },
+    'STABILITY': { cost: '~$0.010', label: 'Stable Image Core', color: 'text-indigo-600' },
     'POLLINATIONS': { cost: 'Free', label: 'Community', color: 'text-emerald-600' },
-    'MIDJOURNEY': { cost: '~$0.060', label: 'Premium Art', color: 'text-purple-600' },
     'LEONARDO': { cost: '~$0.015', label: 'Comic Specialist', color: 'text-pink-600' },
-    'FLUX': { cost: '~$0.001', label: 'Drafting (Cheap)', color: 'text-emerald-600' },
-    'DEEPSEEK': { cost: '~$0.0005', label: 'Ultra Cheap', color: 'text-indigo-600' },
-    'OPENAI': { cost: '~$0.040', label: 'DALL-E 3', color: 'text-green-600' }
+    'FLUX': { cost: '~$0.014', label: 'Flux (BFL)', color: 'text-emerald-600' },
+    'DEEPSEEK': { cost: '~$0.0005', label: 'Ultra Cheap', color: 'text-indigo-600' }
 };
 
 const safeRender = (value: any): React.ReactNode => {
@@ -285,7 +285,7 @@ export const WriterView: React.FC<any> = (props) => {
 };
 
 export const CharacterDesignerView: React.FC<any> = (props) => {
-    const { project, handleFinishCharacterDesign, handleRegenerateSingleCharacter, handleGenerateAllCharacters, handleUpdateCharacterDescription, handleUpdateCharacterVoice, toggleCharacterLock, handleCharacterUpload, handleCheckConsistency, handleSelectCharacterVariant, role, t, availableVoices, loading, updateProject } = props;
+    const { project, handleFinishCharacterDesign, handleRegenerateSingleCharacter, handleGenerateAllCharacters, handleRegenerateAllCharacters, handleUpdateCharacterDescription, handleUpdateCharacterVoice, toggleCharacterLock, handleCharacterUpload, handleCheckConsistency, handleSelectCharacterVariant, role, t, availableVoices, loading, updateProject } = props;
     const [styleSelections, setStyleSelections] = useState<Record<string, string>>({});
     const [globalStyle, setGlobalStyle] = useState(project.style || 'Japanese Manga (B&W)');
     const [tempApiKey, setTempApiKey] = useState('');
@@ -294,10 +294,18 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
     
     const characters = project.characters || [];
     const isGlobalGenerating = characters.some((c: any) => c.isGenerating);
+    const isQueueBusy = loading || imageQueue.total > 0;
+    const hasStuckGenerating = !isQueueBusy && isGlobalGenerating;
+
+    useEffect(() => {
+        if (!hasStuckGenerating) return;
+        const resetChars = characters.map((c: any) => ({ ...c, isGenerating: false }));
+        updateProject({ characters: resetChars });
+    }, [hasStuckGenerating, characters, updateProject]);
     const handleAnchorUpload = (e: React.ChangeEvent<HTMLInputElement>, charIndex: number) => { const file = (e.target as any).files?.[0]; if (!file) return; const reader = new FileReader(); reader.onloadend = () => { const newChars = [...characters]; newChars[charIndex] = { ...newChars[charIndex], referenceImage: reader.result as string }; updateProject({ characters: newChars }); }; reader.readAsDataURL(file); };
 
     const costInfo = COST_ESTIMATES[selectedProvider];
-    const isKeyOptional = selectedProvider !== 'GEMINI';
+    const isKeyOptional = selectedProvider === 'GEMINI' || selectedProvider === 'POLLINATIONS';
 
     return (
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16 sm:pb-24">
@@ -327,8 +335,10 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 outline-none shadow-sm focus:ring-2 focus:ring-purple-500"
                         >
                             <option value="GEMINI">Gemini</option>
+                            <option value="OPENAI">OpenAI</option>
+                            <option value="STABILITY">Stability</option>
+                            <option value="POLLINATIONS">Pollinations (Free)</option>
                             <option value="FLUX">Flux</option>
-                            <option value="MIDJOURNEY">Midjourney</option>
                             <option value="LEONARDO">Leonardo</option>
                         </select>
                         {costInfo && <span className={`text-[9px] ${costInfo.color} font-bold`}>{costInfo.cost}</span>}
@@ -360,7 +370,10 @@ export const CharacterDesignerView: React.FC<any> = (props) => {
                     </div>
 
                     <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 w-full sm:col-span-2 lg:w-auto">
-                        <button onClick={() => handleGenerateAllCharacters(globalStyle, tempApiKey, selectedProvider)} disabled={isGlobalGenerating || loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 text-xs sm:text-sm whitespace-nowrap">{isGlobalGenerating || loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>} Generate All</button>
+                        <button onClick={() => handleGenerateAllCharacters(globalStyle, tempApiKey, selectedProvider)} disabled={isQueueBusy} className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 text-xs sm:text-sm whitespace-nowrap">{isQueueBusy ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>} Generate All</button>
+                        <button onClick={() => handleRegenerateAllCharacters(globalStyle, tempApiKey, selectedProvider)} disabled={isQueueBusy} className="w-full bg-white text-purple-700 border border-purple-200 hover:border-purple-400 hover:text-purple-800 px-4 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50 text-xs sm:text-sm whitespace-nowrap">
+                            {isQueueBusy ? <Loader2 className="w-4 h-4 animate-spin"/> : <RefreshCw className="w-4 h-4"/>} Regenerate All
+                        </button>
                     </div>
                     <button onClick={handleFinishCharacterDesign} className="w-full sm:col-span-2 lg:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none transition-all text-xs sm:text-sm whitespace-nowrap"><CheckCircle className="w-5 h-5"/> {t('designer.finalize')}</button>
                 </div>
@@ -518,10 +531,11 @@ export const PanelArtistView: React.FC<{
                                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 outline-none shadow-sm focus:ring-2 focus:ring-rose-500"
                             >
                                 <option value="GEMINI">Gemini (Balanced)</option>
+                                <option value="OPENAI">OpenAI</option>
+                                <option value="STABILITY">Stability</option>
                                 <option value="POLLINATIONS">Pollinations (Free)</option>
-                                <option value="FLUX">Flux (Draft / Cheap)</option>
-                                <option value="MIDJOURNEY">Midjourney (Final)</option>
-                                <option value="LEONARDO">Leonardo (Ref)</option>
+                                <option value="FLUX">Flux (BFL)</option>
+                                <option value="LEONARDO">Leonardo</option>
                             </select>
                             {costInfo && (
                                 <span className={`text-[10px] font-bold ${costInfo.color} flex items-center gap-1`}>
