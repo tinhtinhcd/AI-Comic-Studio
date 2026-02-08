@@ -2,97 +2,97 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# AI Comic Studio - Nền tảng sáng tạo truyện tranh bằng AI
+# AI Comic Studio - AI-powered Comic Creation Platform
 
-**Tầm nhìn:** AI Comic Studio là một nền tảng sáng tạo truyện tranh (comic/manga/webtoon) được hỗ trợ bởi AI, cho phép người dùng tạo ra truyện tranh hoàn chỉnh — từ ý tưởng, kịch bản, thiết kế nhân vật, vẽ tranh, lồng tiếng, đến xuất bản — thông qua một hệ thống AI Agent đa vai trò hoạt động như một studio sản xuất ảo.
+**Vision:** AI Comic Studio is an AI-powered platform for creating comics/manga/webtoons, enabling users to produce complete comics—from ideation, scripting, character design, illustration, voice acting, to publishing—through a multi-role AI Agent system acting as a virtual production studio.
 
-## ⚠️ Lưu ý quan trọng: Lộ trình phát triển và Ràng buộc
+## ⚠️ Important Note: Development Roadmap and Constraints
 
-Dự án này là một **lab/learning project** trong giai đoạn đầu, tập trung vào **phát triển ý tưởng và xây dựng MVP cốt lõi**, **không tạo ra sản phẩm thương mại hoặc thu nhập** ở thời điểm hiện tại. Việc triển khai các tính năng tạo doanh thu sẽ được thực hiện khi các điều kiện (đặc biệt là về nguồn vốn và tình trạng visa của founder) cho phép.
+This project is a **lab/learning project** in its initial phase, focusing on **idea development and building a core MVP**, **not generating commercial products or income** at this time. The implementation of revenue-generating features will be carried out when conditions (especially regarding funding and the founder's visa status) permit.
 
-Để tối ưu chi phí và tuân thủ các ràng buộc hiện tại, dự án sẽ được phát triển theo hai giai đoạn chính:
+To optimize costs and comply with current constraints, the project will be developed in two main phases:
 
-### Giai đoạn 1: AI-powered Comic Script Studio (Tập trung vào Kịch bản - MVP)
+### Phase 1: AI-powered Comic Script Studio (Focus on Text-based Scripting - MVP)
 
-*   **Mục tiêu:** Xây dựng một sản phẩm cốt lõi mạnh mẽ trong việc hỗ trợ người dùng tạo ra kịch bản truyện tranh chi tiết (cốt truyện, nhân vật, phân cảnh, lời thoại) hoàn toàn bằng văn bản.
-*   **Điểm nổi bật:**
-    *   Sử dụng AI Text Models (như Google Gemini 2.5 Flash) để phát triển ý tưởng, viết kịch bản, thiết kế nhân vật (mô tả văn bản), kiểm duyệt và kiểm tra tính nhất quán cốt truyện.
-    *   Tập trung vào các AI Agent thuộc bộ phận Editorial và Writers' Room.
-    *   **Ưu tiên chi phí thấp và không tạo ra thu nhập**, hoàn toàn phù hợp với giai đoạn phát triển ý tưởng và ràng buộc visa H1B.
-*   **Giá trị:** Giải quyết pain point lớn cho nhà sáng tạo về ý tưởng và cấu trúc kịch bản, tạo nền tảng vững chắc cho các giai đoạn sau.
+*   **Objective:** Build a robust core product that empowers users to create detailed comic scripts (storyline, characters, panel breakdowns, dialogue) entirely text-based.
+*   **Highlights:**
+    *   Utilizes AI Text Models (like Google Gemini 2.5 Flash) to develop ideas, write scripts, design characters (textual descriptions), censor, and check storyline consistency.
+    *   Focuses on AI Agents from the Editorial and Writers' Room departments.
+    *   **Prioritizes low cost and no income generation**, perfectly aligning with the idea development phase and H1B visa constraints.
+*   **Value:** Solves a major pain point for creators regarding ideation and script structuring, building a strong foundation for subsequent phases.
 
-### Giai đoạn 2: Tích hợp AI Image/Video/TTS Generation (Mở rộng sau)
+### Phase 2: Integrated AI Image/Video/TTS Generation (Expansion Later)
 
-*   **Mục tiêu:** Mở rộng sản phẩm để tích hợp AI tạo sinh hình ảnh, video và lồng tiếng, biến kịch bản đã có thành truyện tranh động hoàn chỉnh.
-*   **Thời điểm:** Sẽ thực hiện khi dự án đã gọi được vốn, có nguồn lực dồi dào hơn và các ràng buộc pháp lý/visa cho founder đã được giải quyết.
-*   **Điểm nổi bật:** Kích hoạt các AI Agent thuộc Art Studio và Post-Production, sử dụng Gemini Image, Video (Veo 3.1) và TTS API.
-
----
-
-## Giá trị cốt lõi (Value Proposition)
-
-*   **Một người = cả studio:** AI đảm nhận từng vai trò chuyên biệt, giúp một người dùng có thể vận hành cả "studio" sản xuất.
-*   **End-to-end pipeline:** Hỗ trợ quy trình 7 bước từ ý tưởng đến xuất bản (dần dần theo các giai đoạn).
-*   **Đa ngôn ngữ:** Tích hợp dịch đa ngôn ngữ tự động, UI song ngữ Việt/Anh.
-*   **Đa phong cách:** AI kiểm tra tính nhất quán trong phong cách nghệ thuật (sẽ phát triển ở Giai đoạn 2).
-
-## Đối tượng người dùng (Target Users)
-
-*   **Creators/Artists** muốn tăng tốc quy trình sáng tạo.
-*   **Writers** muốn chuyển thể kịch bản thành truyện tranh.
-*   **Learners** muốn tìm hiểu về quy trình sản xuất comic/manga.
-*   **Indie publishers** muốn prototype nhanh.
+*   **Objective:** Expand the product to integrate AI-generated images, videos, and voiceovers, transforming existing scripts into complete motion comics.
+*   **Timing:** Will be implemented when the project has secured funding, has more resources, and the legal/visa constraints for the founder have been resolved.
+*   **Highlights:** Activates AI Agents from the Art Studio and Post-Production departments, utilizing Gemini Image, Video (Veo 3.1), and TTS APIs.
 
 ---
 
-## Kiến trúc hệ thống cấp cao (High-Level Architecture - HLD)
+## Core Value Proposition
 
-Dự án được thiết kế với kiến trúc hiện đại, phân tán, và hướng dịch vụ, có khả năng mở rộng từ đầu:
+*   **One Person = An Entire Studio:** AI takes on specialized roles, enabling a single user to operate an entire "production studio."
+*   **End-to-end Pipeline:** Supports a 7-step process from ideation to publishing (gradually across phases).
+*   **Multi-language Support:** Integrated automatic multi-language translation, Vietnamese/English bilingual UI.
+*   **Multi-art Style:** AI checks for consistency in art style (to be developed in Phase 2).
 
-### Ứng dụng đa bề mặt (Multi-Surface App)
+## Target Users
 
-Gồm 4 bề mặt độc lập, được xây dựng qua Vite:
-*   **Landing (`/`):** Trang chủ, điều hướng đến Studio/Reader.
-*   **Studio (`/studio/`):** Workspace sáng tạo chính, yêu cầu đăng nhập. (Trọng tâm chính Giai đoạn 1)
-*   **Reader (`/reader/`):** Trải nghiệm đọc truyện (mobile-first).
-*   **Admin (`/admin/`):** Console quản trị users/projects/stats.
+*   **Creators/Artists** looking to accelerate their creative process.
+*   **Writers** wishing to adapt their scripts into comics.
+*   **Learners** interested in understanding the comic/manga production process.
+*   **Indie publishers** aiming for rapid prototyping.
 
-### Tech Stack cốt lõi
+---
+
+## High-Level Architecture (HLD)
+
+The project is designed with a modern, distributed, and service-oriented architecture, inherently built for scalability:
+
+### Multi-Surface App
+
+Comprising 4 independent surfaces, built via Vite:
+*   **Landing (`/`):** Homepage, navigates to Studio/Reader.
+*   **Studio (`/studio/`):** Main creator workspace, requires login. (Primary focus of Phase 1)
+*   **Reader (`/reader/`):** Comic reading experience (mobile-first).
+*   **Admin (`/admin/`):** Console for managing users/projects/stats.
+
+### Core Tech Stack
 
 *   **Frontend:** React 19, TypeScript, TailwindCSS, Lucide Icons.
 *   **Build:** Vite 5 (multi-target builds).
-*   **AI Engine:** Google Gemini API (`@google/genai`) — Text, Image, Video (Veo), TTS. (Giai đoạn 1 tập trung vào Text).
-*   **AI Providers phụ:** DeepSeek, OpenAI (tùy chọn, cho logic/translation tasks).
+*   **AI Engine:** Google Gemini API (`@google/genai`) — Text, Image, Video (Veo), TTS. (Phase 1 focuses on Text).
+*   **Supplementary AI Providers:** DeepSeek, OpenAI (optional, for logic/translation tasks).
 *   **Database:** Neon Postgres (`@neondatabase/serverless`) — serverless.
 *   **Local Storage:** IndexedDB (offline fallback), localStorage (auth session, settings).
 
-### Dữ liệu và Lưu trữ (Data Flow & Persistence)
+### Data Flow & Persistence
 
-*   **Data Flow:** Quy trình 7 bước từ Pitching đến Distribution được điều phối bởi hệ thống AI Agent.
-*   **Cloud-First API:** Serverless API (`functions/api/[[route]].ts`) sử dụng Neon Postgres cho user, project và admin endpoints.
-*   **Local Fallback:** Nếu backend không khả dụng, dự án được lưu trữ trong IndexedDB, cho phép làm việc offline với giới hạn quota.
-*   **Lựa chọn Lưu trữ Dự án (User Preference):**
-    *   Người dùng có thể chọn lưu dự án trên **Cloud (Neon Postgres)** để đồng bộ hóa và truy cập đa thiết bị, hoặc **Local (IndexedDB)** trên thiết bị hiện tại để hoàn toàn offline và riêng tư.
-    *   Logic này được quản lý bởi `storageService.ts` và tích hợp với backend API.
+*   **Data Flow:** The 7-step process from Pitching to Distribution is orchestrated by the AI Agent system.
+*   **Cloud-First API:** Serverless API (`functions/api/[[route]].ts`) uses Neon Postgres for user, project, and admin endpoints.
+*   **Local Fallback:** If the backend is unavailable, projects are stored in IndexedDB, allowing offline work with a limited quota.
+*   **User Project Storage Preference:**
+    *   Users can choose to save their projects on **Cloud (Neon Postgres)** for synchronization and multi-device access, or **Local (IndexedDB)** on the current device for complete offline and privacy.
+    *   This logic is managed by `storageService.ts` and integrated with the backend API.
 
-### Hệ thống AI Agent
+### AI Agent System
 
-13 Agent Roles đại diện cho một studio sản xuất truyện tranh. Trong Giai đoạn 1, chúng ta tập trung vào các agent Text-based:
+13 Agent Roles represent a comic production studio. In Phase 1, we focus on Text-based agents:
 *   **Editorial:** Project Manager, Market Researcher, Continuity Editor.
 *   **Writers' Room:** Scriptwriter, Censor, Translator.
-*   (Các agent khác như Character Designer, Panel Artist, Cinematographer, Voice Actor, Publisher, Archivist sẽ được phát triển và kích hoạt ở Giai đoạn 2).
+*   (Other agents like Character Designer, Panel Artist, Cinematographer, Voice Actor, Publisher, Archivist will be developed and activated in Phase 2).
 
 ---
 
-## Phát triển cục bộ (Run Locally)
+## Run Locally
 
-**Điều kiện tiên quyết:** Node.js
+**Prerequisites:** Node.js
 
-1.  Cài đặt các phụ thuộc:
+1.  Install dependencies:
     `npm install`
-2.  Thiết lập `API_KEY` của Google Gemini trong `.env.local` của bạn.
-3.  Tạo một người dùng trong database (đăng ký bị vô hiệu hóa).
-4.  Chạy ứng dụng (ví dụ, Studio):
+2.  Set your Google Gemini `API_KEY` in `.env.local`.
+3.  Create a user in the database (registration is disabled).
+4.  Run the app (e.g., Studio):
     `npm run dev:studio`
 
 ---
