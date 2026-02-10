@@ -1,109 +1,150 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# AI Comic Studio – AI-powered Comic Creation Platform
 
-# AI Comic Studio - AI-powered Comic Creation Platform
+**AI Comic Studio** is an AI-powered platform for building complete comics and webtoons—from idea to script to production—through a multi-agent system simulating a real comic studio. The project aims to empower creators and hobbyists to rapidly ideate, structure, and eventually visualize their work. 
 
-**Vision:** AI Comic Studio is an AI-powered platform for creating comics/manga/webtoons, enabling users to produce complete comics—from ideation, scripting, character design, illustration, voice acting, to publishing—through a multi-role AI Agent system acting as a virtual production studio.
-
-## ⚠️ Important Note: Development Roadmap and Constraints
-
-This project is a **lab/learning project** in its initial phase, focusing on **idea development and building a core MVP**, **not generating commercial products or income** at this time. The implementation of revenue-generating features will be carried out when conditions (especially regarding funding and the founder's visa status) permit.
-
-To optimize costs and comply with current constraints, the project will be developed in two main phases:
-
-### Tech Stack with Role Mapping
-
-   * Tech/Tool	Role / Purpose.
-  * React 19 + TailwindCSS	Frontend surfaces (Studio, Reader, Admin).
-  * Vite	Fast, multi-surface build tool.
-  * Gemini AI (Text API)	Agent-based script generation, validation, censor.
-  * Neon Postgres	Cloud DB for user/projects data.
-  * IndexedDB	Offline fallback / privacy-first storage.
-  * Node.js	Backend routing and logic handling.
-
-
-### Phase 1: AI-powered Comic Script Studio (Focus on Text-based Scripting - MVP)
-
-*   **Objective:** Build a robust core product that empowers users to create detailed comic scripts (storyline, characters, panel breakdowns, dialogue) entirely text-based.
-*   **Highlights:**
-    *   Utilizes AI Text Models (like Google Gemini 2.5 Flash) to develop ideas, write scripts, design characters (textual descriptions), censor, and check storyline consistency.
-    *   Focuses on AI Agents from the Editorial and Writers' Room departments.
-    *   **Prioritizes low cost and no income generation**, perfectly aligning with the idea development phase and H1B visa constraints.
-*   **Value:** Solves a major pain point for creators regarding ideation and script structuring, building a strong foundation for subsequent phases.
-
-### Phase 2: Integrated AI Image/Video/TTS Generation (Expansion Later)
-
-*   **Objective:** Expand the product to integrate AI-generated images, videos, and voiceovers, transforming existing scripts into complete motion comics.
-*   **Timing:** Will be implemented when the project has secured funding, has more resources, and the legal/visa constraints for the founder have been resolved.
-*   **Highlights:** Activates AI Agents from the Art Studio and Post-Production departments, utilizing Gemini Image, Video (Veo 3.1), and TTS APIs.
+> 🚧 Phase 1 focuses on the **Comic Script Studio**: a powerful tool to create structured comic scripts using Gemini AI. All visual generation will be introduced in Phase 2. This is a personal, non-commercial project under active development and experimentation.
 
 ---
 
-## Core Value Proposition
+## 🎯 Vision
 
-*   **One Person = An Entire Studio:** AI takes on specialized roles, enabling a single user to operate an entire "production studio."
-*   **End-to-end Pipeline:** Supports a 7-step process from ideation to publishing (gradually across phases).
-*   **Multi-language Support:** Integrated automatic multi-language translation, Vietnamese/English bilingual UI.
-*   **Multi-art Style:** AI checks for consistency in art style (to be developed in Phase 2).
-
-## Target Users
-
-*   **Creators/Artists** looking to accelerate their creative process.
-*   **Writers** wishing to adapt their scripts into comics.
-*   **Learners** interested in understanding the comic/manga production process.
-*   **Indie publishers** aiming for rapid prototyping.
+- **One Person = One Studio**: Use AI agents to perform the roles of project manager, scriptwriter, editor, and translator.
+- **Full Pipeline**: 7-stage production pipeline from idea → script → panel breakdown → later illustration & publishing.
+- **Cost-Efficient**: Text-only MVP with no external image/video generation to minimize cost and comply with current legal constraints.
+- **Future-Proof**: Modular architecture designed for future integration of Gemini Image, Veo (video), and TTS APIs.
 
 ---
 
-## High-Level Architecture (HLD)
+## 🚀 Core Features (Phase 1 – MVP)
 
-The project is designed with a modern, distributed, and service-oriented architecture, inherently built for scalability:
-
-### Multi-Surface App
-
-Comprising 4 independent surfaces, built via Vite:
-*   **Landing (`/`):** Homepage, navigates to Studio/Reader.
-*   **Studio (`/studio/`):** Main creator workspace, requires login. (Primary focus of Phase 1)
-*   **Reader (`/reader/`):** Comic reading experience (mobile-first).
-*   **Admin (`/admin/`):** Console for managing users/projects/stats.
-
-### Core Tech Stack
-
-*   **Frontend:** React 19, TypeScript, TailwindCSS, Lucide Icons.
-*   **Build:** Vite 5 (multi-target builds).
-*   **AI Engine:** Google Gemini API (`@google/genai`) — Text, Image, Video (Veo), TTS. (Phase 1 focuses on Text).
-*   **Supplementary AI Providers:** DeepSeek, OpenAI (optional, for logic/translation tasks).
-*   **Database:** Neon Postgres (`@neondatabase/serverless`) — serverless.
-*   **Local Storage:** IndexedDB (offline fallback), localStorage (auth session, settings).
-
-### Data Flow & Persistence
-
-*   **Data Flow:** The 7-step process from Pitching to Distribution is orchestrated by the AI Agent system.
-*   **Cloud-First API:** Serverless API (`functions/api/[[route]].ts`) uses Neon Postgres for user, project, and admin endpoints.
-*   **Local Fallback:** If the backend is unavailable, projects are stored in IndexedDB, allowing offline work with a limited quota.
-*   **User Project Storage Preference:**
-    *   Users can choose to save their projects on **Cloud (Neon Postgres)** for synchronization and multi-device access, or **Local (IndexedDB)** on the current device for complete offline and privacy.
-    *   This logic is managed by `storageService.ts` and integrated with the backend API.
-
-### AI Agent System
-
-13 Agent Roles represent a comic production studio. In Phase 1, we focus on Text-based agents:
-*   **Editorial:** Project Manager, Market Researcher, Continuity Editor.
-*   **Writers' Room:** Scriptwriter, Censor, Translator.
-*   (Other agents like Character Designer, Panel Artist, Cinematographer, Voice Actor, Publisher, Archivist will be developed and activated in Phase 2).
+| Feature                         | Description                                                                 |
+|---------------------------------|-----------------------------------------------------------------------------|
+| 📝 Script Creation              | Use Gemini AI to develop storylines, characters, and dialogue.              |
+| 🧠 AI Agent System              | Editorial and Writers' Room agents to guide users through creation.         |
+| 🔄 Offline/Online Data Handling | Projects can be stored locally (IndexedDB) or synced via Neon Postgres.     |
+| 🌐 Bilingual UI                 | English-Vietnamese switchable interface for wider accessibility.            |
+| 📦 Modular Architecture         | Vite-powered multi-surface app for studio, reader, and admin tools.         |
 
 ---
 
-## Run Locally
+## 🧱 Technology Stack
 
-**Prerequisites:** Node.js
+| Layer          | Tech Stack                                                                 |
+|----------------|-----------------------------------------------------------------------------|
+| Frontend       | React 19, TypeScript, TailwindCSS, Lucide Icons                            |
+| Build System   | Vite 5 (multi-surface targets: Studio, Reader, Admin, Landing)             |
+| AI Engine      | Gemini API (Text only for Phase 1), with future integration of Image/Video |
+| Backend API    | Serverless functions (Node.js) with Neon Postgres                          |
+| Storage        | Cloud: Neon Serverless Postgres / Local: IndexedDB                         |
+| Auth & Session | localStorage, manual account creation (no registration yet)                |
 
-1.  Install dependencies:
-    `npm install`
-2.  Set your Google Gemini `API_KEY` in `.env.local`.
-3.  Create a user in the database (registration is disabled).
-4.  Run the app (e.g., Studio):
-    `npm run dev:studio`
+---
+
+## 📚 7-Step Comic Creation Pipeline
+
+1. **Pitching** – Define theme, tone, and genre.
+2. **Character Setup** – Build character bios and motivations.
+3. **Storyline** – Use AI to draft story arcs and key events.
+4. **Panel Breakdown** – Convert scripts into visual panel instructions.
+5. **Dialogue** – Auto-generate multi-language dialogue.
+6. **Visual Generation** *(Phase 2)* – Use Gemini Image/Veo API to illustrate panels.
+7. **Publishing** *(Phase 2)* – Export to PDF/EPUB or publish to Reader portal.
+
+---
+
+## 🧠 AI Agent System
+
+The system simulates a virtual comic production studio with 13 specialized roles (Phase 1 focuses on text roles only):
+
+| Department     | Agent Role           | Function                            | Status    |
+|----------------|----------------------|-------------------------------------|-----------|
+| Editorial      | Project Manager      | Oversees flow and enforces constraints | ✅ Phase 1 |
+| Editorial      | Market Researcher    | Suggests trends and tone ideas         | ✅ Phase 1 |
+| Editorial      | Continuity Editor    | Maintains consistency in plot         | ✅ Phase 1 |
+| Writers' Room  | Scriptwriter         | Generates and edits stories           | ✅ Phase 1 |
+| Writers' Room  | Censor               | Flags inappropriate content           | ✅ Phase 1 |
+| Writers' Room  | Translator           | Adds multi-language dialogue          | ✅ Phase 1 |
+| Art Studio     | Character Designer   | Converts bios to image prompts        | 🔜 Phase 2 |
+| Art Studio     | Panel Artist         | AI image rendering per panel          | 🔜 Phase 2 |
+| Voice/Media    | Voice Actor          | TTS voice for characters              | 🔜 Phase 2 |
+| Archive        | Publisher, Archivist | Distribution and export               | 🔜 Phase 2 |
+
+---
+
+## 🖥️ App Surfaces
+
+| Surface  | Path          | Description                                 |
+|----------|---------------|---------------------------------------------|
+| Landing  | `/`           | Homepage + intro                            |
+| Studio   | `/studio/`    | Main comic creation workspace (requires login) |
+| Reader   | `/reader/`    | Comic reading experience (mobile-friendly)  |
+| Admin    | `/admin/`     | Admin interface (users, stats, moderation)  |
+
+---
+
+## 🗃️ Project Storage Options
+
+- **Cloud Sync (Neon Postgres)** – Projects stored serverlessly, sync across devices.
+- **Local Only (IndexedDB)** – Offline-friendly, no network dependency, more privacy.
+
+Users can toggle storage options per project.
+
+---
+
+## 🛠️ How to Run Locally
+
+### Prerequisites:
+- Node.js
+- Google Gemini API Key
+
+### Setup:
+```bash
+npm install
+cp .env.example .env.local
+# Add your Gemini API_KEY in .env.local
+npm run dev:studio
+```
+
+> Note: Registration is disabled; you must manually insert your user via database for now.
+
+---
+
+## 📁 Folder Structure
+
+```bash
+├── /studio/         # Creator UI
+├── /reader/         # Comic viewer
+├── /admin/          # Admin dashboard
+├── /functions/api/  # Serverless API endpoints
+├── /agents/         # AI agent definitions
+├── /services/       # Storage, auth, AI orchestration
+├── /public/         # Assets and screenshots
+└── README.md
+```
+
+---
+
+## 📌 Legal & Usage Notes
+
+> ⚠️ AI Comic Studio is an experimental personal project under active development. It is not intended for commercial deployment. All AI-generated content is for educational or demo use only. Compliance with Google Gemini API terms is expected.
+
+---
+
+## 📈 Roadmap
+
+- [x] Text-only Studio (Phase 1)
+- [x] AI Agent orchestration
+- [ ] Public demo with local project save
+- [ ] Image + TTS generation (Phase 2)
+- [ ] Marketplace for community scripts/assets
+
+---
+
+## 🙋 Contact
+
+For questions or collaboration:
+
+- Email: **tinhtinhcd@gmail.com**
+- LinkedIn: [linkedin.com/in/lyvantinh3110](https://www.linkedin.com/in/lyvantinh3110)
 
 ---
