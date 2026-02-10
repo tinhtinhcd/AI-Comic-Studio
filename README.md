@@ -38,6 +38,39 @@
 | Storage        | Cloud: Neon Serverless Postgres / Local: IndexedDB                         |
 | Auth & Session | localStorage, manual account creation (no registration yet)                |
 
+## 🧱 System Architecture
+
+AI Comic Studio is designed with a modular and scalable architecture that separates frontend, backend, and AI orchestration concerns.
+
+### 🧩 Key Layers
+
+- **Frontend (4 Surfaces)**: Built with Vite + React 19.
+  - `/studio`: Main editor and AI control UI
+  - `/reader`: Comic viewer (mobile-first)
+  - `/admin`: Management console
+  - `/`: Marketing landing page
+
+- **AI Orchestration (Agent Layer)**:
+  - Written in TypeScript, acts as controller for AI-based tasks (story writing, translation, censorship).
+  - Modular design: each agent handles one responsibility.
+  - Future extension: pluggable agent system for image, voice, animation.
+
+- **Backend API (Serverless Functions)**:
+  - REST-style routes under `functions/api/*`.
+  - Built using Node.js, TypeScript.
+  - Data persistence: Neon Postgres (Cloud) or IndexedDB (Offline).
+
+- **Data Layer**:
+  - **Cloud (Postgres)**: For user, project, collaboration sync.
+  - **Local (IndexedDB)**: Enables offline work, syncs when online.
+  - Users choose storage mode dynamically (via `storageService.ts`).
+
+### 🔐 Security and Performance
+
+- Session stored in `localStorage`, scoped to device.
+- Project data stored per-device or per-user with fallback sync mechanism.
+- Designed with cost efficiency and serverless scale-in-mind.
+
 ---
 
 ## 📚 7-Step Comic Creation Pipeline
