@@ -12,6 +12,16 @@ This project is a **lab/learning project** in its initial phase, focusing on **i
 
 To optimize costs and comply with current constraints, the project will be developed in two main phases:
 
+## Tech Stack with Role Mapping
+
+Tech/Tool	Role / Purpose
+React 19 + TailwindCSS	Frontend surfaces (Studio, Reader, Admin)
+Vite	Fast, multi-surface build tool
+Gemini AI (Text API)	Agent-based script generation, validation, censor
+Neon Postgres	Cloud DB for user/projects data
+IndexedDB	Offline fallback / privacy-first storage
+Node.js	Backend routing and logic handling
+
 ### Phase 1: AI-powered Comic Script Studio (Focus on Text-based Scripting - MVP)
 
 *   **Objective:** Build a robust core product that empowers users to create detailed comic scripts (storyline, characters, panel breakdowns, dialogue) entirely text-based.
