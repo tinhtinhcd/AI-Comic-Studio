@@ -1,0 +1,149 @@
+<mxfile host="app.diagrams.net" modified="2025-02-10T21:34:00.000Z" agent="5.0" etag="your-etag" version="21.1.2" type="device">
+  <diagram name="Multi-Surface Application Architecture" id="multi-surface">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Single Codebase -->
+        <mxCell id="codebase" value="Single Codebase&lt;br/&gt;AI Comic Studio&lt;br/&gt;Monorepo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#7b1fa2;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1080" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- Vite Multi-Target Config -->
+        <mxCell id="vite-config" value="Vite Multi-Target Config" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="180" width="1080" height="100" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="target-studio" value="TARGET=studio" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e8f5e8;strokeColor=#2e7d32;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="80" y="220" width="200" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="target-reader" value="TARGET=reader" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e8f5e8;strokeColor=#2e7d32;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="320" y="220" width="200" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="target-admin" value="TARGET=admin" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e8f5e8;strokeColor=#2e7d32;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="560" y="220" width="200" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="target-landing" value="TARGET=landing" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e8f5e8;strokeColor=#2e7d32;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="220" width="200" height="50" as="geometry" />
+        </mxCell>
+        
+        <!-- Studio Surface -->
+        <mxCell id="studio-surface" value="Studio Surface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#e65100;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="320" width="240" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="studio-features" value="• Agent Workspace&lt;br/&gt;• Project Management&lt;br/&gt;• AI Integration" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="60" y="360" width="200" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- Reader Surface -->
+        <mxCell id="reader-surface" value="Reader Surface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e8;strokeColor=#2e7d32;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="320" y="320" width="240" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="reader-features" value="• Comic Reading&lt;br/&gt;• Mobile First&lt;br/&gt;• Chapter Navigation" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="340" y="360" width="200" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- Admin Surface -->
+        <mxCell id="admin-surface" value="Admin Surface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce4ec;strokeColor=#c2185b;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="560" y="320" width="240" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="admin-features" value="• User Management&lt;br/&gt;• Analytics&lt;br/&gt;• Settings" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="580" y="360" width="200" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- Landing Surface -->
+        <mxCell id="landing-surface" value="Landing Surface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#7b1fa2;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="800" y="320" width="240" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="landing-features" value="• Project Showcase&lt;br/&gt;• Navigation&lt;br/&gt;• Sign Up" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="820" y="360" width="200" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- Deployment -->
+        <mxCell id="deployment" value="Independent Deployment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e0e0;strokeColor=#424242;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="540" width="1080" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="deploy-studio" value="/studio/" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="120" y="560" width="80" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="deploy-reader" value="/reader/" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="360" y="560" width="80" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="deploy-admin" value="/admin/" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="600" y="560" width="80" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="deploy-landing" value="/" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="840" y="560" width="80" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- Connections -->
+        <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="codebase" target="vite-config">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="target-studio" target="studio-surface">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="target-reader" target="reader-surface">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="target-admin" target="admin-surface">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="target-landing" target="landing-surface">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="studio-surface" target="deploy-studio">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="reader-surface" target="deploy-reader">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="admin-surface" target="deploy-admin">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="landing-surface" target="deploy-landing">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -10,21 +10,35 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleDemoLogin = async () => {
         setError('');
         setLoading(true);
 
         try {
-            const user = await AuthService.login(email, password);
-            onLogin(user);
+            // Hardcode demo user for public access
+            const demoUser: UserProfile = {
+                id: 'demo-user-id',
+                email: 'demo@ai-comic.studio',
+                username: 'Demo User',
+                joinDate: Date.now(),
+                studioName: 'Demo Studio',
+                avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=DemoUser',
+                bio: "Demo account for public access.",
+                stats: { projectsCount: 0, chaptersCount: 0, charactersCount: 0 }
+            };
+            
+            // Store in localStorage for persistence
+            localStorage.setItem('acs_session_v1', JSON.stringify(demoUser));
+            
+            // Simulate loading for UX
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            onLogin(demoUser);
         } catch (err: any) {
-            setError(err.message);
+            setError('Failed to access demo. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -46,25 +60,32 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                     </div>
                     <h1 className="text-5xl font-black mb-6 font-comic tracking-wider">AI COMIC STUDIO</h1>
                     <p className="text-xl text-indigo-200 font-medium leading-relaxed mb-8">
-                        The world's first collaborative AI agent system for professional comic production. 
-                        Script, Draw, and Publish in one seamless workflow.
+                        Experience the future of comic creation with AI-powered agents. 
+                        Script, design, and publish in one seamless workflow.
                     </p>
                     
                     <div className="flex justify-center gap-4 text-sm font-bold tracking-widest uppercase">
                         <div className="flex flex-col items-center gap-2">
                             <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm"><BookOpen className="w-6 h-6"/></div>
-                            <span>Story</span>
+                            <span>Script</span>
                         </div>
                         <div className="w-12 h-px bg-white/20 self-center"></div>
                         <div className="flex flex-col items-center gap-2">
                             <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm"><Palette className="w-6 h-6"/></div>
-                            <span>Art</span>
+                            <span>Design</span>
                         </div>
                         <div className="w-12 h-px bg-white/20 self-center"></div>
                         <div className="flex flex-col items-center gap-2">
                             <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm"><Sparkles className="w-6 h-6"/></div>
-                            <span>Magic</span>
+                            <span>Create</span>
                         </div>
+                    </div>
+                    
+                    <div className="mt-8 p-4 bg-white/10 rounded-xl backdrop-blur-sm">
+                        <p className="text-sm text-indigo-200">
+                            <strong>Demo Access Available</strong><br/>
+                            Try all features without registration
+                        </p>
                     </div>
                 </div>
             </div>
@@ -79,54 +100,33 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                     <div className="text-center lg:text-left">
                         <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center justify-center lg:justify-start gap-3">
                             <LogIn className="w-8 h-8 text-indigo-600"/>
-                            Creator Login
+                            Demo Access
                         </h2>
                         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                            Log in to manage your projects and assets.
+                            Try AI Comic Studio with our demo account. No login required.
                         </p>
                     </div>
 
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">Email Address</label>
-                            <input
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                                placeholder="name@example.com"
-                            />
+                    {error && (
+                        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm font-medium flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                            {error}
                         </div>
+                    )}
 
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">Password</label>
-                            <input
-                                type="password"
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                                placeholder="••••••••"
-                            />
-                        </div>
+                    <button
+                        onClick={handleDemoLogin}
+                        disabled={loading}
+                        className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        {loading ? <Loader2 className="w-5 h-5 animate-spin"/> : <ArrowRight className="w-5 h-5"/>}
+                        Try Demo Now
+                    </button>
 
-                        {error && (
-                            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm font-medium flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                {error}
-                            </div>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all disabled:opacity-70 disabled:cursor-not-allowed"
-                        >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin"/> : <ArrowRight className="w-5 h-5"/>}
-                            Access Dashboard
-                        </button>
-                    </form>
+                    <div className="text-center text-xs text-gray-500 dark:text-gray-400">
+                        <p>Demo account with full access to all features</p>
+                        <p className="mt-1">No registration or API key required</p>
+                    </div>
                 </div>
                 
                 <div className="mt-10 md:absolute md:bottom-6 text-xs text-gray-400 dark:text-gray-600">

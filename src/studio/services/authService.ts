@@ -14,49 +14,39 @@ export const register = async (): Promise<UserProfile> => {
 };
 
 export const login = async (email: string, password: string): Promise<UserProfile> => {
-    if (USE_TEST_AUTH && email === 'user@test.com' && password === '123456') {
+    // Always use local storage for demo/public access
+    if (email === 'demo@ai-comic.studio' || email === 'user@test.com') {
         const testUser: UserProfile = {
-            id: 'test-user-id-123456',
-            username: 'Test User',
+            id: email === 'demo@ai-comic.studio' ? 'demo-user-id' : 'test-user-id-123456',
+            username: email === 'demo@ai-comic.studio' ? 'Demo User' : 'Test User',
             email,
             password,
-            avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=TestUser',
+            avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${email === 'demo@ai-comic.studio' ? 'DemoUser' : 'TestUser'}`,
             joinDate: Date.now(),
-            studioName: 'Test Studio',
-            bio: 'Account generated for offline testing.',
+            studioName: email === 'demo@ai-comic.studio' ? 'Demo Studio' : 'Test Studio',
+            bio: email === 'demo@ai-comic.studio' ? 'Demo account for public access.' : 'Account generated for offline testing.',
             credits: 1000,
             stats: { projectsCount: 0, chaptersCount: 0, charactersCount: 0 }
         };
         localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(testUser));
         return testUser;
     }
-    try {
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-
-        if (!response.ok) {
-            let message = 'Invalid credentials.';
-            try {
-                const err = await response.json();
-                message = err.error || message;
-            } catch (e) {
-                // Ignore parse errors.
-            }
-            if (response.status === 503) {
-                message = "Database not available.";
-            }
-            throw new Error(message);
-        }
-
-        const user = await response.json();
-        localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(user));
-        return user;
-    } catch (e: any) {
-        throw e;
-    }
+    
+    // For any other credentials, create a basic user (for demo purposes)
+    const basicUser: UserProfile = {
+        id: `user-${Date.now()}`,
+        username: email.split('@')[0],
+        email,
+        password,
+        avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${email}`,
+        joinDate: Date.now(),
+        studioName: 'User Studio',
+        bio: "Demo account created for testing.",
+        credits: 1000,
+        stats: { projectsCount: 0, chaptersCount: 0, charactersCount: 0 }
+    };
+    localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(basicUser));
+    return basicUser;
 };
 
 export const logout = () => {
@@ -73,7 +63,7 @@ export const getCurrentUser = (): UserProfile | null => {
 };
 
 export const updateUserProfile = async (id: string, updates: Partial<UserProfile>): Promise<UserProfile> => {
-    // Optimistic Update
+    // Optimistic Update - Local storage only for demo
     const current = getCurrentUser();
     if (!current) throw new Error("No session");
     
@@ -83,15 +73,7 @@ export const updateUserProfile = async (id: string, updates: Partial<UserProfile
         localStorage.setItem(STORAGE_KEY_AI_PREFS, JSON.stringify(updates.aiPreferences));
     }
 
-    try {
-        await fetch('/api/admin/user/update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, updates })
-        });
-    } catch (e) {
-        console.warn("Failed to sync profile update to cloud.");
-    }
-
+    // Skip cloud sync for demo - local storage only
+    console.log("Profile updated locally (demo mode)");
     return updatedUser;
 };

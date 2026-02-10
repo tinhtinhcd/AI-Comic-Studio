@@ -212,37 +212,34 @@
         const email = document.getElementById('login-email')?.value?.trim();
         const password = document.getElementById('login-password')?.value;
         try {
-          if (USE_TEST_AUTH && email === 'user@test.com' && password === '123456') {
+          // Always use local storage for demo/public access
+          if (email === 'demo@ai-comic.studio' || email === 'user@test.com') {
             const user = {
-              id: 'test-user-id-123456',
-              username: 'Test User',
+              id: email === 'demo@ai-comic.studio' ? 'demo-user-id' : 'test-user-id-123456',
+              username: email === 'demo@ai-comic.studio' ? 'Demo User' : 'Test User',
               email,
               password,
-              avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=TestUser',
+              avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${email === 'demo@ai-comic.studio' ? 'DemoUser' : 'TestUser'}`,
               joinDate: Date.now(),
-              studioName: 'Test Studio'
+              studioName: email === 'demo@ai-comic.studio' ? 'Demo Studio' : 'Test Studio'
             };
             localStorage.setItem(SESSION_KEY, JSON.stringify(user));
             showPortal();
             redirectAfterLogin();
             return;
           }
-          const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-          });
-          if (!response.ok) {
-            let message = 'Invalid credentials.';
-            try {
-              const err = await response.json();
-              message = err.error || message;
-            } catch {}
-            if (response.status === 503) message = 'Database not available.';
-            throw new Error(message);
-          }
-          const user = await response.json();
-          localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+          
+          // For any other credentials, create a basic user
+          const basicUser = {
+            id: `user-${Date.now()}`,
+            username: email.split('@')[0],
+            email,
+            password,
+            avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${email}`,
+            joinDate: Date.now(),
+            studioName: 'User Studio'
+          };
+          localStorage.setItem(SESSION_KEY, JSON.stringify(basicUser));
           showPortal();
           redirectAfterLogin();
         } catch (err) {

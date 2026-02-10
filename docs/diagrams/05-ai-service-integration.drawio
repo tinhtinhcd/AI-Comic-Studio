@@ -1,0 +1,132 @@
+<mxfile host="app.diagrams.net" modified="2025-02-10T21:34:00.000Z" agent="5.0" etag="your-etag" version="21.1.2" type="device">
+  <diagram name="AI Service Integration Architecture" id="ai-service">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- AI Service Layer -->
+        <mxCell id="ai-service-layer" value="AI Service Layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1080" height="120" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="text-generation" value="Text Generation" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e8f5e8;strokeColor=#2e7d32;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="80" y="80" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="image-generation" value="Image Generation" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e8f5e8;strokeColor=#2e7d32;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="280" y="80" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="video-generation" value="Video Generation" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e8f5e8;strokeColor=#2e7d32;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="480" y="80" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Google APIs -->
+        <mxCell id="google-apis" value="Google APIs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#e65100;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="1080" height="120" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="gemini-text" value="Gemini Text API" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="80" y="240" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="gemini-vision" value="Gemini Vision API" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="280" y="240" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="veo-video" value="Veo Video API" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="480" y="240" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Request Management -->
+        <mxCell id="request-management" value="Request Management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#7b1fa2;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="360" width="1080" height="120" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="api-key-mgmt" value="API Key Management&lt;br/&gt;(Dynamic Selection)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e6d0de;strokeColor=#996699;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="400" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rate-limiting" value="Rate Limiting&lt;br/&gt;(Queue System)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e6d0de;strokeColor=#996699;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="280" y="400" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="error-handling" value="Error Handling&lt;br/&gt;(Fallback Chains)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e6d0de;strokeColor=#996699;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="400" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="response-caching" value="Response Caching&lt;br/&gt;(Performance Optimization)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e6d0de;strokeColor=#996699;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="680" y="400" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Connections -->
+        <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="text-generation" target="gemini-text">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="image-generation" target="gemini-vision">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="video-generation" target="veo-video">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="gemini-text" target="api-key-mgmt">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="gemini-vision" target="api-key-mgmt">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="veo-video" target="api-key-mgmt">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="api-key-mgmt" target="rate-limiting">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="rate-limiting" target="error-handling">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="error-handling" target="response-caching">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Additional Components -->
+        <mxCell id="request-flow" value="Request Flow" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="880" y="280" width="100" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="flow-arrow" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="request-flow" target="video-generation">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

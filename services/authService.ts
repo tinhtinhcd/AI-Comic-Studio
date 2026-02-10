@@ -13,46 +13,37 @@ export const register = async (): Promise<UserProfile> => {
 };
 
 export const login = async (email: string, password: string): Promise<UserProfile> => {
-    if (USE_TEST_AUTH && email === 'user@test.com' && password === '123456') {
+    // Always use local storage for demo/public access
+    if (email === 'demo@ai-comic.studio' || email === 'user@test.com') {
         const testUser: UserProfile = {
-            id: 'test-user-id-123456',
+            id: email === 'demo@ai-comic.studio' ? 'demo-user-id' : 'test-user-id-123456',
             email,
             password,
-            username: 'Test User',
+            username: email === 'demo@ai-comic.studio' ? 'Demo User' : 'Test User',
             joinDate: Date.now(),
-            studioName: 'Test Studio',
-            avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=TestUser',
-            bio: "Account generated for offline testing.",
+            studioName: email === 'demo@ai-comic.studio' ? 'Demo Studio' : 'Test Studio',
+            avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${email === 'demo@ai-comic.studio' ? 'DemoUser' : 'TestUser'}`,
+            bio: email === 'demo@ai-comic.studio' ? "Demo account for public access." : "Account generated for offline testing.",
             stats: { projectsCount: 0, chaptersCount: 0, charactersCount: 0 }
         };
         localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(testUser));
         return testUser;
     }
-    try {
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-
-        if (!response.ok) {
-            let message = 'Invalid credentials.';
-            try {
-                const err = await response.json();
-                message = err.error || message;
-            } catch (e) {}
-            if (response.status === 503) {
-                message = "Database not available.";
-            }
-            throw new Error(message);
-        }
-
-        const user = await response.json();
-        localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(user));
-        return user;
-    } catch (e: any) {
-        throw e;
-    }
+    
+    // For any other credentials, create a basic user (for demo purposes)
+    const basicUser: UserProfile = {
+        id: `user-${Date.now()}`,
+        email,
+        password,
+        username: email.split('@')[0],
+        joinDate: Date.now(),
+        studioName: 'User Studio',
+        avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${email}`,
+        bio: "Demo account created for testing.",
+        stats: { projectsCount: 0, chaptersCount: 0, charactersCount: 0 }
+    };
+    localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(basicUser));
+    return basicUser;
 };
 
 export const logout = () => {
