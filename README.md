@@ -57,14 +57,13 @@ graph TD
     G --> G3[Translator Agent]
     G --> G4[Continuity Editor Agent]
 
-    G -->|API Request| H>Gemini API (Text)]
+    G -->|API Request| H[Gemini API (Text)]
 
     style B fill:#f3f3f3,stroke:#333
     style D fill:#e0f7fa,stroke:#333
     style E fill:#fff3e0,stroke:#333
     style F fill:#fff3e0,stroke:#333
     style G fill:#fce4ec,stroke:#333
-
 
 ## 🧱 System Architecture
 
