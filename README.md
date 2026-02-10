@@ -14,13 +14,20 @@ To optimize costs and comply with current constraints, the project will be devel
 
 ## Tech Stack with Role Mapping
 
-Tech/Tool	Role / Purpose
-React 19 + TailwindCSS	Frontend surfaces (Studio, Reader, Admin)
-Vite	Fast, multi-surface build tool
-Gemini AI (Text API)	Agent-based script generation, validation, censor
-Neon Postgres	Cloud DB for user/projects data
-IndexedDB	Offline fallback / privacy-first storage
-Node.js	Backend routing and logic handling
+Tech/Tool	Role / Purpose.
+
+React 19 + TailwindCSS	Frontend surfaces (Studio, Reader, Admin).
+
+Vite	Fast, multi-surface build tool.
+
+Gemini AI (Text API)	Agent-based script generation, validation, censor.
+
+Neon Postgres	Cloud DB for user/projects data.
+
+IndexedDB	Offline fallback / privacy-first storage.
+
+Node.js	Backend routing and logic handling.
+
 
 ### Phase 1: AI-powered Comic Script Studio (Focus on Text-based Scripting - MVP)
 
