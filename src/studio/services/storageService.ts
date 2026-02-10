@@ -112,30 +112,12 @@ export const saveWorkInProgress = async (project: ComicProject): Promise<{ succe
         lastModified: Date.now()
     };
 
+    // 1. Skip Cloud API for demo - Local storage only
     let cloudSuccess = false;
-    let cloudMessage = "";
+    let cloudMessage = "Demo mode - local storage only";
 
-    // 1. Try Cloud API
-    try {
-        const res = await fetch('/api/projects/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ project: projectToSave, isActive: true })
-        });
-
-        if (res.ok) {
-            cloudSuccess = true;
-        } else {
-            const errorData = await res.json();
-            // Critical Logic Error (like Quota Full) should stop us from confusing user with local save
-            if (res.status === 403 && errorData.error === "SLOTS_FULL") {
-                return { success: false, message: "SLOTS_FULL" };
-            }
-            cloudMessage = errorData.error || "Auth Failed";
-        }
-    } catch (e: any) {
-        cloudMessage = e.message;
-    }
+    // Always use local storage for demo
+    console.log("Saving project locally (demo mode)");
 
     if (cloudSuccess) {
         return { success: true, id: projectToSave.id };
@@ -158,10 +140,8 @@ export const saveWorkInProgress = async (project: ComicProject): Promise<{ succe
 };
 
 export const deleteActiveProject = async (id: string): Promise<void> => {
-    // Try Cloud
-    try {
-        await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-    } catch (e) {}
+    // Skip Cloud - Local storage only for demo
+    console.log("Deleting project locally (demo mode)");
 
     // Always Delete Local
     await dbAction(STORE_PROJECTS, 'readwrite', (store) => store.delete(id));
@@ -173,34 +153,24 @@ export const saveProjectToLibrary = async (project: ComicProject): Promise<void>
     const projectToSave = { ...project };
     if (!projectToSave.id) projectToSave.id = crypto.randomUUID();
     
-    // Try Cloud
-    try {
-        await fetch('/api/projects/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ project: projectToSave, isActive: false })
-        });
-    } catch (e) {}
+    // Skip Cloud - Local storage only for demo
+    console.log("Saving project to library locally (demo mode)");
 
     // Save Local
     await dbAction(STORE_LIBRARY, 'readwrite', (store) => store.put(projectToSave));
 };
 
 export const getLibrary = async (userId?: string): Promise<ComicProject[]> => {
-    // Try Cloud
-    try {
-        let url = '/api/projects?type=library';
-        if (userId) url += `&userId=${userId}`;
-        const res = await fetch(url);
-        if (res.ok) return await res.json();
-    } catch (e) {}
+    // Skip Cloud - Local storage only for demo
+    console.log("Loading library from local storage (demo mode)");
 
-    // Fallback Local
+    // Always return local library
     return await dbAction<ComicProject[]>(STORE_LIBRARY, 'readonly', (store) => store.getAll());
 };
 
 export const deleteProjectFromLibrary = async (id: string): Promise<void> => {
-    try { await fetch(`/api/projects/${id}`, { method: 'DELETE' }); } catch(e){}
+    // Skip Cloud - Local storage only for demo
+    console.log("Deleting project from library locally (demo mode)");
     await dbAction(STORE_LIBRARY, 'readwrite', (store) => store.delete(id));
 };
 

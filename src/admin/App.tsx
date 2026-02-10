@@ -90,18 +90,11 @@ const AdminApp: React.FC = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            // Load Stats
-            const statsRes = await fetch('/api/admin/stats');
-            if (statsRes.ok) setStats(await statsRes.json());
-
-            // Load specific tab data
-            if (activeTab === 'USERS') {
-                const usersRes = await fetch('/api/admin/users');
-                if (usersRes.ok) setUsers(await usersRes.json());
-            } else if (activeTab === 'CONTENT') {
-                const projRes = await fetch('/api/admin/projects');
-                if (projRes.ok) setProjects(await projRes.json());
-            }
+            // Skip Cloud API for demo - Set empty data
+            console.log("Admin: Loading data in demo mode (local storage only)");
+            setStats({ totalUsers: 0, activeProjects: 0, revenue: 0, flaggedContent: 0 });
+            setUsers([]);
+            setProjects([]);
         } catch (e) {
             console.error("Admin Load Failed", e);
         } finally {
@@ -110,29 +103,17 @@ const AdminApp: React.FC = () => {
     };
 
     const handleUpdateUser = async (updatedUser: UserProfile) => {
-        try {
-            const res = await fetch('/api/admin/user/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: updatedUser.id, updates: updatedUser })
-            });
-            if (res.ok) {
-                setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-                setEditingUser(null);
-            }
-        } catch (e) {
-            alert("Failed to update user");
-        }
+        // Skip Cloud API for demo - Local update only
+        console.log("Admin: Updating user locally (demo mode)");
+        setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+        setEditingUser(null);
     };
 
     const handleDeleteProject = async (id: string) => {
         if (!confirm("Are you sure you want to PERMANENTLY delete this project?")) return;
-        try {
-            await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-            setProjects(prev => prev.filter(p => p.id !== id));
-        } catch (e) {
-            alert("Delete failed");
-        }
+        // Skip Cloud API for demo - Local delete only
+        console.log("Admin: Deleting project locally (demo mode)");
+        setProjects(prev => prev.filter(p => p.id !== id));
     };
 
     useEffect(() => {
