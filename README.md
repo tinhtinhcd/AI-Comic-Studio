@@ -38,29 +38,6 @@
 | Storage        | Cloud: Neon Serverless Postgres / Local: IndexedDB                         |
 | Auth & Session | localStorage, manual account creation (no registration yet)                |
 
-## 🗺️ System Architecture Diagram (Mermaid)
-
-```mermaid
-graph TD
-    A[User Interface] -->|HTTP| B(Frontend App - React/Vite)
-    B --> C1[Studio Editor]
-    B --> C2[Reader]
-    B --> C3[Admin Console]
-    
-    B -->|API Calls| D(Serverless API Functions)
-    D --> E[Neon Postgres - Cloud DB]
-    D --> F[IndexedDB - Local DB]
-    
-    B -->|Agent Commands| G[AI Agent Layer]
-    G --> G1[Scriptwriter Agent]
-    G --> G2[Censorship Agent]
-    G --> G3[Translator Agent]
-    G --> G4[Continuity Editor Agent]
-    
-    G -->|API Request| H[Gemini API (Text)]
-```
-
-
 ## 🧱 System Architecture
 
 AI Comic Studio is designed with a modular and scalable architecture that separates frontend, backend, and AI orchestration concerns.
