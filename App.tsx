@@ -21,7 +21,24 @@ const App: React.FC = () => {
   // Initialize Auth
   useEffect(() => {
       const user = AuthService.getCurrentUser();
-      if (user) setCurrentUser(user);
+      if (user) {
+        setCurrentUser(user);
+      } else {
+        // Auto-login with demo user for public access
+        const demoUser: UserProfile = {
+          id: 'demo-user-id',
+          email: 'demo@ai-comic.studio',
+          username: 'Demo User',
+          joinDate: Date.now(),
+          studioName: 'Demo Studio',
+          avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=DemoUser',
+          bio: "Demo account for public access.",
+          stats: { projectsCount: 0, chaptersCount: 0, charactersCount: 0 }
+        };
+        localStorage.setItem('acs_session_v1', JSON.stringify(demoUser));
+        setCurrentUser(demoUser);
+        setProject({ ...INITIAL_PROJECT_STATE, ownerId: demoUser.id });
+      }
   }, []);
 
   const handleLogin = (user: UserProfile) => {
@@ -46,12 +63,12 @@ const App: React.FC = () => {
       }
   };
 
-  // Initialize Language from localStorage (Default: 'vi')
+  // Initialize Language from localStorage (Default: 'en')
   const [uiLanguage, setUiLanguage] = useState<'en' | 'vi'>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('ai_comic_lang') as 'en' | 'vi') || 'vi';
+      return (localStorage.getItem('ai_comic_lang') as 'en' | 'vi') || 'en';
     }
-    return 'vi';
+    return 'en';
   });
 
   // Initialize Theme from localStorage (Default: 'light')
