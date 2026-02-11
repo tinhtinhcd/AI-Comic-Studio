@@ -1,0 +1,4 @@
+# Redirect root to studio
+RewriteEngine On
+RewriteRule ^$ /studio/ [R=302,L]
+RewriteRule ^index\.html$ /studio/ [R=302,L]

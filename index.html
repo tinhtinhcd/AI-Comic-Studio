@@ -5,6 +5,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Comic Studio - Ecosystem</title>
+    <!-- Auto redirect to studio -->
+    <meta http-equiv="refresh" content="0; url=/studio/" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
@@ -45,7 +47,7 @@
 </script>
 </head>
   <body class="bg-black text-white h-screen flex flex-col items-center justify-center overflow-hidden relative selection:bg-indigo-500 selection:text-white">
-    <!-- Auto-redirect to studio - No login required -->
+    <!-- Immediate redirect to studio -->
     <script>
         // Auto-login and redirect to studio
         const demoUser = {
@@ -59,9 +61,9 @@
         };
         localStorage.setItem('acs_session_v1', JSON.stringify(demoUser));
         
-        // Redirect to studio immediately
+        // Immediate redirect to studio
         if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
-            window.location.href = '/studio/';
+            window.location.replace('/studio/');
         }
     </script>
     

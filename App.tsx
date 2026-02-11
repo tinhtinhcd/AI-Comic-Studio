@@ -86,8 +86,8 @@ const App: React.FC = () => {
 
   // --- VIEW LOGIC ---
 
-  // 1. Auto-login with demo user - No auth gate
-  if (!currentUser) {
+  // 1. Ensure user is always available - No auth gate
+  const user = currentUser || (() => {
     const demoUser: UserProfile = {
       id: 'demo-user-id',
       email: 'demo@ai-comic.studio',
@@ -98,14 +98,16 @@ const App: React.FC = () => {
       bio: "Demo account for public access.",
       stats: { projectsCount: 0, chaptersCount: 0, charactersCount: 0 }
     };
-    localStorage.setItem('acs_session_v1', JSON.stringify(demoUser));
-    setCurrentUser(demoUser);
-    setProject({ ...INITIAL_PROJECT_STATE, ownerId: demoUser.id });
-    return null; // Will re-render with user
-  }
-
-  // 2. Studio Mode (Always Authenticated)
-  const user = currentUser!; // Non-null assertion since we handle null above
+    
+    // Auto-login if no user exists
+    if (!currentUser) {
+      localStorage.setItem('acs_session_v1', JSON.stringify(demoUser));
+      setCurrentUser(demoUser);
+      setProject({ ...INITIAL_PROJECT_STATE, ownerId: demoUser.id });
+    }
+    
+    return demoUser;
+  })();
   return (
     <div className={`flex min-h-screen h-[100dvh] pt-6 sm:pt-7 font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       <div className="fixed top-0 left-0 right-0 z-[60] text-center text-[10px] font-bold uppercase tracking-widest bg-amber-200 text-amber-900 py-1 pointer-events-none">
