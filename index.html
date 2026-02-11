@@ -5,8 +5,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Comic Studio - Ecosystem</title>
-    <!-- Auto redirect to studio -->
-    <meta http-equiv="refresh" content="0; url=/studio/" />
+    <!-- Meta refresh disabled to prevent conflicts -->
+    <!-- <meta http-equiv="refresh" content="0; url=/studio/" /> -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
@@ -47,9 +47,16 @@
 </script>
 </head>
   <body class="bg-black text-white h-screen flex flex-col items-center justify-center overflow-hidden relative selection:bg-indigo-500 selection:text-white">
-    <!-- Immediate redirect to studio -->
+    <!-- Auto-login and redirect to studio -->
     <script>
-        // Auto-login and redirect to studio
+        console.log('Loading AI Comic Studio...');
+        console.log('Current path:', window.location.pathname);
+        
+        // Clear Vietnamese language preference and set English default
+        localStorage.removeItem('ai_comic_lang');
+        localStorage.setItem('ai_comic_lang', 'en');
+        
+        // Auto-login
         const demoUser = {
             id: 'demo-user-id',
             email: 'demo@ai-comic.studio',
@@ -60,10 +67,14 @@
             bio: "Demo account for public access."
         };
         localStorage.setItem('acs_session_v1', JSON.stringify(demoUser));
+        console.log('Demo user logged in');
         
-        // Immediate redirect to studio
+        // Simple redirect to studio
         if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
-            window.location.replace('/studio/');
+            console.log('Redirecting to studio...');
+            window.location.href = '/studio/';
+        } else {
+            console.log('Not on root page, showing content');
         }
     </script>
     

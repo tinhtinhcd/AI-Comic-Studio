@@ -52,7 +52,13 @@ const App: React.FC = () => {
   // Initialize Language from localStorage (Default: 'en')
   const [uiLanguage, setUiLanguage] = useState<'en' | 'vi'>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('ai_comic_lang') as 'en' | 'vi') || 'en';
+      // Force English as default for demo
+      const savedLang = localStorage.getItem('ai_comic_lang') as 'en' | 'vi';
+      if (savedLang && savedLang !== 'en') {
+        // Clear Vietnamese language preference
+        localStorage.removeItem('ai_comic_lang');
+      }
+      return 'en';
     }
     return 'en';
   });
