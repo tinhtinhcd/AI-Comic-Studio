@@ -14,7 +14,7 @@ interface SidebarProps {
   theme: 'light' | 'dark';
   setTheme: (theme: 'light' | 'dark') => void;
   currentUser: UserProfile;
-  onLogout: () => void;
+  onLogout?: () => void; // Optional for demo
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentRole, onSelectRole, projectTitle, uiLanguage, setUiLanguage, theme, setTheme, currentUser, onLogout }) => {
@@ -108,9 +108,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, onSelectRole, projectTit
                  <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{currentUser.username}</p>
                  <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{currentUser.studioName || "Comic Artist"}</p>
              </div>
-             <button onClick={onLogout} className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-gray-600 text-gray-400 hover:text-red-500 transition-colors" title="Logout">
-                 <LogOut className="w-4 h-4"/>
-             </button>
+             {/* Logout button disabled for demo */}
+             <div className="p-1.5 rounded-lg text-gray-400" title="Demo Mode - Logout Disabled">
+                 <LogOut className="w-4 h-4 opacity-50"/>
+             </div>
          </div>
 
          <div className="rounded-xl p-2 flex flex-col sm:flex-row items-center justify-between gap-2 border shadow-sm bg-white dark:bg-gray-700 border-gray-100 dark:border-gray-600">
@@ -133,12 +134,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, onSelectRole, projectTit
              
              <div className="flex rounded-lg p-1 border bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-600">
                  <button 
-                    onClick={() => setUiLanguage('en')}
-                    className={`px-2 py-1 text-[10px] font-bold rounded ${uiLanguage === 'en' ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+                     onClick={() => setUiLanguage('en')}
+                     className={`px-2 py-1 text-[10px] font-bold rounded ${uiLanguage === 'en' ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
                  >EN</button>
+                 {/* Vietnamese button disabled for demo */}
                  <button 
-                    onClick={() => setUiLanguage('vi')}
-                    className={`px-2 py-1 text-[10px] font-bold rounded ${uiLanguage === 'vi' ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+                     disabled
+                     className="px-2 py-1 text-[10px] font-bold rounded text-gray-300 dark:text-gray-600 opacity-50 cursor-not-allowed"
+                     title="Vietnamese disabled for demo"
                  >VN</button>
              </div>
          </div>

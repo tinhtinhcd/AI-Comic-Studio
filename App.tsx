@@ -34,9 +34,11 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
-      AuthService.logout();
-      setCurrentUser(null);
-      setProject(INITIAL_PROJECT_STATE);
+      // Logout disabled for demo - keep user logged in
+      console.log('Logout disabled in demo mode');
+      // AuthService.logout();
+      // setCurrentUser(null);
+      // setProject(INITIAL_PROJECT_STATE);
   };
 
   const toggleFullScreen = () => {
