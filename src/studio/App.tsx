@@ -49,9 +49,9 @@ const StudioContent: React.FC = () => {
 
   const [uiLanguage, setUiLanguage] = useState<'en' | 'vi'>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('ai_comic_lang') as 'en' | 'vi') || 'vi';
+      return (localStorage.getItem('ai_comic_lang') as 'en' | 'vi') || 'en';
     }
-    return 'vi';
+    return 'en';
   });
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
