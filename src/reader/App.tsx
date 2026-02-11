@@ -4,10 +4,10 @@ import { ComicProject, Chapter, Comment } from './types';
 import * as StorageService from './services/storageService';
 import * as AuthService from '../studio/services/authService';
 import { UserProfile } from '../shared/types';
-import { 
-    BookOpen, ChevronLeft, Heart, Share2, Search, X, Star, Layers, 
-    Home, Compass, Library, User, Bell, Settings, MessageCircle, 
-    MoreHorizontal, ArrowRight, PlayCircle, Clock, ThumbsUp 
+import {
+    BookOpen, ChevronLeft, Heart, Share2, Search, X, Star, Layers,
+    Home, Compass, Library, User, Bell, Settings, MessageCircle,
+    MoreHorizontal, ArrowRight, PlayCircle, Clock, ThumbsUp
 } from 'lucide-react';
 import { Logo } from './components/Logo';
 
@@ -99,8 +99,8 @@ const BottomNav: React.FC<{ active: string, onChange: (v: string) => void }> = (
                 const isActive = active === item;
                 const Icon = item === 'Home' ? Home : item === 'Explore' ? Compass : item === 'Library' ? Library : User;
                 return (
-                    <button 
-                        key={item} 
+                    <button
+                        key={item}
                         onClick={() => onChange(item)}
                         className={`flex flex-col items-center gap-1 w-full h-full justify-center ${isActive ? 'text-indigo-600 dark:text-white' : 'text-gray-400'}`}
                     >
@@ -121,12 +121,12 @@ const CommentDrawer: React.FC<{ isOpen: boolean, onClose: () => void }> = ({ isO
             <div className="bg-white dark:bg-gray-900 w-full sm:max-w-md h-[70vh] sm:h-[600px] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col pointer-events-auto transform transition-transform duration-300 slide-in-from-bottom">
                 <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
                     <h3 className="font-bold text-gray-900 dark:text-white">Comments (342)</h3>
-                    <button onClick={onClose}><X className="w-5 h-5 text-gray-500"/></button>
+                    <button onClick={onClose}><X className="w-5 h-5 text-gray-500" /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {MOCK_COMMENTS.map(c => (
                         <div key={c.id} className="flex gap-3">
-                            <img src={c.avatar} className="w-8 h-8 rounded-full bg-gray-200"/>
+                            <img src={c.avatar} className="w-8 h-8 rounded-full bg-gray-200" />
                             <div className="flex-1">
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs font-bold text-gray-500">{c.user}</span>
@@ -134,7 +134,7 @@ const CommentDrawer: React.FC<{ isOpen: boolean, onClose: () => void }> = ({ isO
                                 </div>
                                 <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{c.text}</p>
                                 <div className="flex items-center gap-4 mt-2">
-                                    <button className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-indigo-500"><ThumbsUp className="w-3 h-3"/> {c.likes}</button>
+                                    <button className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-indigo-500"><ThumbsUp className="w-3 h-3" /> {c.likes}</button>
                                     <button className="text-[10px] text-gray-400 font-bold">Reply</button>
                                 </div>
                             </div>
@@ -143,8 +143,8 @@ const CommentDrawer: React.FC<{ isOpen: boolean, onClose: () => void }> = ({ isO
                 </div>
                 <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
                     <div className="relative">
-                        <input placeholder="Add a comment..." className="w-full bg-white dark:bg-gray-800 rounded-full py-3 pl-4 pr-12 text-sm border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 outline-none"/>
-                        <button className="absolute right-2 top-2 p-1 bg-indigo-600 rounded-full text-white"><ArrowRight className="w-4 h-4"/></button>
+                        <input placeholder="Add a comment..." className="w-full bg-white dark:bg-gray-800 rounded-full py-3 pl-4 pr-12 text-sm border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                        <button className="absolute right-2 top-2 p-1 bg-indigo-600 rounded-full text-white"><ArrowRight className="w-4 h-4" /></button>
                     </div>
                 </div>
             </div>
@@ -182,7 +182,24 @@ const ReaderApp: React.FC = () => {
         loadContent();
     }, []);
 
-    if (!currentUser) {
+    // Ensure user is always available - No auth gate
+    const user = currentUser || (() => {
+        const demoUser: UserProfile = {
+            id: 'demo-user-id',
+            username: 'Demo User',
+            email: 'demo@ai-comic.studio',
+            joinDate: Date.now(),
+            avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=DemoUser'
+        };
+
+        if (!currentUser) {
+            localStorage.setItem('acs_session_v1', JSON.stringify(demoUser));
+            setCurrentUser(demoUser);
+        }
+        return demoUser;
+    })();
+
+    if (false) { // Keep LoginGate code but skip it
         return (
             <>
                 <LabNotice />
@@ -225,13 +242,13 @@ const ReaderApp: React.FC = () => {
                 {/* Header */}
                 <header className="sticky top-0 z-30 bg-white/80 dark:bg-black/80 backdrop-blur-md px-4 py-3 flex justify-between items-center border-b border-gray-100 dark:border-gray-800">
                     <div className="flex items-center gap-2">
-                        <Logo className="w-8 h-8"/>
+                        <Logo className="w-8 h-8" />
                         <span className="font-black text-lg tracking-tight hidden sm:block">ACS READER</span>
                     </div>
                     <div className="flex items-center gap-4">
-                        <button className="p-2 text-gray-500 hover:text-indigo-600"><Search className="w-5 h-5"/></button>
+                        <button className="p-2 text-gray-500 hover:text-indigo-600"><Search className="w-5 h-5" /></button>
                         <button className="p-2 text-gray-500 hover:text-indigo-600 relative">
-                            <Bell className="w-5 h-5"/>
+                            <Bell className="w-5 h-5" />
                             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-black"></span>
                         </button>
                     </div>
@@ -239,12 +256,12 @@ const ReaderApp: React.FC = () => {
 
                 {/* Content */}
                 <div className="space-y-8 pb-10">
-                    
+
                     {/* Hero Section */}
                     {featured ? (
                         <div onClick={() => handleOpenProject(featured)} className="relative w-full aspect-[4/5] md:aspect-[21/9] cursor-pointer group">
                             <div className="absolute inset-0">
-                                <img src={featured.coverImage || featured.panels[0].imageUrl} className="w-full h-full object-cover"/>
+                                <img src={featured.coverImage || featured.panels[0].imageUrl} className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
                             </div>
                             <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
@@ -274,7 +291,7 @@ const ReaderApp: React.FC = () => {
                                 {trending.map(p => (
                                     <div key={p.id} onClick={() => handleOpenProject(p)} className="snap-start min-w-[140px] md:min-w-[180px] cursor-pointer group">
                                         <div className="aspect-[3/4] rounded-lg overflow-hidden mb-2 relative">
-                                            <img src={p.coverImage || p.panels[0].imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                                            <img src={p.coverImage || p.panels[0].imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                             <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] text-white font-bold">
                                                 #{Math.floor(Math.random() * 10) + 1}
                                             </div>
@@ -294,14 +311,14 @@ const ReaderApp: React.FC = () => {
                             {newArrivals.map(p => (
                                 <div key={p.id} onClick={() => handleOpenProject(p)} className="cursor-pointer group">
                                     <div className="aspect-[3/4] rounded-lg overflow-hidden mb-2 relative">
-                                        <img src={p.coverImage || p.panels[0].imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                                        <img src={p.coverImage || p.panels[0].imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                         <div className="absolute bottom-0 right-0 bg-indigo-600 text-white text-[10px] px-2 py-1 rounded-tl-lg font-bold">
                                             UP
                                         </div>
                                     </div>
                                     <h3 className="font-bold text-sm truncate">{p.title}</h3>
                                     <div className="flex items-center gap-1 text-xs text-gray-500">
-                                        <Heart className="w-3 h-3 fill-current text-gray-400"/> {p.rating}
+                                        <Heart className="w-3 h-3 fill-current text-gray-400" /> {p.rating}
                                     </div>
                                 </div>
                             ))}
@@ -321,28 +338,28 @@ const ReaderApp: React.FC = () => {
                 <LabNotice />
                 {/* Navbar Overlay */}
                 <div className="fixed top-0 left-0 right-0 p-4 z-40 flex justify-between items-center text-white mix-blend-difference">
-                    <button onClick={handleBack} className="p-2 bg-white/10 backdrop-blur-md rounded-full"><ChevronLeft className="w-6 h-6"/></button>
+                    <button onClick={handleBack} className="p-2 bg-white/10 backdrop-blur-md rounded-full"><ChevronLeft className="w-6 h-6" /></button>
                     <div className="flex gap-3">
-                        <button className="p-2 bg-white/10 backdrop-blur-md rounded-full"><Share2 className="w-5 h-5"/></button>
-                        <button className="p-2 bg-white/10 backdrop-blur-md rounded-full"><MoreHorizontal className="w-5 h-5"/></button>
+                        <button className="p-2 bg-white/10 backdrop-blur-md rounded-full"><Share2 className="w-5 h-5" /></button>
+                        <button className="p-2 bg-white/10 backdrop-blur-md rounded-full"><MoreHorizontal className="w-5 h-5" /></button>
                     </div>
                 </div>
 
                 {/* Hero Header */}
                 <div className="relative w-full aspect-[4/3] md:aspect-[21/9]">
-                    <img src={selectedProject.coverImage || selectedProject.panels[0].imageUrl} className="w-full h-full object-cover"/>
+                    <img src={selectedProject.coverImage || selectedProject.panels[0].imageUrl} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-white dark:to-black"></div>
                     <div className="absolute bottom-0 left-0 right-0 p-6 pt-12">
                         <div className="flex items-end gap-4 mb-4">
                             <div className="w-24 h-32 md:w-32 md:h-48 rounded-lg overflow-hidden shadow-2xl border-2 border-white dark:border-gray-800 shrink-0 hidden md:block">
-                                <img src={selectedProject.coverImage || selectedProject.panels[0].imageUrl} className="w-full h-full object-cover"/>
+                                <img src={selectedProject.coverImage || selectedProject.panels[0].imageUrl} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex-1">
                                 <h1 className="text-3xl md:text-5xl font-black mb-2">{selectedProject.title}</h1>
                                 <div className="flex flex-wrap items-center gap-4 text-sm font-medium opacity-90">
                                     <span className="text-indigo-600 dark:text-indigo-400">{selectedProject.author?.name}</span>
                                     <span>•</span>
-                                    <div className="flex items-center gap-1"><Star className="w-4 h-4 fill-yellow-400 text-yellow-400"/> {selectedProject.rating}</div>
+                                    <div className="flex items-center gap-1"><Star className="w-4 h-4 fill-yellow-400 text-yellow-400" /> {selectedProject.rating}</div>
                                     <span>•</span>
                                     <div>{selectedProject.viewCount} Views</div>
                                     <span>•</span>
@@ -361,10 +378,10 @@ const ReaderApp: React.FC = () => {
 
                     <div className="flex gap-4 mb-8">
                         <button onClick={handleReadChapter} className="flex-1 bg-indigo-600 text-white font-bold py-3.5 rounded-full shadow-lg shadow-indigo-600/30 hover:scale-105 transition-transform flex items-center justify-center gap-2">
-                            <BookOpen className="w-5 h-5"/> Read Ep. 1
+                            <BookOpen className="w-5 h-5" /> Read Ep. 1
                         </button>
                         <button className="p-3.5 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                            <Heart className="w-6 h-6"/>
+                            <Heart className="w-6 h-6" />
                         </button>
                     </div>
 
@@ -378,15 +395,15 @@ const ReaderApp: React.FC = () => {
                             {[1, 2, 3].map(ep => (
                                 <div key={ep} onClick={handleReadChapter} className="flex gap-4 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 cursor-pointer transition-colors group">
                                     <div className="w-24 h-20 rounded-lg bg-gray-200 dark:bg-gray-800 overflow-hidden relative shrink-0">
-                                        {selectedProject.panels[0]?.imageUrl && <img src={selectedProject.panels[0].imageUrl} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform"/>}
+                                        {selectedProject.panels[0]?.imageUrl && <img src={selectedProject.panels[0].imageUrl} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform" />}
                                         {ep === 1 && <div className="absolute inset-0 flex items-center justify-center bg-black/20"><span className="text-[10px] font-bold text-white uppercase tracking-widest">Read</span></div>}
                                     </div>
                                     <div className="flex-1 py-1">
                                         <h4 className="font-bold text-sm mb-1 group-hover:text-indigo-500">Episode {ep}</h4>
                                         <p className="text-xs text-gray-500 mb-2">24 May 2024</p>
                                         <div className="flex items-center gap-3 text-xs text-gray-400">
-                                            <span className="flex items-center gap-1"><Heart className="w-3 h-3"/> 1.2K</span>
-                                            <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3"/> 45</span>
+                                            <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> 1.2K</span>
+                                            <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" /> 45</span>
                                         </div>
                                     </div>
                                 </div>
@@ -406,22 +423,22 @@ const ReaderApp: React.FC = () => {
                 {/* Reader Header */}
                 <div className={`fixed top-0 left-0 right-0 bg-gray-900/90 backdrop-blur-md text-white px-4 py-3 flex justify-between items-center border-b border-gray-800 z-50 transition-transform duration-300 ${uiVisible ? 'translate-y-0' : '-translate-y-full'}`}>
                     <button onClick={handleBack} className="p-2 hover:bg-gray-800 rounded-full transition-colors flex items-center gap-2">
-                        <ChevronLeft className="w-6 h-6"/>
+                        <ChevronLeft className="w-6 h-6" />
                         <span className="font-bold text-sm truncate max-w-[150px]">{selectedProject.title}</span>
                     </button>
                     <div className="flex gap-2">
-                        <button className="p-2 hover:bg-gray-800 rounded-full text-gray-400"><Settings className="w-5 h-5"/></button>
+                        <button className="p-2 hover:bg-gray-800 rounded-full text-gray-400"><Settings className="w-5 h-5" /></button>
                     </div>
                 </div>
 
                 {/* Progress Bar */}
                 {uiVisible && (
-                    <div className="fixed top-[60px] left-0 h-1 bg-indigo-600 z-50 transition-all" style={{width: `${scrollProgress}%`}}></div>
+                    <div className="fixed top-[60px] left-0 h-1 bg-indigo-600 z-50 transition-all" style={{ width: `${scrollProgress}%` }}></div>
                 )}
 
                 {/* Content Area */}
-                <div 
-                    className="flex-1 overflow-y-auto bg-[#121212] custom-scrollbar" 
+                <div
+                    className="flex-1 overflow-y-auto bg-[#121212] custom-scrollbar"
                     onScroll={handleScroll}
                     onClick={toggleUi}
                 >
@@ -444,7 +461,7 @@ const ReaderApp: React.FC = () => {
                                         </div>
                                     )}
                                     {/* Webtoon-style spacing */}
-                                    <div className="h-2 bg-white dark:bg-gray-900"></div> 
+                                    <div className="h-2 bg-white dark:bg-gray-900"></div>
                                 </div>
                             ))}
                         </div>
@@ -454,16 +471,16 @@ const ReaderApp: React.FC = () => {
                             <p className="text-gray-400 text-xs uppercase tracking-widest mb-6">To Be Continued</p>
                             <div className="flex justify-center gap-6 mb-8">
                                 <div className="text-center">
-                                    <button className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-pink-500 hover:scale-110 transition-transform shadow-lg"><Heart className="w-6 h-6 fill-current"/></button>
+                                    <button className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-pink-500 hover:scale-110 transition-transform shadow-lg"><Heart className="w-6 h-6 fill-current" /></button>
                                     <span className="text-[10px] text-gray-500 font-bold mt-2 block">Like</span>
                                 </div>
                                 <div className="text-center">
-                                    <button className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-white hover:scale-110 transition-transform shadow-lg"><Share2 className="w-6 h-6"/></button>
+                                    <button className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-white hover:scale-110 transition-transform shadow-lg"><Share2 className="w-6 h-6" /></button>
                                     <span className="text-[10px] text-gray-500 font-bold mt-2 block">Share</span>
                                 </div>
                             </div>
                             <button className="px-8 py-4 bg-indigo-600 text-white rounded-full font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition-all w-full max-w-xs mx-auto flex items-center justify-center gap-2">
-                                Next Episode <ChevronLeft className="w-4 h-4 rotate-180"/>
+                                Next Episode <ChevronLeft className="w-4 h-4 rotate-180" />
                             </button>
                         </div>
                     </div>
@@ -473,16 +490,16 @@ const ReaderApp: React.FC = () => {
                 <div className={`fixed bottom-0 left-0 right-0 bg-gray-900/90 backdrop-blur-md border-t border-gray-800 p-4 z-50 transition-transform duration-300 ${uiVisible ? 'translate-y-0' : 'translate-y-full'}`}>
                     <div className="max-w-3xl mx-auto flex justify-between items-center text-white">
                         <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors" disabled>
-                            <ChevronLeft className="w-5 h-5"/> Prev
+                            <ChevronLeft className="w-5 h-5" /> Prev
                         </button>
-                        <button 
+                        <button
                             onClick={(e) => { e.stopPropagation(); setShowComments(true); }}
                             className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors text-sm font-bold"
                         >
-                            <MessageCircle className="w-4 h-4"/> 342 Comments
+                            <MessageCircle className="w-4 h-4" /> 342 Comments
                         </button>
                         <button className="flex items-center gap-2 text-white font-bold hover:text-indigo-400 transition-colors">
-                            Next <ChevronLeft className="w-5 h-5 rotate-180"/>
+                            Next <ChevronLeft className="w-5 h-5 rotate-180" />
                         </button>
                     </div>
                 </div>

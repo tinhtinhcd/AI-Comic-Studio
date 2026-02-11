@@ -20,47 +20,41 @@ const App: React.FC = () => {
 
   // Initialize Auth
   useEffect(() => {
-      const user = AuthService.getCurrentUser();
-      if (user) {
-        setCurrentUser(user);
-        setProject({ ...INITIAL_PROJECT_STATE, ownerId: user.id });
-      }
+    const user = AuthService.getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+      setProject({ ...INITIAL_PROJECT_STATE, ownerId: user.id });
+    }
   }, []);
 
   const handleLogin = (user: UserProfile) => {
-      setCurrentUser(user);
-      // Reset project state to clean slate on login (or load from their last session in future)
-      setProject({ ...INITIAL_PROJECT_STATE, ownerId: user.id });
+    setCurrentUser(user);
+    // Reset project state to clean slate on login (or load from their last session in future)
+    setProject({ ...INITIAL_PROJECT_STATE, ownerId: user.id });
   };
 
   const handleLogout = () => {
-      // Logout disabled for demo - keep user logged in
-      console.log('Logout disabled in demo mode');
-      // AuthService.logout();
-      // setCurrentUser(null);
-      // setProject(INITIAL_PROJECT_STATE);
+    // Logout disabled for demo - keep user logged in
+    console.log('Logout disabled in demo mode');
+    // AuthService.logout();
+    // setCurrentUser(null);
+    // setProject(INITIAL_PROJECT_STATE);
   };
 
   const toggleFullScreen = () => {
-      if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen().then(() => setIsFullScreen(true));
-      } else {
-          if (document.exitFullscreen) {
-              document.exitFullscreen().then(() => setIsFullScreen(false));
-          }
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => setIsFullScreen(true));
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().then(() => setIsFullScreen(false));
       }
+    }
   };
 
   // Initialize Language from localStorage (Default: 'en')
   const [uiLanguage, setUiLanguage] = useState<'en' | 'vi'>(() => {
     if (typeof window !== 'undefined') {
-      // Force English as default for demo
-      const savedLang = localStorage.getItem('ai_comic_lang') as 'en' | 'vi';
-      if (savedLang && savedLang !== 'en') {
-        // Clear Vietnamese language preference
-        localStorage.removeItem('ai_comic_lang');
-      }
-      return 'en';
+      return (localStorage.getItem('ai_comic_lang') as 'en' | 'vi') || 'en';
     }
     return 'en';
   });
@@ -106,14 +100,14 @@ const App: React.FC = () => {
       bio: "Demo account for public access.",
       stats: { projectsCount: 0, chaptersCount: 0, charactersCount: 0 }
     };
-    
+
     // Auto-login if no user exists
     if (!currentUser) {
       localStorage.setItem('acs_session_v1', JSON.stringify(demoUser));
       setCurrentUser(demoUser);
       setProject({ ...INITIAL_PROJECT_STATE, ownerId: demoUser.id });
     }
-    
+
     return demoUser;
   })();
   return (
@@ -122,71 +116,71 @@ const App: React.FC = () => {
         Lab / Learning Project — Not a Product
       </div>
       {/* Full Screen Toggle (Floating) */}
-      <button 
-          onClick={toggleFullScreen}
-          className="fixed bottom-4 left-4 z-50 p-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-full shadow-lg hover:scale-110 transition-transform opacity-50 hover:opacity-100"
-          title="Toggle Full Screen"
+      <button
+        onClick={toggleFullScreen}
+        className="fixed bottom-4 left-4 z-50 p-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-full shadow-lg hover:scale-110 transition-transform opacity-50 hover:opacity-100"
+        title="Toggle Full Screen"
       >
-          {isFullScreen ? <Minimize2 className="w-5 h-5"/> : <Maximize2 className="w-5 h-5"/>}
+        {isFullScreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
       </button>
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-gray-900/20 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
-           <div className={`absolute left-0 top-0 bottom-0 w-[82vw] max-w-xs sm:max-w-sm shadow-2xl transition-colors ${theme === 'dark' ? 'bg-gray-800 border-r border-gray-700' : 'bg-white'}`}>
-              <Sidebar 
-                currentRole={activeRole} 
-                onSelectRole={(role) => { setActiveRole(role); setMobileMenuOpen(false); }}
-                projectTitle={project.title}
-                uiLanguage={uiLanguage}
-                setUiLanguage={setUiLanguage}
-                theme={theme}
-                setTheme={setTheme}
-                currentUser={user}
-                onLogout={handleLogout}
-              />
-           </div>
+          <div className={`absolute left-0 top-0 bottom-0 w-[82vw] max-w-xs sm:max-w-sm shadow-2xl transition-colors ${theme === 'dark' ? 'bg-gray-800 border-r border-gray-700' : 'bg-white'}`}>
+            <Sidebar
+              currentRole={activeRole}
+              onSelectRole={(role) => { setActiveRole(role); setMobileMenuOpen(false); }}
+              projectTitle={project.title}
+              uiLanguage={uiLanguage}
+              setUiLanguage={setUiLanguage}
+              theme={theme}
+              setTheme={setTheme}
+              currentUser={user}
+              onLogout={handleLogout}
+            />
+          </div>
         </div>
       )}
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:block h-full flex-shrink-0">
-         <Sidebar 
-            currentRole={activeRole} 
-            onSelectRole={setActiveRole}
-            projectTitle={project.title}
-            uiLanguage={uiLanguage}
-            setUiLanguage={setUiLanguage}
-            theme={theme}
-            setTheme={setTheme}
-            currentUser={user}
-            onLogout={handleLogout}
-         />
+        <Sidebar
+          currentRole={activeRole}
+          onSelectRole={setActiveRole}
+          projectTitle={project.title}
+          uiLanguage={uiLanguage}
+          setUiLanguage={setUiLanguage}
+          theme={theme}
+          setTheme={setTheme}
+          currentUser={user}
+          onLogout={handleLogout}
+        />
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative transition-all duration-300">
         {/* Mobile Header */}
         <div className={`lg:hidden px-3 py-3 sm:p-4 border-b flex items-center justify-between shadow-sm z-10 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-           <button onClick={() => setMobileMenuOpen(true)} className="shrink-0 p-1">
-             <Menu className={`w-6 h-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
-           </button>
-           <span className="font-bold text-sm sm:text-base truncate max-w-[150px]">{project.title}</span>
-           <button onClick={() => setShowPreview(!showPreview)} className={`text-[11px] sm:text-xs px-3 py-1 rounded font-medium border ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>
-              {showPreview ? 'Hide' : 'View'} Comic
-           </button>
+          <button onClick={() => setMobileMenuOpen(true)} className="shrink-0 p-1">
+            <Menu className={`w-6 h-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
+          </button>
+          <span className="font-bold text-sm sm:text-base truncate max-w-[150px]">{project.title}</span>
+          <button onClick={() => setShowPreview(!showPreview)} className={`text-[11px] sm:text-xs px-3 py-1 rounded font-medium border ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>
+            {showPreview ? 'Hide' : 'View'} Comic
+          </button>
         </div>
 
         <div className={`flex-1 overflow-hidden relative ${showPreview ? 'lg:mr-96 xl:mr-[26rem]' : ''}`}>
-           <AgentWorkspace 
-             role={activeRole}
-             project={project}
-             updateProject={updateProject}
-             onAgentChange={setActiveRole} 
-             uiLanguage={uiLanguage}
-             currentUser={user}
-             onUpdateUser={setCurrentUser}
-           />
+          <AgentWorkspace
+            role={activeRole}
+            project={project}
+            updateProject={updateProject}
+            onAgentChange={setActiveRole}
+            uiLanguage={uiLanguage}
+            currentUser={user}
+            onUpdateUser={setCurrentUser}
+          />
         </div>
 
         {/* Preview Sidebar (Desktop Only toggle) */}
@@ -196,11 +190,11 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <button 
+        <button
           onClick={() => setShowPreview(!showPreview)}
           className={`hidden lg:flex fixed top-4 z-30 p-2 rounded-l-lg shadow-md items-center gap-2 transition-all duration-300 border ${showPreview ? 'right-96' : 'right-0'} ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500 hover:text-indigo-600'}`}
         >
-           {showPreview ? <X className="w-4 h-4"/> : <Menu className="w-4 h-4"/>}
+          {showPreview ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
         </button>
       </div>
     </div>
