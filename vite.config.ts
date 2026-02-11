@@ -84,6 +84,14 @@ export default defineConfig(({ mode }) => {
         server.middlewares.use(async (req, res, next) => {
           const url = req.url || '';
 
+          // Redirect root to studio for demo
+          if (url === '/' || url === '/index.html') {
+            res.statusCode = 302;
+            res.setHeader('Location', '/studio/');
+            res.end();
+            return;
+          }
+
           if (url === '/studio' || url === '/studio/') {
             await serveHtml('/studio/', studioHtml, res);
             return;
