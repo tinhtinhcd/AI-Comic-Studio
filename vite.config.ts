@@ -6,26 +6,26 @@ import fs from 'fs'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  
+
   const target = process.env.TARGET || 'landing';
   const projectRoot = process.cwd();
 
   let root = projectRoot;
   let outDir = path.resolve(projectRoot, 'dist');
   let input: any = { main: path.resolve(projectRoot, 'index.html') };
-  let base = '/'; 
+  let base = '/';
   let emptyOutDir = true;
 
   // Build Configuration Logic
   if (target === 'reader') {
     root = path.resolve(projectRoot, 'src/reader');
-    outDir = path.resolve(projectRoot, 'dist/reader'); 
-    base = '/reader/'; 
+    outDir = path.resolve(projectRoot, 'dist/reader');
+    base = '/reader/';
     input = { main: path.resolve(projectRoot, 'src/reader/index.html') };
   } else if (target === 'studio') {
     root = path.resolve(projectRoot, 'src/studio');
     outDir = path.resolve(projectRoot, 'dist/studio');
-    base = '/studio/'; 
+    base = '/studio/';
     input = { main: path.resolve(projectRoot, 'src/studio/index.html') };
   } else if (target === 'admin') {
     root = path.resolve(projectRoot, 'src/admin');
@@ -40,7 +40,7 @@ export default defineConfig(({ mode }) => {
     // Landing page builds to root dist, we might want to avoid wiping other folders if running sequentially
     // But typically build:landing is part of full build. 
     // Careful with emptyOutDir here if running parallel.
-    emptyOutDir = false; 
+    emptyOutDir = false;
   }
 
   // Ensure output directory exists to prevent build failures
@@ -119,17 +119,36 @@ export default defineConfig(({ mode }) => {
             return next();
           }
 
+          // Handle API auth requests (mock responses for demo)
+          if (url.startsWith('/api/auth/')) {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({
+              success: true,
+              user: {
+                id: 'demo-user-id',
+                email: 'demo@ai-comic.studio',
+                username: 'Demo User',
+                joinDate: Date.now(),
+                studioName: 'Demo Studio',
+                avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=DemoUser',
+                bio: 'Demo account for public access.'
+              }
+            }));
+            return;
+          }
+
           return next();
         });
       }
     },
     resolve: {
-        alias: {
-            '@': path.resolve(projectRoot, 'src'),
-            '@studio': path.resolve(projectRoot, 'src/studio'),
-            '@reader': path.resolve(projectRoot, 'src/reader'),
-            '@admin': path.resolve(projectRoot, 'src/admin')
-        }
+      alias: {
+        '@': path.resolve(projectRoot, 'src'),
+        '@studio': path.resolve(projectRoot, 'src/studio'),
+        '@reader': path.resolve(projectRoot, 'src/reader'),
+        '@admin': path.resolve(projectRoot, 'src/admin')
+      }
     }
   }
 })
