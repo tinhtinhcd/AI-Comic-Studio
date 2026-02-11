@@ -182,31 +182,30 @@ const ReaderApp: React.FC = () => {
         loadContent();
     }, []);
 
-    // Ensure user is always available - No auth gate
-    const user = currentUser || (() => {
-        const demoUser: UserProfile = {
-            id: 'demo-user-id',
-            username: 'Demo User',
-            email: 'demo@ai-comic.studio',
-            joinDate: Date.now(),
-            avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=DemoUser'
-        };
-
+    // Auto-login effect - runs once on mount
+    useEffect(() => {
         if (!currentUser) {
+            const demoUser: UserProfile = {
+                id: 'demo-user-id',
+                username: 'Demo User',
+                email: 'demo@ai-comic.studio',
+                joinDate: Date.now(),
+                avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=DemoUser'
+            };
+
             localStorage.setItem('acs_session_v1', JSON.stringify(demoUser));
             setCurrentUser(demoUser);
         }
-        return demoUser;
-    })();
+    }, []);
 
-    if (false) { // Keep LoginGate code but skip it
-        return (
-            <>
-                <LabNotice />
-                <LoginGate onLogin={setCurrentUser} />
-            </>
-        );
-    }
+    // Ensure user is always available
+    const user = currentUser || {
+        id: 'demo-user-id',
+        username: 'Demo User',
+        email: 'demo@ai-comic.studio',
+        joinDate: Date.now(),
+        avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=DemoUser'
+    };
 
     const handleOpenProject = (project: ComicProject) => {
         setSelectedProject(project);

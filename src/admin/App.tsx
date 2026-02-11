@@ -131,24 +131,32 @@ const AdminApp: React.FC = () => {
         u.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Ensure user is always available - No auth gate
-    const user = currentUser || (() => {
-        const demoUser: UserProfile = {
-            id: 'admin-user-id',
-            username: 'Super Admin',
-            email: 'admin@ai-comic.studio',
-            joinDate: Date.now(),
-            avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=Admin'
-        };
-
+    // Auto-login effect - runs once on mount
+    useEffect(() => {
         if (!currentUser) {
+            const demoUser: UserProfile = {
+                id: 'admin-user-id',
+                username: 'Super Admin',
+                email: 'admin@ai-comic.studio',
+                joinDate: Date.now(),
+                avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=Admin'
+            };
+
             if (typeof window !== 'undefined') {
                 localStorage.setItem('acs_session_v1', JSON.stringify(demoUser));
             }
             setCurrentUser(demoUser);
         }
-        return demoUser;
-    })();
+    }, []);
+
+    // Ensure user is always available
+    const user = currentUser || {
+        id: 'admin-user-id',
+        username: 'Super Admin',
+        email: 'admin@ai-comic.studio',
+        joinDate: Date.now(),
+        avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=Admin'
+    };
 
     return (
         <div className="flex h-screen bg-slate-50 font-sans text-slate-900">

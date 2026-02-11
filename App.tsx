@@ -88,28 +88,38 @@ const App: React.FC = () => {
 
   // --- VIEW LOGIC ---
 
-  // 1. Ensure user is always available - No auth gate
-  const user = currentUser || (() => {
-    const demoUser: UserProfile = {
-      id: 'demo-user-id',
-      email: 'demo@ai-comic.studio',
-      username: 'Demo User',
-      joinDate: Date.now(),
-      studioName: 'Demo Studio',
-      avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=DemoUser',
-      bio: "Demo account for public access.",
-      stats: { projectsCount: 0, chaptersCount: 0, charactersCount: 0 }
-    };
 
-    // Auto-login if no user exists
+  // Auto-login effect - runs once on mount
+  useEffect(() => {
     if (!currentUser) {
+      const demoUser: UserProfile = {
+        id: 'demo-user-id',
+        email: 'demo@ai-comic.studio',
+        username: 'Demo User',
+        joinDate: Date.now(),
+        studioName: 'Demo Studio',
+        avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=DemoUser',
+        bio: "Demo account for public access.",
+        stats: { projectsCount: 0, chaptersCount: 0, charactersCount: 0 }
+      };
+
       localStorage.setItem('acs_session_v1', JSON.stringify(demoUser));
       setCurrentUser(demoUser);
       setProject({ ...INITIAL_PROJECT_STATE, ownerId: demoUser.id });
     }
+  }, []);
 
-    return demoUser;
-  })();
+  // Ensure user is always available
+  const user = currentUser || {
+    id: 'demo-user-id',
+    email: 'demo@ai-comic.studio',
+    username: 'Demo User',
+    joinDate: Date.now(),
+    studioName: 'Demo Studio',
+    avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=DemoUser',
+    bio: "Demo account for public access.",
+    stats: { projectsCount: 0, chaptersCount: 0, charactersCount: 0 }
+  };
   return (
     <div className={`flex min-h-screen h-[100dvh] pt-6 sm:pt-7 font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       <div className="fixed top-0 left-0 right-0 z-[60] text-center text-[10px] font-bold uppercase tracking-widest bg-amber-200 text-amber-900 py-1 pointer-events-none">
