@@ -1,2 +1,5 @@
-# Netlify redirects
-/*    /studio/:splat   200
+# Cloudflare Pages SPA routing
+/studio/* /studio/index.html 200
+/reader/* /reader/index.html 200
+/admin/* /admin/index.html 200
+/ /studio/ 302

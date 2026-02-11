@@ -1,4 +1,3 @@
-
 {
   "name": "ai-comic-studio",
   "private": true,
@@ -6,14 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:studio": "TARGET=studio vite",
-    "dev:reader": "TARGET=reader vite",
-    "dev:admin": "TARGET=admin vite",
+    "dev:studio": "cross-env TARGET=studio vite",
+    "dev:reader": "cross-env TARGET=reader vite",
+    "dev:admin": "cross-env TARGET=admin vite",
     "build": "npm run build:reader && npm run build:studio && npm run build:admin && npm run build:landing",
-    "build:landing": "TARGET=landing vite build",
-    "build:studio": "TARGET=studio vite build",
-    "build:reader": "TARGET=reader vite build",
-    "build:admin": "TARGET=admin vite build",
+    "build:landing": "cross-env TARGET=landing vite build",
+    "build:studio": "cross-env TARGET=studio vite build",
+    "build:reader": "cross-env TARGET=reader vite build",
+    "build:admin": "cross-env TARGET=admin vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -32,10 +31,12 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.19",
+    "cross-env": "^10.1.0",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.2.2",
-    "vite": "^5.2.0"
+    "vite": "^5.2.0",
+    "wrangler": "^4.64.0"
   },
   "overrides": {
     "react": "^19.0.0",
