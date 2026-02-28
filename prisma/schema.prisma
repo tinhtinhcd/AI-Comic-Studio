@@ -1,0 +1,103 @@
+// AI Story Studio - Prisma Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Series {
+  id                      String   @id @default(cuid())
+  title                   String
+  mode                    String   @default("ideation") // ideation | production
+  primaryLanguage         String   @default("auto")     // "vi" | "en" | "auto"
+  preferredOutputLanguage String   @default("auto")     // "vi" | "en" | "auto"
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  messages        Message[]
+  conceptSnapshots ConceptSnapshot[]
+  outlines        Outline[]
+  chapters        Chapter[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  seriesId  String
+  role      String   // user | assistant | system
+  content   String
+  language  String   @default("unknown") // "vi" | "en" | "unknown"
+  createdAt DateTime @default(now())
+
+  series Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+}
+
+model ConceptSnapshot {
+  id        String   @id @default(cuid())
+  seriesId  String
+  data      String   @default("{}") // Full ConceptSnapshot JSON
+  bible     String?  // Legacy: premise, tone, genre
+  characters String? // Legacy: [{name, role, traits}]
+  world     String?  // Legacy: rules, setting, magic
+  themes    String?  // Legacy: [theme strings]
+  createdAt DateTime @default(now())
+
+  series Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+}
+
+model Outline {
+  id        String   @id @default(cuid())
+  seriesId  String
+  structure String   // JSON: { acts, beats, chapterSummaries }
+  createdAt DateTime @default(now())
+
+  series   Series    @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  chapters Chapter[]
+}
+
+model Chapter {
+  id        String   @id @default(cuid())
+  seriesId  String
+  outlineId String?
+  number    Int
+  title     String?
+  status    String   @default("draft") // draft | in_review | approved
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  series       Series          @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  outline      Outline?        @relation(fields: [outlineId], references: [id])
+  versions     ChapterVersion[]
+  qcReports    QCReport[]
+  continuityLogs ContinuityLog[]
+}
+
+model ChapterVersion {
+  id        String   @id @default(cuid())
+  chapterId String
+  content   String   // JSON: { scenes: [{heading, body}] }
+  version   Int
+  createdAt DateTime @default(now())
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+}
+
+model QCReport {
+  id        String   @id @default(cuid())
+  chapterId String
+  report    String   // JSON: { issues, suggestions, score }
+  createdAt DateTime @default(now())
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+}
+
+model ContinuityLog {
+  id        String   @id @default(cuid())
+  chapterId String
+  log       String   // JSON: { characterAppearances, timeline, inconsistencies }
+  createdAt DateTime @default(now())
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+}

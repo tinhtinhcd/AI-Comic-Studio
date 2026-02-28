@@ -1,45 +1,29 @@
 {
-  "name": "ai-comic-studio",
+  "name": "ai-story-studio",
+  "version": "0.1.0",
   "private": true,
-  "version": "1.0.0",
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:studio": "cross-env TARGET=studio vite",
-    "dev:reader": "cross-env TARGET=reader vite",
-    "dev:admin": "cross-env TARGET=admin vite",
-    "build": "npm run build:reader && npm run build:studio && npm run build:admin && npm run build:landing",
-    "build:landing": "cross-env TARGET=landing vite build",
-    "build:studio": "cross-env TARGET=studio vite build",
-    "build:reader": "cross-env TARGET=reader vite build",
-    "build:admin": "cross-env TARGET=admin vite build",
-    "preview": "vite preview"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@ffmpeg/ffmpeg": "^0.12.10",
-    "@ffmpeg/util": "^0.12.1",
-    "@google/genai": "*",
-    "@neondatabase/serverless": "^0.9.0",
-    "jszip": "^3.10.1",
-    "lucide-react": "^0.344.0",
+    "@prisma/client": "^5.22.0",
+    "next": "15.0.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20.11.24",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.2.1",
-    "autoprefixer": "^10.4.19",
-    "cross-env": "^10.1.0",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.3",
-    "typescript": "^5.2.2",
-    "vite": "^5.2.0",
-    "wrangler": "^4.64.0"
-  },
-  "overrides": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "@types/node": "^22.9.0",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.1",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3"
   }
 }

@@ -1,183 +1,189 @@
-# AI Comic Studio – AI-powered Comic Creation Platform
+# AI Story Studio
 
-**AI Comic Studio** is an AI-powered platform for building complete comics and webtoons—from idea to script to production—through a multi-agent system simulating a real comic studio. The project aims to empower creators and hobbyists to rapidly ideate, structure, and eventually visualize their work. 
-
-> 🚧 Phase 1 focuses on the **Comic Script Studio**: a powerful tool to create structured comic scripts using Gemini AI. All visual generation will be introduced in Phase 2. This is a personal, non-commercial project under active development and experimentation.
+A fullstack MVP for developing stories with AI: **ideation** (chat + structured concept memory) and **production** (outline, chapters, scenes, critic). Built with Next.js App Router, TypeScript, Tailwind, and Prisma (SQLite).
 
 ---
 
-## 🎯 Vision
+## Features
 
-- **One Person = One Studio**: Use AI agents to perform the roles of project manager, scriptwriter, editor, and translator.
-- **Full Pipeline**: 7-stage production pipeline from idea → script → panel breakdown → later illustration & publishing.
-- **Cost-Efficient**: Text-only MVP with no external image/video generation to minimize cost and comply with current legal constraints.
-- **Future-Proof**: Modular architecture designed for future integration of Gemini Image, Veo (video), and TTS APIs.
+- **Ideation mode**
+  - Slack-style chat: user messages on the right, assistant on the left.
+  - Auto language detection (Vietnamese / English).
+  - After each turn, an extractor builds a **Concept Snapshot** (premise, characters, world, themes, conflict, stakes, open questions).
+  - Snapshots support **multilingual** fields: `original` (user language) + optional `en` (English) for search/consistency.
+  - Right panel: structured memory view with “Show English” toggle and “Save Concept Version”.
 
----
+- **Production mode**
+  - Generate outline → create chapters → **Generate Scenes** → **Draft Chapter** → **Run Critic** → **Approve**.
+  - All AI outputs validated with Zod schemas; fallbacks keep the app working when the provider returns unexpected JSON.
 
-## 🚀 Core Features (Phase 1 – MVP)
+- **Language**
+  - Series-level: **Language** (Auto / Tiếng Việt / English) and **Output** (Auto / Tiếng Việt / English).
+  - Stored per series; assistant and extractor respect these preferences.
+  - Messages store an optional `language` field; snapshot stores both original and optional English.
 
-| Feature                         | Description                                                                 |
-|---------------------------------|-----------------------------------------------------------------------------|
-| 📝 Script Creation              | Use Gemini AI to develop storylines, characters, and dialogue.              |
-| 🧠 AI Agent System              | Editorial and Writers' Room agents to guide users through creation.         |
-| 🔄 Offline/Online Data Handling | Projects can be stored locally (IndexedDB) or synced via Neon Postgres.     |
-| 🌐 Bilingual UI                 | English-Vietnamese switchable interface for wider accessibility.            |
-| 📦 Modular Architecture         | Vite-powered multi-surface app for studio, reader, and admin tools.         |
-
----
-
-## 🧱 Technology Stack
-
-| Layer          | Tech Stack                                                                 |
-|----------------|-----------------------------------------------------------------------------|
-| Frontend       | React 19, TypeScript, TailwindCSS, Lucide Icons                            |
-| Build System   | Vite 5 (multi-surface targets: Studio, Reader, Admin, Landing)             |
-| AI Engine      | Gemini API (Text only for Phase 1), with future integration of Image/Video |
-| Backend API    | Serverless functions (Node.js) with Neon Postgres                          |
-| Storage        | Cloud: Neon Serverless Postgres / Local: IndexedDB                         |
-| Auth & Session | localStorage, manual account creation (no registration yet)                |
-
-## 🧱 System Architecture
-
-AI Comic Studio is designed with a modular and scalable architecture that separates frontend, backend, and AI orchestration concerns.
-
-### 🧩 Key Layers
-
-- **Frontend (4 Surfaces)**: Built with Vite + React 19.
-  - `/studio`: Main editor and AI control UI
-  - `/reader`: Comic viewer (mobile-first)
-  - `/admin`: Management console
-  - `/`: Marketing landing page
-
-- **AI Orchestration (Agent Layer)**:
-  - Written in TypeScript, acts as controller for AI-based tasks (story writing, translation, censorship).
-  - Modular design: each agent handles one responsibility.
-  - Future extension: pluggable agent system for image, voice, animation.
-
-- **Backend API (Serverless Functions)**:
-  - REST-style routes under `functions/api/*`.
-  - Built using Node.js, TypeScript.
-  - Data persistence: Neon Postgres (Cloud) or IndexedDB (Offline).
-
-- **Data Layer**:
-  - **Cloud (Postgres)**: For user, project, collaboration sync.
-  - **Local (IndexedDB)**: Enables offline work, syncs when online.
-  - Users choose storage mode dynamically (via `storageService.ts`).
-
-### 🔐 Security and Performance
-
-- Session stored in `localStorage`, scoped to device.
-- Project data stored per-device or per-user with fallback sync mechanism.
-- Designed with cost efficiency and serverless scale-in-mind.
+- **LLM**
+  - Single provider interface in `lib/ai/provider.ts`; no hardcoded keys.
+  - **Mock provider** works without `LLM_API_KEY` (placeholder chat + extraction). Set `LLM_API_KEY` when you plug in a real provider.
 
 ---
 
-## 📚 7-Step Comic Creation Pipeline
+## Tech Stack
 
-1. **Pitching** – Define theme, tone, and genre.
-2. **Character Setup** – Build character bios and motivations.
-3. **Storyline** – Use AI to draft story arcs and key events.
-4. **Panel Breakdown** – Convert scripts into visual panel instructions.
-5. **Dialogue** – Auto-generate multi-language dialogue.
-6. **Visual Generation** *(Phase 2)* – Use Gemini Image/Veo API to illustrate panels.
-7. **Publishing** *(Phase 2)* – Export to PDF/EPUB or publish to Reader portal.
-
----
-
-## 🧠 AI Agent System
-
-The system simulates a virtual comic production studio with 13 specialized roles (Phase 1 focuses on text roles only):
-
-| Department     | Agent Role           | Function                            | Status    |
-|----------------|----------------------|-------------------------------------|-----------|
-| Editorial      | Project Manager      | Oversees flow and enforces constraints | ✅ Phase 1 |
-| Editorial      | Market Researcher    | Suggests trends and tone ideas         | ✅ Phase 1 |
-| Editorial      | Continuity Editor    | Maintains consistency in plot         | ✅ Phase 1 |
-| Writers' Room  | Scriptwriter         | Generates and edits stories           | ✅ Phase 1 |
-| Writers' Room  | Censor               | Flags inappropriate content           | ✅ Phase 1 |
-| Writers' Room  | Translator           | Adds multi-language dialogue          | ✅ Phase 1 |
-| Art Studio     | Character Designer   | Converts bios to image prompts        | 🔜 Phase 2 |
-| Art Studio     | Panel Artist         | AI image rendering per panel          | 🔜 Phase 2 |
-| Voice/Media    | Voice Actor          | TTS voice for characters              | 🔜 Phase 2 |
-| Archive        | Publisher, Archivist | Distribution and export               | 🔜 Phase 2 |
+| Layer        | Stack                          |
+|-------------|---------------------------------|
+| Framework   | Next.js 15 (App Router)        |
+| Language    | TypeScript                     |
+| Styling     | Tailwind CSS                   |
+| Database    | Prisma + SQLite                |
+| Validation  | Zod (concept, outline, chapter, QC) |
 
 ---
 
-## 🖥️ App Surfaces
+## Project Structure
 
-| Surface  | Path          | Description                                 |
-|----------|---------------|---------------------------------------------|
-| Landing  | `/`           | Homepage + intro                            |
-| Studio   | `/studio/`    | Main comic creation workspace (requires login) |
-| Reader   | `/reader/`    | Comic reading experience (mobile-friendly)  |
-| Admin    | `/admin/`     | Admin interface (users, stats, moderation)  |
-
----
-
-## 🗃️ Project Storage Options
-
-- **Cloud Sync (Neon Postgres)** – Projects stored serverlessly, sync across devices.
-- **Local Only (IndexedDB)** – Offline-friendly, no network dependency, more privacy.
-
-Users can toggle storage options per project.
-
----
-
-## 🛠️ How to Run Locally
-
-### Prerequisites:
-- Node.js
-- Google Gemini API Key
-
-### Setup:
-```bash
-npm install
-cp .env.example .env.local
-# Add your Gemini API_KEY in .env.local
-npm run dev:studio
 ```
-
-> Note: Registration is disabled; you must manually insert your user via database for now.
-
----
-
-## 📁 Folder Structure
-
-```bash
-├── /studio/         # Creator UI
-├── /reader/         # Comic viewer
-├── /admin/          # Admin dashboard
-├── /functions/api/  # Serverless API endpoints
-├── /agents/         # AI agent definitions
-├── /services/       # Storage, auth, AI orchestration
-├── /public/         # Assets and screenshots
+├── app/
+│   ├── api/series/
+│   │   ├── route.ts                    # GET list, POST create
+│   │   └── [seriesId]/
+│   │       ├── route.ts                # GET one, PATCH (language prefs)
+│   │       ├── ideation/
+│   │       │   ├── route.ts            # POST legacy ideation
+│   │       │   └── send-json/route.ts  # POST chat + extractor, JSON response
+│   │       ├── snapshot/route.ts       # GET/POST snapshot (extract or save)
+│   │       ├── outline/route.ts        # GET/POST outline
+│   │       ├── chapters/
+│   │       │   ├── route.ts            # GET/POST chapters
+│   │       │   └── [chapterId]/
+│   │       │       ├── scenes/route.ts   # POST generate scene list
+│   │       │       ├── draft/route.ts     # POST draft chapter
+│   │       │       ├── critic/route.ts    # POST QC report
+│   │       │       └── approve/route.ts   # POST approve chapter
+│   ├── dashboard/page.tsx              # List/create series
+│   ├── studio/[seriesId]/page.tsx      # 3-column Studio (structure, chat/editor, actions + memory)
+│   ├── layout.tsx
+│   ├── page.tsx                        # Home → Dashboard
+│   └── globals.css
+├── components/
+│   ├── IdeationChat.tsx                # Slack-like chat, send-json
+│   ├── SnapshotPanel.tsx               # Renders snapshot sections + “Show English”
+│   └── LanguageSelector.tsx            # Lang / Output dropdowns
+├── lib/
+│   ├── ai/
+│   │   ├── provider.ts                 # LLM interface + MockProvider
+│   │   ├── extractor.ts                # Prompt, runExtractor, mergeSnapshots, detectLanguage
+│   ├── db.ts                           # Prisma singleton
+│   └── schemas/
+│       ├── concept.ts                  # ConceptSnapshot (multilingual), MLText, helpers
+│       ├── outline.ts
+│       ├── chapter.ts                  # ChapterContent, QCReport
+│       └── index.ts
+├── prisma/
+│   └── schema.prisma
+├── .env.example
 └── README.md
 ```
 
 ---
 
-## 📌 Legal & Usage Notes
+## Setup
 
-> ⚠️ AI Comic Studio is an experimental personal project under active development. It is not intended for commercial deployment. All AI-generated content is for educational or demo use only. Compliance with Google Gemini API terms is expected.
+1. **Install and env**
+
+   ```bash
+   npm install
+   cp .env.example .env
+   ```
+
+2. **Database**
+
+   - `DATABASE_URL` in `.env`: use `file:./dev.db` so the DB lives under `prisma/dev.db` (relative to schema).
+
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
+
+3. **Run**
+
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000). If port 3000 is in use, Next.js will use 3001.
 
 ---
 
-## 📈 Roadmap
+## Environment Variables
 
-- [x] Text-only Studio (Phase 1)
-- [x] AI Agent orchestration
-- [ ] Public demo with local project save
-- [ ] Image + TTS generation (Phase 2)
-- [ ] Marketplace for community scripts/assets
+| Variable        | Required | Description |
+|----------------|----------|-------------|
+| `DATABASE_URL` | Yes      | SQLite URL, e.g. `file:./dev.db` (resolved relative to `prisma/`). |
+| `LLM_API_KEY`  | No       | When set, can be used by a real LLM provider. If unset, MockProvider is used. |
+
+---
+
+## API Reference
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET    | `/api/series` | List all series. |
+| POST   | `/api/series` | Create series. Body: `{ title?, mode?, primaryLanguage?, preferredOutputLanguage? }`. |
+| GET    | `/api/series/[id]` | Get series with messages, snapshot, outlines, chapters. |
+| PATCH  | `/api/series/[id]` | Update series. Body: `{ primaryLanguage?, preferredOutputLanguage?, title?, mode? }`. |
+| POST   | `/api/series/[id]/ideation` | Legacy: send message, returns `{ reply }`. |
+| POST   | `/api/series/[id]/ideation/send-json` | Send message; runs extractor; returns `{ messages, snapshot }` (no redirect). |
+| GET    | `/api/series/[id]/snapshot` | Get latest concept snapshot. |
+| POST   | `/api/series/[id]/snapshot` | Extract (body: `{ extract: true }`) or save (body: snapshot object). |
+| GET    | `/api/series/[id]/outline` | Get latest outline. |
+| POST   | `/api/series/[id]/outline` | Generate outline. |
+| GET    | `/api/series/[id]/chapters` | List chapters. |
+| POST   | `/api/series/[id]/chapters` | Create chapter. Body: `{ outlineId? }`. |
+| POST   | `/api/series/[id]/chapters/[chId]/scenes` | Generate scene list for chapter. |
+| POST   | `/api/series/[id]/chapters/[chId]/draft` | Draft chapter (from scenes or from scratch). |
+| POST   | `/api/series/[id]/chapters/[chId]/critic` | Run quality check; returns report. |
+| POST   | `/api/series/[id]/chapters/[chId]/approve` | Set chapter status to approved. |
 
 ---
 
-## 🙋 Contact
+## Data Models (Prisma)
 
-For questions or collaboration:
+- **Series** – title, mode, primaryLanguage, preferredOutputLanguage.
+- **Message** – seriesId, role, content, language.
+- **ConceptSnapshot** – seriesId, data (full JSON), legacy bible/characters/world/themes.
+- **Outline** – seriesId, structure (JSON).
+- **Chapter** – seriesId, outlineId?, number, title?, status (draft | in_review | approved).
+- **ChapterVersion** – chapterId, content (JSON scenes), version.
+- **QCReport** – chapterId, report (JSON: issues, suggestions, score).
+- **ContinuityLog** – chapterId, log (JSON).
 
-- Email: **tinhtinhcd@gmail.com**
-- LinkedIn: [linkedin.com/in/lyvantinh3110](https://www.linkedin.com/in/lyvantinh3110)
+Concept snapshot `data` shape (see `lib/schemas/concept.ts`): multilingual fields with `{ original, en? }` for premise, coreConflict, stakes, world.setting, world.rules, character role/traits/goal, themes, openQuestions; plus genre, tone, language.
 
 ---
+
+## Scripts
+
+| Script         | Command              | Description |
+|----------------|----------------------|-------------|
+| Dev            | `npm run dev`        | Start Next.js dev server. |
+| Build          | `npm run build`      | Production build. |
+| Start          | `npm run start`      | Run production server. |
+| Lint           | `npm run lint`       | Next.js lint. |
+| DB generate    | `npm run db:generate`| Prisma generate client. |
+| DB push        | `npm run db:push`    | Push schema to DB. |
+| DB studio      | `npm run db:studio`  | Open Prisma Studio. |
+
+---
+
+## How to Test
+
+1. **Dashboard** – Create a series, open Studio.
+2. **Ideation** – Choose Language (e.g. Tiếng Việt) and Output; send messages; confirm snapshot updates and “Show English” in the right panel.
+3. **Production** – Generate Outline → Create Chapter → Generate Scenes → Draft Chapter → Run Critic → Approve. Each step should complete without 500s; mock or fallbacks provide valid JSON when needed.
+
+---
+
+## License
+
+Private / unlicensed unless stated otherwise.
